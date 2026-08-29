@@ -95,20 +95,27 @@ pub async fn analyze_scan(
     on_progress: Channel<ScanEvent>,
 ) -> Result<mole_ops::analyze::DirListing, IpcError> {
     let _busy = crate::tray_anim::busy();
-    let cancel = state.cancel_flag(&task_id);
+    let (cancel, _task_guard) = state.begin_analyze(&task_id);
+    let progress_cancel = cancel.clone();
     let result = tauri::async_runtime::spawn_blocking(move || {
         mole_ops::analyze::scan_dir(&root, &cancel, |done, total| {
             // Progress granularity: every entry; the channel batches for us.
-            let _ = on_progress.send(ScanEvent {
-                label: format!("{done}/{total}"),
-                count: done,
-            });
+            if on_progress
+                .send(ScanEvent {
+                    label: format!("{done}/{total}"),
+                    count: done,
+                })
+                .is_err()
+            {
+                // A failed WebView eval means the JavaScript channel no longer
+                // has a receiver. Stop the scan instead of orphaning its walk.
+                progress_cancel.store(true, std::sync::atomic::Ordering::Relaxed);
+            }
         })
     })
     .await
     .map_err(|e| IpcError::new("io", e.to_string()))?
     .map_err(|e| IpcError::new("io", e.to_string()))?;
-    state.clear_task(&task_id);
     Ok(result)
 }
 

@@ -7,7 +7,7 @@ use mole_core::plan::DeletionPlan;
 use mole_ops::scanutil::CancelFlag;
 use mole_ops::uninstall::AppInfo;
 use mole_ops::updates::{AppUpdate, UpdateCatalog};
-use std::collections::HashMap;
+use std::collections::{HashMap, VecDeque};
 use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
@@ -27,6 +27,66 @@ const UPDATES_TTL: Duration = Duration::from_secs(900);
 /// Reopening the Updates tab should reuse the last complete scan. Manual
 /// refresh bypasses this shorter display-cache TTL.
 const UPDATES_CACHE_TTL: Duration = Duration::from_secs(300);
+
+/// Unknown cancellations are retained briefly as bounded tombstones so a
+/// cancel IPC that wins the race against task registration is not lost.
+const MAX_PRE_REGISTERED_CANCELS: usize = 64;
+
+/// Cancellation registry and Analyze ownership live behind one mutex. Keeping
+/// them together makes "cancel previous + register replacement" atomic.
+#[derive(Default)]
+struct CancellationRegistry {
+    flags: HashMap<String, CancelFlag>,
+    pre_cancelled: VecDeque<String>,
+    active_analyze: Option<String>,
+}
+
+/// Ownership token for one Analyze generation. Dropping the command future,
+/// returning an IPC error, or completing normally all retire the same task id
+/// without clearing a newer generation.
+pub struct AnalyzeTaskGuard<'a> {
+    state: &'a AppState,
+    task_id: String,
+}
+
+impl Drop for AnalyzeTaskGuard<'_> {
+    fn drop(&mut self) {
+        self.state.finish_analyze(&self.task_id);
+    }
+}
+
+impl CancellationRegistry {
+    fn take_pre_cancelled(&mut self, task_id: &str) -> bool {
+        let Some(index) = self.pre_cancelled.iter().position(|id| id == task_id) else {
+            return false;
+        };
+        self.pre_cancelled.remove(index);
+        true
+    }
+
+    fn remember_pre_cancelled(&mut self, task_id: &str) {
+        if self.pre_cancelled.iter().any(|id| id == task_id) {
+            return;
+        }
+        if self.pre_cancelled.len() == MAX_PRE_REGISTERED_CANCELS {
+            self.pre_cancelled.pop_front();
+        }
+        self.pre_cancelled.push_back(task_id.to_string());
+    }
+
+    fn register(&mut self, task_id: &str) -> CancelFlag {
+        let was_cancelled = self.take_pre_cancelled(task_id);
+        let flag = self
+            .flags
+            .entry(task_id.to_string())
+            .or_insert_with(|| Arc::new(AtomicBool::new(false)))
+            .clone();
+        if was_cancelled {
+            flag.store(true, Ordering::Relaxed);
+        }
+        flag
+    }
+}
 
 /// One cached inventory. `at == None` marks a stale seed (persisted rows from
 /// a previous launch): served instantly for display, but always due for a
@@ -282,7 +342,7 @@ struct StoredUpdates {
 #[derive(Default)]
 pub struct AppState {
     plans: Mutex<HashMap<String, StoredPlan>>,
-    cancels: Mutex<HashMap<String, CancelFlag>>,
+    cancels: Mutex<CancellationRegistry>,
     /// app path → PNG data URL (None = extraction already failed; don't retry).
     icons: Mutex<HashMap<String, Option<String>>>,
     /// Installed-app inventory cache (Arc so blocking threads can own it).
@@ -335,27 +395,74 @@ impl AppState {
 
     /// Get or create the cancellation flag for a task id.
     pub fn cancel_flag(&self, task_id: &str) -> CancelFlag {
-        self.cancels
-            .lock()
-            .unwrap()
-            .entry(task_id.to_string())
-            .or_insert_with(|| Arc::new(AtomicBool::new(false)))
-            .clone()
+        self.cancels.lock().unwrap().register(task_id)
     }
 
-    /// Flip a task's cancellation flag; false when the task is unknown.
+    /// Atomically replace the active Analyze scan. A page reload may lose the
+    /// frontend's in-memory task id, so the backend owns this single-flight
+    /// boundary and always cancels the previous generation itself.
+    pub fn begin_analyze(&self, task_id: &str) -> (CancelFlag, AnalyzeTaskGuard<'_>) {
+        let mut cancels = self.cancels.lock().unwrap();
+        if let Some(previous) = cancels.active_analyze.take() {
+            if let Some(flag) = cancels.flags.get(&previous) {
+                flag.store(true, Ordering::Relaxed);
+            }
+        }
+        let flag = cancels.register(task_id);
+        cancels.active_analyze = Some(task_id.to_string());
+        (
+            flag,
+            AnalyzeTaskGuard {
+                state: self,
+                task_id: task_id.to_string(),
+            },
+        )
+    }
+
+    /// Finish one Analyze generation without disturbing a newer replacement.
+    fn finish_analyze(&self, task_id: &str) {
+        let mut cancels = self.cancels.lock().unwrap();
+        cancels.flags.remove(task_id);
+        if cancels.active_analyze.as_deref() == Some(task_id) {
+            cancels.active_analyze = None;
+        }
+    }
+
+    /// Cancel the current Analyze generation after a page reload, WebView
+    /// teardown, or progress-channel failure.
+    pub fn cancel_analyze(&self) -> bool {
+        let cancels = self.cancels.lock().unwrap();
+        let Some(task_id) = cancels.active_analyze.as_ref() else {
+            return false;
+        };
+        let Some(flag) = cancels.flags.get(task_id) else {
+            return false;
+        };
+        flag.store(true, Ordering::Relaxed);
+        true
+    }
+
+    /// Flip a task's cancellation flag. Unknown ids return false but leave a
+    /// bounded tombstone so a not-yet-registered task starts cancelled.
     pub fn cancel(&self, task_id: &str) -> bool {
-        if let Some(flag) = self.cancels.lock().unwrap().get(task_id) {
+        let mut cancels = self.cancels.lock().unwrap();
+        if let Some(flag) = cancels.flags.get(task_id) {
             flag.store(true, Ordering::Relaxed);
             true
         } else {
+            cancels.remember_pre_cancelled(task_id);
             false
         }
     }
 
     /// Remove a finished task's flag.
     pub fn clear_task(&self, task_id: &str) {
-        self.cancels.lock().unwrap().remove(task_id);
+        let mut cancels = self.cancels.lock().unwrap();
+        cancels.flags.remove(task_id);
+        cancels.pre_cancelled.retain(|id| id != task_id);
+        if cancels.active_analyze.as_deref() == Some(task_id) {
+            cancels.active_analyze = None;
+        }
     }
 
     /// Cached icon lookup; Some(inner) when the answer (hit or known-miss)
@@ -462,6 +569,38 @@ impl AppState {
     /// Release the update mutation lease on every completion/failure path.
     pub fn finish_updates(&self) {
         self.updates_busy.store(false, Ordering::Release);
+    }
+}
+
+#[cfg(test)]
+mod analyze_state_tests {
+    use super::*;
+
+    #[test]
+    fn newer_analyze_scan_cancels_the_previous_scan() {
+        let state = AppState::default();
+        let (first, first_guard) = state.begin_analyze("analyze-first");
+        let (second, _second_guard) = state.begin_analyze("analyze-second");
+
+        assert!(first.load(Ordering::Relaxed));
+        assert!(!second.load(Ordering::Relaxed));
+
+        // A late completion from the superseded command must not clear the
+        // current scan's identity or make page-reload cancellation miss it.
+        drop(first_guard);
+        assert!(state.cancel_analyze());
+        assert!(second.load(Ordering::Relaxed));
+    }
+
+    #[test]
+    fn cancellation_before_registration_is_preserved() {
+        let state = AppState::default();
+
+        assert!(!state.cancel("not-registered-yet"));
+        let cancel = state.cancel_flag("not-registered-yet");
+
+        assert!(cancel.load(Ordering::Relaxed));
+        state.clear_task("not-registered-yet");
     }
 }
 

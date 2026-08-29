@@ -128,7 +128,25 @@ pub fn run() {
             warm_status_sampler();
             Ok(())
         })
+        .on_page_load(|webview, payload| {
+            // PageLoadEvent::Started is the reliable backend-side signal for
+            // Vite reloads and normal navigations. The old JavaScript module
+            // (and its in-memory task id) is already gone at this point.
+            if webview.label() == "main"
+                && payload.event() == tauri::webview::PageLoadEvent::Started
+            {
+                webview.state::<state::AppState>().cancel_analyze();
+            }
+        })
+        .on_web_content_process_terminate(|webview| {
+            if webview.label() == "main" {
+                webview.state::<state::AppState>().cancel_analyze();
+            }
+        })
         .on_window_event(|window, event| {
+            if window.label() == "main" && matches!(event, tauri::WindowEvent::Destroyed) {
+                window.state::<state::AppState>().cancel_analyze();
+            }
             // Close-to-tray: hide instead of quitting when enabled.
             if let tauri::WindowEvent::CloseRequested { api, .. } = event {
                 if KEEP_IN_TRAY.load(Ordering::Relaxed) {

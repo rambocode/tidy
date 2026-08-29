@@ -33,6 +33,7 @@ are documented in [`docs/BRAND_GUIDELINES.md`](docs/BRAND_GUIDELINES.md).
 
 Feature contracts:
 
+- [`docs/ANALYZE.md`](docs/ANALYZE.md) — Analyze 扫描生命周期、取消语义与全进程并发预算。
 - [`docs/OPTIMIZE_TASKS.md`](docs/OPTIMIZE_TASKS.md) — optimization domain,
   Mole.app parity inventory, conditions, and execution boundaries.
 - [`docs/OPTIMIZE_HELP.md`](docs/OPTIMIZE_HELP.md) — user-facing explanation of

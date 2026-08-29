@@ -8,7 +8,8 @@ use std::fs;
 use std::os::unix::fs::MetadataExt;
 use std::path::Path;
 use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
-use std::sync::Arc;
+use std::sync::{Arc, Condvar, Mutex};
+use std::time::Duration;
 
 /// Cancellation flag shared between an IPC command and its scan workers.
 pub type CancelFlag = Arc<AtomicBool>;
@@ -17,6 +18,66 @@ extern "C" {
     /// From <pthread/qos.h>; not exposed by the libc crate.
     fn pthread_set_qos_class_self_np(qos_class: u32, relative_priority: i32) -> i32;
 }
+
+/// Maximum number of recursive filesystem walks allowed in the whole
+/// process. A per-request cap is insufficient because independent Analyze,
+/// Clean, and Apps requests can otherwise multiply each other's CPU load.
+const GLOBAL_SCAN_WORKERS: usize = 2;
+
+/// Process-wide counting semaphore for recursive metadata walks. It uses only
+/// the standard library so the low-level scan boundary stays dependency-free.
+struct ScanLimiter {
+    active: Mutex<usize>,
+    ready: Condvar,
+    limit: usize,
+}
+
+impl ScanLimiter {
+    const fn new(limit: usize) -> Self {
+        Self {
+            active: Mutex::new(0),
+            ready: Condvar::new(),
+            limit,
+        }
+    }
+
+    /// Wait for one process-wide worker slot. Timed waits keep cancellation
+    /// responsive even when every slot is occupied by another feature.
+    fn acquire<'a>(&'a self, cancel: &AtomicBool) -> Result<ScanPermit<'a>, Cancelled> {
+        let mut active = self.active.lock().unwrap();
+        while *active >= self.limit {
+            if cancel.load(Ordering::Relaxed) {
+                return Err(Cancelled);
+            }
+            let (next, _) = self
+                .ready
+                .wait_timeout(active, Duration::from_millis(25))
+                .unwrap();
+            active = next;
+        }
+        if cancel.load(Ordering::Relaxed) {
+            return Err(Cancelled);
+        }
+        *active += 1;
+        Ok(ScanPermit { limiter: self })
+    }
+}
+
+/// RAII worker slot: every success, cancellation, and panic-unwind path
+/// releases capacity for the next queued scan.
+struct ScanPermit<'a> {
+    limiter: &'a ScanLimiter,
+}
+
+impl Drop for ScanPermit<'_> {
+    fn drop(&mut self) {
+        let mut active = self.limiter.active.lock().unwrap();
+        *active -= 1;
+        self.limiter.ready.notify_one();
+    }
+}
+
+static SCAN_LIMITER: ScanLimiter = ScanLimiter::new(GLOBAL_SCAN_WORKERS);
 
 /// Move the calling scan worker to the Utility QoS band so heavy tree walks
 /// land on efficiency cores and never compete with the UI thread. A full-speed
@@ -29,12 +90,11 @@ pub fn set_scan_thread_qos() {
     }
 }
 
-/// Bounded worker count for parallel size measurement: half the cores, capped
-/// at 4. Tree walks are metadata-I/O bound, so extra threads add CPU load and
-/// heat much faster than they add throughput.
+/// Bounded worker count for parallel size measurement. Each request stays at
+/// or below the process-wide budget, while `SCAN_LIMITER` also coordinates
+/// independent requests and product features.
 pub fn scan_workers(jobs: usize) -> usize {
-    let half = std::thread::available_parallelism().map_or(2, |n| n.get() / 2);
-    jobs.clamp(1, half.clamp(2, 4))
+    jobs.clamp(1, GLOBAL_SCAN_WORKERS)
 }
 
 /// Error returned when a scan was cancelled mid-flight; partial output must
@@ -75,6 +135,7 @@ fn walk_tree(
 /// instead of duty-cycle throttling, so warmups are fast yet stay off the
 /// performance cores.
 pub fn dir_size_kb(path: &Path, cancel: &AtomicBool) -> Result<(SizeKb, u64), Cancelled> {
+    let _permit = SCAN_LIMITER.acquire(cancel)?;
     let mut blocks = 0u64;
     let mut items = 0u64;
     walk_tree(path, &mut blocks, &mut items, cancel)?;
@@ -130,8 +191,54 @@ mod tests {
     fn scan_worker_pool_is_bounded() {
         assert_eq!(scan_workers(0), 1);
         assert_eq!(scan_workers(1), 1);
-        assert!(scan_workers(100) <= 4);
-        assert!(scan_workers(100) >= 2);
+        assert_eq!(scan_workers(100), 2);
+    }
+
+    /// Multiple product scans share one process-wide budget. Per-call worker
+    /// caps alone allowed three Analyze requests to run six hot walks after a
+    /// WebView reload, which reproduced as roughly 500% CPU on macOS.
+    #[test]
+    fn scan_limiter_caps_concurrent_walks_across_callers() {
+        let limiter = Arc::new(ScanLimiter::new(2));
+        let cancel = Arc::new(AtomicBool::new(false));
+        let active = Arc::new(std::sync::atomic::AtomicUsize::new(0));
+        let peak = Arc::new(std::sync::atomic::AtomicUsize::new(0));
+
+        std::thread::scope(|scope| {
+            for _ in 0..6 {
+                let limiter = limiter.clone();
+                let cancel = cancel.clone();
+                let active = active.clone();
+                let peak = peak.clone();
+                scope.spawn(move || {
+                    let _permit = limiter.acquire(&cancel).unwrap();
+                    let now = active.fetch_add(1, Ordering::SeqCst) + 1;
+                    peak.fetch_max(now, Ordering::SeqCst);
+                    std::thread::sleep(std::time::Duration::from_millis(20));
+                    active.fetch_sub(1, Ordering::SeqCst);
+                });
+            }
+        });
+
+        assert_eq!(peak.load(Ordering::SeqCst), 2);
+    }
+
+    #[test]
+    fn directory_walk_waiting_for_global_budget_is_cancellable() {
+        let (_guard, root) = fixture();
+        let occupied_cancel = AtomicBool::new(false);
+        let _first = SCAN_LIMITER.acquire(&occupied_cancel).unwrap();
+        let _second = SCAN_LIMITER.acquire(&occupied_cancel).unwrap();
+        let waiting_cancel = Arc::new(AtomicBool::new(false));
+
+        let waiter = {
+            let waiting_cancel = waiting_cancel.clone();
+            std::thread::spawn(move || dir_size_kb(&root, &waiting_cancel).is_err())
+        };
+        std::thread::sleep(Duration::from_millis(10));
+        waiting_cancel.store(true, Ordering::Relaxed);
+
+        assert!(waiter.join().unwrap());
     }
 
     #[test]
