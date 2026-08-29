@@ -25,6 +25,7 @@ import type {
   UpdateCatalog,
   UpdateResult,
   WhitelistPayload,
+  DockerPlanPayload,
 } from "./types";
 
 /** Build a progress channel from a plain callback. */
@@ -51,11 +52,13 @@ export const celestialCatalog = () => invoke<CelestialCatalog>("celestial_catalo
 export const analyzeScan = (
   root: string,
   taskId: string,
+  fresh: boolean,
   onProgress: (e: ScanEvent) => void,
 ) =>
   invoke<DirListing>("analyze_scan", {
     root,
     taskId,
+    fresh,
     onProgress: channel(onProgress),
   });
 
@@ -79,6 +82,17 @@ export const planUninstall = (appPaths: string[], taskId: string) =>
 
 export const planPurge = (taskId: string, onProgress: (e: ScanEvent) => void) =>
   invoke<PurgePlanPayload>("plan_purge", { taskId, onProgress: channel(onProgress) });
+
+export const planDocker = (taskId: string) =>
+  invoke<DockerPlanPayload>("plan_docker", { taskId });
+
+/** Docker items are removed by the docker CLI, not the file sink. */
+export const executeDocker = (
+  planId: string,
+  selection: string[],
+  onProgress: (item: ExecItem) => void,
+) =>
+  invoke<ExecReport>("execute_docker", { planId, selection, onProgress: channel(onProgress) });
 
 export const planInstaller = (taskId: string) =>
   invoke<PlanSummary>("plan_installer", { taskId });
@@ -108,6 +122,9 @@ export const runOptimize = (taskIds: string[]) =>
 export const appIcon = (appPath: string) =>
   invoke<string | null>("app_icon", { appPath });
 
+/** Drop the backend app-inventory and icon caches before a manual re-scan. */
+export const refreshAppCache = () => invoke<void>("refresh_app_cache");
+
 export const previewUninstall = (appPaths: string[], taskId: string) =>
   invoke<UninstallPlanPayload>("preview_uninstall", { appPaths, taskId });
 
@@ -122,9 +139,6 @@ export const runAppUpdates = (updateIds: string[], taskId: string) =>
 
 export const setAppUpdateIgnored = (updateId: string, ignored: boolean) =>
   invoke<void>("set_app_update_ignored", { updateId, ignored });
-/** Drop the backend app-inventory and icon caches before a manual re-scan. */
-export const refreshAppCache = () => invoke<void>("refresh_app_cache");
-
 
 export const listLoginItems = () => invoke<LoginItem[]>("list_login_items");
 
@@ -146,6 +160,11 @@ export const signalProcess = (pid: number, force: boolean) =>
 
 export const fdaStatus = () => invoke<boolean>("fda_status");
 export const openFdaSettings = () => invoke<void>("open_fda_settings");
+/** Floating "drag Tidy into the list" helper shown next to System Settings. */
+export const fdaHelperShow = () => invoke<void>("fda_helper_show");
+export const fdaHelperHide = () => invoke<void>("fda_helper_hide");
+export const fdaDragSource = () =>
+  invoke<{ app_path: string; icon_path: string }>("fda_drag_source");
 export const autostartGet = () => invoke<boolean>("autostart_get");
 export const autostartSet = (enable: boolean) => invoke<void>("autostart_set", { enable });
 export const traySetVisible = (visible: boolean) => invoke<void>("tray_set_visible", { visible });

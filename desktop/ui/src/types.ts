@@ -189,6 +189,24 @@ export interface UninstallPlanPayload {
 export interface ProjectReport {
   root: string;
   blockers: string[];
+  /** Days since last commit / edit; null when unknown. */
+  idle_days: number | null;
+}
+
+/** One Docker image row (mirror of mole_ops::docker::DockerImage). */
+export interface DockerImage {
+  id: string;
+  repository: string;
+  tag: string;
+  size_kb: number;
+  containers: number;
+  age_days: number | null;
+  dangling: boolean;
+}
+
+export interface DockerPlanPayload {
+  summary: PlanSummary;
+  images: DockerImage[];
 }
 
 export interface PurgePlanPayload {

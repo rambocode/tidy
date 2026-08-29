@@ -147,8 +147,19 @@ pub fn run() {
             }
         })
         .on_window_event(|window, event| {
+            // Whatever closed the helper (✕, drop, grant, main closing), the
+            // settings page re-reads the permission once.
+            if window.label() == "fda-helper" && matches!(event, tauri::WindowEvent::Destroyed) {
+                if let Some(main) = window.app_handle().get_webview_window("main") {
+                    let _ = main.emit("fda-helper-closed", ());
+                }
+            }
             if window.label() == "main" && matches!(event, tauri::WindowEvent::Destroyed) {
                 window.state::<state::AppState>().cancel_analyze();
+                // The drag helper has no life of its own.
+                if let Some(helper) = window.app_handle().get_webview_window("fda-helper") {
+                    let _ = helper.close();
+                }
             }
             // Close-to-tray: hide instead of quitting when enabled.
             if let tauri::WindowEvent::CloseRequested { api, .. } = event {
@@ -158,6 +169,7 @@ pub fn run() {
                 }
             }
         })
+        .plugin(tauri_plugin_drag::init())
         .invoke_handler(tauri::generate_handler![
             commands::app_meta,
             commands::status_snapshot,
@@ -173,6 +185,7 @@ pub fn run() {
             commands::plan_clean,
             commands::list_apps,
             commands::app_icon,
+            commands::refresh_app_cache,
             commands::preview_uninstall,
             commands::cached_app_updates,
             commands::list_app_updates,
@@ -183,15 +196,19 @@ pub fn run() {
             commands::set_login_item_enabled,
             commands::plan_uninstall,
             commands::plan_purge,
+            commands::plan_docker,
+            commands::execute_docker,
             commands::plan_installer,
             commands::execute_plan,
-            commands::refresh_app_cache,
             commands::cancel_task,
             commands::reveal_in_finder,
             commands::list_optimize_tasks,
             commands::run_optimize,
             commands::fda_status,
             commands::open_fda_settings,
+            commands::fda_helper_show,
+            commands::fda_helper_hide,
+            commands::fda_drag_source,
             commands::autostart_get,
             commands::autostart_set,
             commands::tray_set_visible,

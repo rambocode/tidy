@@ -331,6 +331,20 @@ pub struct StoredPlan {
     created: Instant,
 }
 
+/// What a Docker plan item removes; ids come only from the last scan.
+#[derive(Clone)]
+pub enum DockerTarget {
+    Image(String),
+    BuildCache,
+}
+
+/// Last Docker scan: item id → action. Same boundary rule as updates.
+struct StoredDocker {
+    plan_id: String,
+    targets: HashMap<String, DockerTarget>,
+    created: Instant,
+}
+
 /// Last update catalog used as the scan-to-action authorization boundary.
 struct StoredUpdates {
     items: HashMap<String, AppUpdate>,
@@ -350,6 +364,10 @@ pub struct AppState {
     /// Latest update scan; actions accept ids from this map, never raw tokens,
     /// paths, or URLs from the webview.
     updates: Mutex<Option<StoredUpdates>>,
+    /// Analyze subtree-size cache (Arc so blocking scans can own it).
+    pub analyze_cache: Arc<mole_ops::analyze::SizeCache>,
+    /// Latest Docker scan; execute_docker accepts ids from this map only.
+    docker: Mutex<Option<StoredDocker>>,
     /// Single-flight update mutation guard.
     updates_busy: AtomicBool,
 }
@@ -385,6 +403,30 @@ impl AppState {
             None => Err("plan_not_found"),
             Some(p) if p.created.elapsed() > PLAN_TTL => Err("plan_expired"),
             Some(p) => Ok((p.plan.clone(), p.config.clone())),
+        }
+    }
+
+    /// Store the Docker scan and hand back its plan id.
+    pub fn store_docker(&self, targets: HashMap<String, DockerTarget>) -> String {
+        static COUNTER: AtomicU64 = AtomicU64::new(1);
+        let plan_id = format!("plan-docker-{}", COUNTER.fetch_add(1, Ordering::Relaxed));
+        *self.docker.lock().unwrap() = Some(StoredDocker {
+            plan_id: plan_id.clone(),
+            targets,
+            created: Instant::now(),
+        });
+        plan_id
+    }
+
+    /// Resolve a Docker item id against the stored scan (plan id must match
+    /// and the scan must be fresh), or explain why not.
+    pub fn docker_target(&self, plan_id: &str, id: &str) -> Result<DockerTarget, &'static str> {
+        let docker = self.docker.lock().unwrap();
+        match docker.as_ref() {
+            None => Err("plan_not_found"),
+            Some(d) if d.plan_id != plan_id => Err("plan_not_found"),
+            Some(d) if d.created.elapsed() > PLAN_TTL => Err("plan_expired"),
+            Some(d) => d.targets.get(id).cloned().ok_or("selection_mismatch"),
         }
     }
 
@@ -479,6 +521,14 @@ impl AppState {
             .insert(app_path.to_string(), data_url);
     }
 
+    /// Drop every cached icon so the next render re-extracts them from disk.
+    /// Paired with `apps.invalidate()` behind the Apps view's refresh button:
+    /// an icon that failed to extract is cached as a permanent miss, so without
+    /// this the miss would survive for the whole session.
+    pub fn icons_clear(&self) {
+        self.icons.lock().unwrap().clear();
+    }
+
     /// Replace the update authorization snapshot after a complete scan.
     pub fn store_updates(&self, catalog: &UpdateCatalog) {
         let items = catalog
@@ -521,14 +571,6 @@ impl AppState {
             }
             let Some(update) = stored.items.get(id) else {
                 return Err("unknown_update_id");
-    /// Drop every cached icon so the next render re-extracts them from disk.
-    /// Paired with `apps.invalidate()` behind the Apps view's refresh button:
-    /// an icon that failed to extract is cached as a permanent miss, so without
-    /// this the miss would survive for the whole session.
-    pub fn icons_clear(&self) {
-        self.icons.lock().unwrap().clear();
-    }
-
             };
             selected.push(update.clone());
         }

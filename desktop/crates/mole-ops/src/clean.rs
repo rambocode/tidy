@@ -301,6 +301,12 @@ pub fn build_plan(
     progress("dev", dev.len());
     plan.candidates.extend(dev);
 
+    // --- Section: temp files (user's $TMPDIR and /private/tmp) ---
+    let temp_paths = temp_candidates(&temp_roots(), &whitelist.patterns, &policy_ctx);
+    let temp = scanutil::parallel_candidates(&temp_paths, "temp", Scope::User, cancel);
+    progress("temp", temp.len());
+    plan.candidates.extend(temp);
+
     // --- Section: system caches/logs (admin — helper-gated at execution) ---
     let mut system_paths: Vec<PathBuf> = Vec::new();
     for root in ["/Library/Caches", "/Library/Logs"] {
@@ -322,6 +328,80 @@ pub fn build_plan(
     plan.candidates.extend(system);
 
     CleanPlanOutput { plan, blocked }
+}
+
+/// Temp entries younger than this stay: macOS itself only reaps the per-user
+/// temp dir after 3 days without access, so anything newer may be live.
+const TEMP_MIN_AGE: std::time::Duration = std::time::Duration::from_secs(3 * 86_400);
+
+/// The per-user Darwin temp dir (what $TMPDIR points to) plus /private/tmp.
+/// confstr is used instead of $TMPDIR because the app bundle's environment
+/// may not carry the variable.
+fn temp_roots() -> Vec<PathBuf> {
+    let mut roots = Vec::new();
+    let mut buf = vec![0u8; 1024];
+    // SAFETY: buf outlives the call and its length is passed exactly.
+    let n = unsafe {
+        libc::confstr(
+            libc::_CS_DARWIN_USER_TEMP_DIR,
+            buf.as_mut_ptr() as *mut libc::c_char,
+            buf.len(),
+        )
+    };
+    if n > 0 && (n as usize) <= buf.len() {
+        let s = String::from_utf8_lossy(&buf[..n as usize - 1]).into_owned();
+        roots.push(PathBuf::from(s.trim_end_matches('/')));
+    } else if let Ok(t) = std::env::var("TMPDIR") {
+        roots.push(PathBuf::from(t.trim_end_matches('/')));
+    }
+    roots.push(PathBuf::from("/private/tmp"));
+    roots
+}
+
+/// Eligible temp entries: owned by this user, untouched for TEMP_MIN_AGE,
+/// not a socket, not an Apple/launchd runtime entry, not protected or
+/// whitelisted. Everything else is somebody's live scratch space.
+fn temp_candidates(roots: &[PathBuf], whitelist: &[String], ctx: &PolicyCtx) -> Vec<PathBuf> {
+    use std::os::unix::fs::{FileTypeExt, MetadataExt};
+    // SAFETY: getuid has no preconditions.
+    let uid = unsafe { libc::getuid() };
+    let now = std::time::SystemTime::now();
+    let mut out = Vec::new();
+    for root in roots {
+        let Ok(entries) = std::fs::read_dir(root) else {
+            continue;
+        };
+        for entry in entries.flatten() {
+            let path = entry.path();
+            let name = entry.file_name().to_string_lossy().into_owned();
+            if name.starts_with('.') || name.starts_with("com.apple.") {
+                continue;
+            }
+            let Ok(meta) = std::fs::symlink_metadata(&path) else {
+                continue;
+            };
+            if meta.uid() != uid || meta.file_type().is_socket() {
+                continue;
+            }
+            let fresh = meta
+                .modified()
+                .ok()
+                .and_then(|m| now.duration_since(m).ok())
+                .is_none_or(|age| age < TEMP_MIN_AGE);
+            if fresh {
+                continue;
+            }
+            let path_str = path.to_string_lossy().into_owned();
+            if policy::should_protect_path(&path_str, ctx)
+                || policy::is_path_whitelisted(&path_str, whitelist)
+                || policy::is_endpoint_security_cache_path(&path_str)
+            {
+                continue;
+            }
+            out.push(path);
+        }
+    }
+    out
 }
 
 /// Preview-parity check used by tests: no candidate in a built plan may be
@@ -385,6 +465,36 @@ mod real_machine {
 
 #[cfg(test)]
 mod tests {
+    /// Old, user-owned, non-Apple temp entries are eligible; fresh, hidden
+    /// and com.apple.* entries are not.
+    #[test]
+    fn temp_candidates_skip_fresh_and_runtime_entries() {
+        let tmp = tempfile::tempdir().unwrap();
+        let root = tmp.path().to_path_buf();
+        let old = std::time::SystemTime::now() - std::time::Duration::from_secs(10 * 86_400);
+        for name in ["old-scratch", "com.apple.launchd.xyz", ".hidden-old"] {
+            let p = root.join(name);
+            std::fs::write(&p, b"x").unwrap();
+            std::fs::File::options()
+                .write(true)
+                .open(&p)
+                .unwrap()
+                .set_modified(old)
+                .unwrap();
+        }
+        std::fs::write(root.join("fresh"), b"x").unwrap();
+        let ctx = super::PolicyCtx {
+            home: root.to_string_lossy().into_owned(),
+            uninstall_mode: false,
+        };
+        let got = super::temp_candidates(std::slice::from_ref(&root), &[], &ctx);
+        let names: Vec<String> = got
+            .iter()
+            .map(|p| p.file_name().unwrap().to_string_lossy().into_owned())
+            .collect();
+        assert_eq!(names, vec!["old-scratch".to_string()]);
+    }
+
     use super::*;
     use mole_core::probes::StubProbes;
     use std::sync::atomic::AtomicBool;

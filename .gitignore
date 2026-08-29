@@ -15,3 +15,7 @@ site/tools/node_modules/
 *.log
 .vscode/
 .idea/
+
+# Local signing / notarization credentials
+.env
+desktop/.env

@@ -9,6 +9,7 @@
 mod catalog;
 mod discovery;
 mod execute;
+pub(crate) use execute::{run_bounded, CommandStatus};
 
 use mole_core::probes::{LiveProbes, TriState};
 use serde::Serialize;

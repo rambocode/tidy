@@ -8,7 +8,7 @@ import { cancelTask, executePlan, revealInFinder } from "./ipc";
 import { esc, humanKb } from "./format";
 import { mountParticles, type ParticlePalette } from "./particles";
 import { t } from "./i18n";
-import type { ExecItem, ExecReport, PlanSection, PlanSummary } from "./types";
+import type { ExecItem, ExecReport, PlanItem, PlanSection, PlanSummary } from "./types";
 
 export interface FlowOptions {
   title: string;
@@ -33,6 +33,17 @@ export interface FlowOptions {
   home?: string;
   /** Clean-only: route deletes to Trash instead of permanent removal. */
   trashOverride?: boolean;
+  /** Items to leave unchecked on first render (e.g. deps of a project
+   * edited this week). The user can still tick them. */
+  defaultUnchecked?: (item: PlanItem, sectionTitle: string) => boolean;
+  /** Extra badge HTML for an item row (already escaped by the caller). */
+  itemBadge?: (item: PlanItem, sectionTitle: string) => string;
+  /** Extra warning line for the confirm sheet, computed from the checked
+   * items; empty string = no line. */
+  confirmNote?: (selected: PlanItem[]) => string;
+  /** Per-plan executor override (e.g. Docker items go through the docker
+   * CLI). Return undefined to use the default file-deletion funnel. */
+  execute?: (job: ExecJob, onItem: (item: ExecItem) => void) => Promise<ExecReport> | undefined;
 }
 
 /** Icons for the known section keys; unknown sections get the folder. */
@@ -46,6 +57,9 @@ const SECTION_ICONS: Record<string, string> = {
   im: "💬",
   system: "🔒",
   "Installer artifacts": "📦",
+  projects: "🗂️",
+  docker: "🐳",
+  temp: "🧹",
 };
 
 /** Match the software list's outlined disclosure icon. The SVG rotates as a
@@ -130,6 +144,7 @@ function renderPreview(body: HTMLElement, summaries: PlanSummary[], opts: FlowOp
     new Set(
       section.items
         .filter((i) => !(i.scope === "system" && !opts.helperAvailable))
+        .filter((i) => !opts.defaultUnchecked?.(i, section.title))
         .map((i) => i.id),
     ),
   );
@@ -242,6 +257,7 @@ function renderPreview(body: HTMLElement, summaries: PlanSummary[], opts: FlowOp
           <div class="spacer"></div>
           ${item.item_count > 1 ? `<span class="muted icount">${item.item_count} ${t("prev.items")}</span>` : ""}
           <span class="isize">${item.size_kb === null ? "?" : humanKb(item.size_kb)}</span>
+          ${opts.itemBadge?.(item, section.title) ?? ""}
           ${gated ? `<span class="badge warn">${t("flow.admin")}</span>` : ""}
           <button class="chev reveal" data-reveal="${esc(item.path)}" title="Finder">📂</button>
         </div>`;
@@ -327,6 +343,7 @@ function renderPreview(body: HTMLElement, summaries: PlanSummary[], opts: FlowOp
     // Group the checked ids back by owning plan: each plan executes through
     // its own two-phase funnel, the flow only aggregates the reports.
     const byPlan = new Map<string, string[]>();
+    const selected: PlanItem[] = [];
     let count = 0;
     let kb = 0;
     sections.forEach((section, idx) => {
@@ -334,12 +351,21 @@ function renderPreview(body: HTMLElement, summaries: PlanSummary[], opts: FlowOp
       if (set.size === 0) return;
       count += set.size;
       for (const item of section.items) {
-        if (set.has(item.id)) kb += item.size_kb ?? 0;
+        if (set.has(item.id)) {
+          kb += item.size_kb ?? 0;
+          selected.push(item);
+        }
       }
       byPlan.set(planOf[idx], [...(byPlan.get(planOf[idx]) ?? []), ...set]);
     });
     const jobs = [...byPlan.entries()].map(([planId, selection]) => ({ planId, selection }));
-    confirmSheet(count, kb, opts.verb, () => runExecution(body, jobs, opts));
+    confirmSheet(
+      count,
+      kb,
+      opts.verb,
+      () => runExecution(body, jobs, opts),
+      opts.confirmNote?.(selected),
+    );
   });
 }
 
@@ -349,6 +375,7 @@ export function confirmSheet(
   totalKb: number,
   verb: string,
   onConfirm: () => void,
+  note?: string,
 ): void {
   const sheet = document.createElement("div");
   sheet.className = "confirm-backdrop";
@@ -356,6 +383,7 @@ export function confirmSheet(
     <div class="confirm-sheet">
       <h2>${esc(t("flow.confirm.title", { n: count }))}</h2>
       <p class="muted">${esc(t("flow.confirm.sub", { size: humanKb(totalKb) }))}</p>
+      ${note ? `<p class="confirm-note">${esc(note)}</p>` : ""}
       <div class="confirm-actions">
         <button id="confirm-cancel">${t("flow.cancel")}</button>
         <button id="confirm-go" class="danger">${esc(verb)}</button>
@@ -381,7 +409,7 @@ export interface ExecJob {
 export function runExecution(
   body: HTMLElement,
   jobs: ExecJob[],
-  opts: Pick<FlowOptions, "particles" | "trashOverride">,
+  opts: Pick<FlowOptions, "particles" | "trashOverride" | "execute">,
 ): void {
   body.innerHTML = `
     <div class="muted" id="exec-line" style="text-align:center;margin:10px 0">${t("flow.working")}…</div>
@@ -408,13 +436,9 @@ export function runExecution(
     let skipped = 0;
     let failed = 0;
     for (const job of jobs) {
-      const report: ExecReport = await executePlan(
-        job.planId,
-        job.selection,
-        false,
-        onItem,
-        opts.trashOverride ?? null,
-      );
+      const report: ExecReport =
+        (await opts.execute?.(job, onItem)) ??
+        (await executePlan(job.planId, job.selection, false, onItem, opts.trashOverride ?? null));
       freedKb += report.total_freed_kb;
       skipped += report.skipped;
       failed += report.failed;

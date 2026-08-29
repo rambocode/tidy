@@ -1175,9 +1175,14 @@ button.danger:hover { background: var(--danger); color: var(--brand-paper); }
 }
 
 .ana-side .item:hover { background: var(--hover); }
-.ana-side .item .name { font-size: 13px; }
+/* Long names ellipsize inside the row so the checkbox / chevron column
+ * stays put; the chevron slot is always rendered (empty for files) so every
+ * checkbox lines up. */
+.ana-side .item .name { font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .ana-side .item .size { font-family: var(--font-mono); font-size: 11px; color: var(--fg-faint); }
-.ana-side .item .grow { flex: 1; }
+.ana-side .item .grow { flex: 1; min-width: 0; }
+.ana-side .item input[type="checkbox"] { flex-shrink: 0; }
+.ana-side .item .chev-slot { width: 12px; flex-shrink: 0; text-align: center; }
 
 .ana-main { flex: 1; display: flex; flex-direction: column; min-width: 0; }
 
@@ -1788,3 +1793,73 @@ tr.proc-row {
     transition-duration: 0.01ms !important;
   }
 }
+
+/* Confirm sheet: extra warning line (e.g. project deps must be reinstalled). */
+.confirm-note {
+  color: var(--warn);
+  font-size: 12px;
+  line-height: 1.5;
+  margin: 0 0 12px;
+}
+
+/* Settings: small numeric threshold inputs (days / months). */
+.num-field { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: var(--fg-faint); }
+.num-field input[type="number"] {
+  width: 64px;
+  padding: 4px 6px;
+  font: inherit;
+  font-size: 12px;
+  color: inherit;
+  background: transparent;
+  border: 1px solid color-mix(in srgb, currentColor 30%, transparent);
+  border-radius: 6px;
+  text-align: right;
+}
+
+/* --- FDA drag helper window (its own 460×150 always-on-top window) --- */
+.fda-helper-body { background: #14161c; }
+.fda-helper-body #app { height: 100vh; }
+.fda-helper {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  height: 100%;
+  padding: 0 18px 0 22px;
+  box-sizing: border-box;
+  color: var(--fg);
+  user-select: none;
+  -webkit-user-select: none;
+}
+.fda-stage { position: relative; width: 150px; height: 110px; flex-shrink: 0; cursor: grab; }
+.fda-stage:active { cursor: grabbing; }
+.fda-app-icon { position: absolute; left: 8px; top: 24px; width: 64px; height: 64px; border-radius: 14px; }
+/* The ghost copy rides from the icon to the list target, over and over. */
+.fda-app-ghost {
+  position: absolute; left: 8px; top: 24px; width: 64px; height: 64px; border-radius: 14px;
+  opacity: 0; pointer-events: none;
+  animation: fda-drag 2.6s ease-in-out infinite;
+}
+@keyframes fda-drag {
+  0%   { transform: translate(0, 0) scale(1); opacity: 0; }
+  10%  { opacity: 0.9; }
+  60%  { transform: translate(72px, -6px) scale(0.55); opacity: 0.9; }
+  75%  { transform: translate(72px, -6px) scale(0.5); opacity: 0; }
+  100% { transform: translate(0, 0) scale(1); opacity: 0; }
+}
+/* Pictogram of the System Settings list; the target row lights up on arrival. */
+.fda-list { position: absolute; right: 4px; top: 20px; width: 56px; display: flex; flex-direction: column; gap: 7px; }
+.fda-list span { height: 12px; border-radius: 4px; background: color-mix(in srgb, var(--fg) 14%, transparent); }
+.fda-list span.target {
+  border: 1px dashed color-mix(in srgb, var(--ok) 70%, transparent);
+  background: transparent;
+  animation: fda-target 2.6s ease-in-out infinite;
+}
+@keyframes fda-target {
+  0%, 50% { background: transparent; }
+  60%, 72% { background: color-mix(in srgb, var(--ok) 40%, transparent); }
+  80%, 100% { background: transparent; }
+}
+.fda-text { flex: 1; min-width: 0; }
+.fda-title { font-size: 15px; font-weight: 600; margin-bottom: 6px; }
+.fda-sub { font-size: 12px; line-height: 1.5; }
+.fda-helper .chev { align-self: flex-start; margin-top: 12px; }

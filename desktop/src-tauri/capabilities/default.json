@@ -2,6 +2,13 @@
   "$schema": "../gen/schemas/desktop-schema.json",
   "identifier": "default",
   "description": "Core window capabilities only; no fs/shell plugin surface.",
-  "windows": ["main"],
-  "permissions": ["core:default", "core:window:allow-start-dragging"]
+  "windows": [
+    "main",
+    "fda-helper"
+  ],
+  "permissions": [
+    "core:default",
+    "core:window:allow-start-dragging",
+    "drag:default"
+  ]
 }

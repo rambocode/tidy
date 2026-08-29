@@ -8,6 +8,8 @@ import {
   autostartGet,
   autostartSet,
   fdaStatus,
+  fdaHelperShow,
+  fdaHelperHide,
   openFdaSettings,
   purgePathsGet,
   touchidStatus,
@@ -17,7 +19,8 @@ import {
 import { PRODUCT_NAME } from "../brand";
 import { esc } from "../format";
 import { lang, langMode, setLang, t } from "../i18n";
-import { applyBackendPrefs, pref, setPref } from "../prefs";
+import { listen } from "@tauri-apps/api/event";
+import { applyBackendPrefs, dockerIdleMonths, pref, purgeIdleDays, setPref } from "../prefs";
 import type { View } from "../router";
 
 type Tab = "general" | "tools" | "menubar";
@@ -44,12 +47,22 @@ function segmented(id: string, options: [string, string][], active: string): str
     .join("")}</div>`;
 }
 
+/** Small numeric input (days / months thresholds). */
+function numberInput(id: string, value: number, unit: string): string {
+  return `<label class="num-field"><input type="number" id="${id}" min="1" max="3650" value="${value}" /> ${unit}</label>`;
+}
+
 /** Toggle switch HTML. */
 function toggle(id: string, on: boolean): string {
   return `<button class="toggle ${on ? "on" : ""}" id="${id}"></button>`;
 }
 
 export const settings: View = {
+  unmount() {
+    stopFdaPoll();
+    unlistenHelper?.();
+    unlistenHelper = undefined;
+  },
   async mount(container) {
     const [meta, fda, autostart, wl, purgePaths, touchid] = await Promise.all([
       appMeta(),
@@ -168,6 +181,16 @@ function toolsTab(patterns: string[], purgePaths: string[] | null, touchidOn: bo
       "",
     ),
     row(
+      t("set.purgeidle"),
+      t("set.purgeidle.desc"),
+      numberInput("num-purgeidle", purgeIdleDays(), t("set.unit.days")),
+    ),
+    row(
+      t("set.dockeridle"),
+      t("set.dockeridle.desc"),
+      numberInput("num-dockeridle", dockerIdleMonths(), t("set.unit.months")),
+    ),
+    row(
       t("set.touchid"),
       t("set.touchid.hint"),
       touchidOn
@@ -189,9 +212,42 @@ function menubarTab(): string {
   ].join("");
 }
 
+/** Poll timer started by the FDA button; cleared on grant and on unmount. */
+let fdaPoll: number | undefined;
+function stopFdaPoll(): void {
+  if (fdaPoll !== undefined) window.clearInterval(fdaPoll);
+  fdaPoll = undefined;
+}
+
+/** Backend "helper window closed" subscription; the page re-reads the
+ * permission once so the row reflects a grant made while it was open. */
+let unlistenHelper: (() => void) | undefined;
+
 /** Wire the active tab's controls. */
 function wire(container: HTMLElement, redraw: () => void): void {
-  container.querySelector("#fda-open")?.addEventListener("click", () => void openFdaSettings());
+  // "去授权": open the pane, float the drag helper beside it, and poll until
+  // the toggle flips so the row turns into the "granted" badge by itself.
+  unlistenHelper?.();
+  void listen("fda-helper-closed", () => {
+    stopFdaPoll();
+    redraw();
+  }).then((un) => {
+    unlistenHelper = un;
+  });
+  container.querySelector("#fda-open")?.addEventListener("click", () => {
+    void openFdaSettings();
+    void fdaHelperShow();
+    stopFdaPoll();
+    fdaPoll = window.setInterval(() => {
+      void fdaStatus().then((ok) => {
+        if (!ok) return;
+        stopFdaPoll();
+        void fdaHelperHide();
+        redraw();
+      });
+    }, 1500);
+  });
+
 
   container.querySelectorAll<HTMLElement>(".segmented").forEach((seg) => {
     seg.querySelectorAll<HTMLButtonElement>("button").forEach((btn) => {
@@ -225,6 +281,16 @@ function wire(container: HTMLElement, redraw: () => void): void {
     setPref("keep-in-tray", on ? "1" : "0");
     applyBackendPrefs();
   });
+
+  // Threshold inputs save on every change; invalid values fall back to the
+  // default at read time (see prefs.intPref).
+  const wireNumber = (id: string, key: "purge-idle-days" | "docker-idle-months") => {
+    container.querySelector<HTMLInputElement>(`#${id}`)?.addEventListener("change", (ev) => {
+      setPref(key, (ev.target as HTMLInputElement).value.trim());
+    });
+  };
+  wireNumber("num-purgeidle", "purge-idle-days");
+  wireNumber("num-dockeridle", "docker-idle-months");
 
   container.querySelector("#wl-save")?.addEventListener("click", async () => {
     const textarea = container.querySelector<HTMLTextAreaElement>("#wl")!;

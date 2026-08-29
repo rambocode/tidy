@@ -1,6 +1,6 @@
 # Tidy standalone Makefile — adapted from the original Mole repo's desktop-*
 # targets so the README's `make desktop-*` commands also work in this checkout.
-.PHONY: dev build bundle check desktop-dev desktop-build desktop-bundle desktop-check
+.PHONY: dev build bundle release check desktop-dev desktop-build desktop-bundle desktop-check
 
 # The tauri CLI must run from desktop/ (it locates src-tauri/tauri.conf.json
 # by scanning subfolders of the invocation directory).
@@ -16,6 +16,11 @@ bundle:
 	cd desktop && npm ci --prefix ui && ui/node_modules/.bin/tauri build
 	desktop/scripts/set-dmg-icon.sh desktop/target/release/bundle/dmg/*.dmg
 
+# Signed + notarized DMG (see desktop/scripts/release.sh for the one-time
+# notarytool credential setup).
+release:
+	desktop/scripts/release.sh
+
 check:
 	cd desktop && cargo fmt --check && cargo clippy --workspace -- -D warnings && cargo test --workspace
 	cd desktop/ui && npm run check
@@ -23,5 +28,5 @@ check:
 # Parent-repo-compatible aliases.
 desktop-dev: dev
 desktop-build: build
-desktop-check: check
 desktop-bundle: bundle
+desktop-check: check

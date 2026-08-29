@@ -136,15 +136,16 @@ function openDir(root: string): void {
 }
 
 /** Kick off a background scan of `root`, superseding any in-flight scan. */
-function startScan(root: string): void {
+function startScan(root: string, fresh = false): void {
   currentRoot = root;
   // The user navigated away from the old target — stop paying for it.
   if (pending) void cancelTask(pending.taskId);
   const state = { root, taskId: newTaskId(), label: "" };
   pending = state;
   if (mounted) renderScanning(mounted, state);
-  analyzeScan(root, state.taskId, (e) => {
-    state.label = e.label;
+  analyzeScan(root, state.taskId, fresh, (e) => {
+    // Walk progress: directories visited so far (total unknown until done).
+    state.label = e.count > 0 ? t("ana.walking", { n: e.count }) : "";
     if (pending !== state) return;
     const el = mounted?.querySelector<HTMLElement>("#scan-progress");
     if (el) el.textContent = e.label;
@@ -189,7 +190,7 @@ function renderListing(container: HTMLElement, listing: DirListing): void {
           <div class="size">${humanKb(e.size_kb)}</div>
         </div>
         <input type="checkbox" data-path="${esc(e.path)}" />
-        ${e.is_dir ? `<span class="muted">›</span>` : ""}
+        <span class="muted chev-slot">${e.is_dir ? "›" : ""}</span>
       </div>`,
     )
     .join("");
@@ -240,7 +241,7 @@ function renderListing(container: HTMLElement, listing: DirListing): void {
   });
   container.querySelector("#rescan")!.addEventListener("click", () => {
     dropListing(listing.root);
-    startScan(listing.root);
+    startScan(listing.root, true);
   });
 
   // Selection → Trash flow.

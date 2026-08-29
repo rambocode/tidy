@@ -4,7 +4,9 @@
 
 use mole_core::identity;
 use mole_core::plan::{Candidate, Scope, SizeKb};
+use std::ffi::{CString, OsString};
 use std::fs;
+use std::os::unix::ffi::{OsStrExt, OsStringExt};
 use std::os::unix::fs::MetadataExt;
 use std::path::Path;
 use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
@@ -22,7 +24,10 @@ extern "C" {
 /// Maximum number of recursive filesystem walks allowed in the whole
 /// process. A per-request cap is insufficient because independent Analyze,
 /// Clean, and Apps requests can otherwise multiply each other's CPU load.
-const GLOBAL_SCAN_WORKERS: usize = 2;
+/// Four is safe because every walker runs at Utility QoS (efficiency cores,
+/// see `set_scan_thread_qos`); the >700% CPU incident was 8 default-QoS
+/// threads.
+const GLOBAL_SCAN_WORKERS: usize = 4;
 
 /// Process-wide counting semaphore for recursive metadata walks. It uses only
 /// the standard library so the low-level scan boundary stays dependency-free.
@@ -102,7 +107,8 @@ pub fn scan_workers(jobs: usize) -> usize {
 #[derive(Debug)]
 pub struct Cancelled;
 
-/// Cancellable recursive walk behind the size measurement.
+/// Cancellable recursive walk behind the size measurement. The node itself
+/// is stat'ed once; its children go through the bulk lister when possible.
 fn walk_tree(
     path: &Path,
     blocks: &mut u64,
@@ -120,13 +126,181 @@ fn walk_tree(
     *blocks += meta.blocks();
     *items += 1;
     if meta.is_dir() {
-        if let Ok(entries) = fs::read_dir(path) {
-            for entry in entries.flatten() {
+        walk_children(path, blocks, items, cancel)?;
+    }
+    Ok(true)
+}
+
+/// Sum a directory's children. Fast path: one `getattrlistbulk` call per
+/// directory returns name, type and allocated size for every entry (what
+/// Finder and `du` use) instead of one `stat` syscall per file. Falls back to
+/// `read_dir` + `stat` when the volume does not support bulk attributes.
+fn walk_children(
+    dir: &Path,
+    blocks: &mut u64,
+    items: &mut u64,
+    cancel: &AtomicBool,
+) -> Result<(), Cancelled> {
+    let Some(entries) = bulk::list(dir) else {
+        if let Ok(rd) = fs::read_dir(dir) {
+            for entry in rd.flatten() {
                 walk_tree(&entry.path(), blocks, items, cancel)?;
             }
         }
+        return Ok(());
+    };
+    for entry in entries {
+        if cancel.load(Ordering::Relaxed) {
+            return Err(Cancelled);
+        }
+        *items += 1;
+        // allocsize is bytes; keep the 512-byte block unit of the stat path.
+        *blocks += entry.alloc_bytes / 512;
+        if entry.is_dir {
+            walk_children(&dir.join(&entry.name), blocks, items, cancel)?;
+        }
     }
-    Ok(true)
+    Ok(())
+}
+
+/// Minimal `getattrlistbulk(2)` binding: list one directory with the three
+/// attributes the size walk needs. Symlinks are reported as themselves
+/// (FSOPT_NOFOLLOW), never followed.
+mod bulk {
+    use super::*;
+
+    /// One directory entry from the bulk lister.
+    pub struct Entry {
+        pub name: OsString,
+        pub is_dir: bool,
+        pub alloc_bytes: u64,
+    }
+
+    // <sys/attr.h> / <sys/vnode.h> values the libc crate does not export.
+    const ATTR_CMN_ERROR: u32 = 0x2000_0000;
+    const VDIR: u32 = 2;
+    const BUF_LEN: usize = 256 * 1024;
+
+    /// Read a little-endian scalar from an unaligned 4-byte-packed buffer.
+    fn read_u32(buf: &[u8], at: usize) -> Option<u32> {
+        buf.get(at..at + 4)
+            .map(|b| u32::from_ne_bytes([b[0], b[1], b[2], b[3]]))
+    }
+    /// See [`read_u32`]; off_t fields are 8 bytes but only 4-byte aligned.
+    fn read_u64(buf: &[u8], at: usize) -> Option<u64> {
+        buf.get(at..at + 8)
+            .map(|b| u64::from_ne_bytes([b[0], b[1], b[2], b[3], b[4], b[5], b[6], b[7]]))
+    }
+
+    /// List `dir`. None means "use the stat fallback" (open failed, volume
+    /// lacks bulk support, or the reply was malformed).
+    pub fn list(dir: &Path) -> Option<Vec<Entry>> {
+        let c_path = CString::new(dir.as_os_str().as_bytes()).ok()?;
+        // SAFETY: plain open(2) on a NUL-terminated path; the fd is closed
+        // below on every exit path.
+        let fd = unsafe {
+            libc::open(
+                c_path.as_ptr(),
+                libc::O_RDONLY | libc::O_DIRECTORY | libc::O_NOFOLLOW | libc::O_CLOEXEC,
+            )
+        };
+        if fd < 0 {
+            return None;
+        }
+        let result = list_fd(fd);
+        // SAFETY: fd came from the open above and is not used afterwards.
+        unsafe { libc::close(fd) };
+        result
+    }
+
+    /// Drain the bulk iterator on an open directory fd.
+    fn list_fd(fd: libc::c_int) -> Option<Vec<Entry>> {
+        let mut attrs = libc::attrlist {
+            bitmapcount: libc::ATTR_BIT_MAP_COUNT,
+            reserved: 0,
+            commonattr: libc::ATTR_CMN_RETURNED_ATTRS
+                | ATTR_CMN_ERROR
+                | libc::ATTR_CMN_NAME
+                | libc::ATTR_CMN_OBJTYPE,
+            volattr: 0,
+            dirattr: libc::ATTR_DIR_ALLOCSIZE,
+            fileattr: libc::ATTR_FILE_ALLOCSIZE,
+            forkattr: 0,
+        };
+        let mut buf = vec![0u8; BUF_LEN];
+        let mut out = Vec::new();
+        loop {
+            // SAFETY: attrs and buf outlive the call; buf length is passed
+            // exactly; the kernel writes at most BUF_LEN bytes.
+            let n = unsafe {
+                libc::getattrlistbulk(
+                    fd,
+                    &mut attrs as *mut libc::attrlist as *mut libc::c_void,
+                    buf.as_mut_ptr() as *mut libc::c_void,
+                    buf.len(),
+                    libc::FSOPT_NOFOLLOW as u64,
+                )
+            };
+            if n < 0 {
+                return None;
+            }
+            if n == 0 {
+                return Some(out);
+            }
+            let mut pos = 0usize;
+            for _ in 0..n {
+                let len = read_u32(&buf, pos)? as usize;
+                if len < 4 + 20 || pos + len > buf.len() {
+                    return None;
+                }
+                let entry = &buf[pos..pos + len];
+                // attribute_set_t: five u32 groups, we need common/dir/file.
+                let ret_common = read_u32(entry, 4)?;
+                let ret_dir = read_u32(entry, 12)?;
+                let ret_file = read_u32(entry, 16)?;
+                let mut cur = 24;
+                let mut error = 0;
+                if ret_common & ATTR_CMN_ERROR != 0 {
+                    error = read_u32(entry, cur)?;
+                    cur += 4;
+                }
+                let mut name = OsString::new();
+                if ret_common & libc::ATTR_CMN_NAME != 0 {
+                    // attrreference_t: offset is relative to the reference
+                    // itself; length includes the trailing NUL.
+                    let off = read_u32(entry, cur)? as i32 as isize;
+                    let nlen = read_u32(entry, cur + 4)? as usize;
+                    let start = (cur as isize + off) as usize;
+                    let bytes = entry.get(start..start + nlen)?;
+                    let bytes = bytes.strip_suffix(&[0]).unwrap_or(bytes);
+                    name = OsString::from_vec(bytes.to_vec());
+                    cur += 8;
+                }
+                let mut is_dir = false;
+                if ret_common & libc::ATTR_CMN_OBJTYPE != 0 {
+                    is_dir = read_u32(entry, cur)? == VDIR;
+                    cur += 4;
+                }
+                let mut alloc_bytes = 0;
+                if ret_dir & libc::ATTR_DIR_ALLOCSIZE != 0 {
+                    alloc_bytes = read_u64(entry, cur)?;
+                    cur += 8;
+                }
+                if ret_file & libc::ATTR_FILE_ALLOCSIZE != 0 {
+                    alloc_bytes = read_u64(entry, cur)?;
+                }
+                pos += len;
+                if error != 0 || name.is_empty() {
+                    continue;
+                }
+                out.push(Entry {
+                    name,
+                    is_dir,
+                    alloc_bytes,
+                });
+            }
+        }
+    }
 }
 
 /// Physical size of a tree in KB plus item count, without following symlinks.
@@ -140,6 +314,165 @@ pub fn dir_size_kb(path: &Path, cancel: &AtomicBool) -> Result<(SizeKb, u64), Ca
     let mut items = 0u64;
     walk_tree(path, &mut blocks, &mut items, cancel)?;
     Ok((SizeKb::Known(blocks * 512 / 1024), items))
+}
+
+/// Directories deeper than this below the measured root are folded into
+/// their nearest kept ancestor instead of getting their own entry. Keeps the
+/// result map small on trees like node_modules while every directory a user
+/// can realistically drill into (≤ 6 clicks) stays a cache hit.
+const TREE_KEEP_DEPTH: usize = 6;
+
+/// One kept directory during a parallel walk. `name` + `parent` replace a
+/// full PathBuf per node so a million-directory tree stays in tens of MB.
+struct TreeNode {
+    name: std::ffi::OsString,
+    parent: Option<usize>,
+    blocks: u64,
+    items: u64,
+}
+
+/// Subtree totals (KB, item count) for `root` and every kept directory
+/// below it, from ONE walk. This is what makes Analyze drill-down cheap:
+/// the top-level scan already visited every file, so child listings are
+/// map lookups instead of fresh walks.
+pub struct TreeSizes {
+    pub dirs: std::collections::HashMap<std::path::PathBuf, (u64, u64)>,
+}
+
+/// Parallel work-stealing directory walk: every directory is one job, so a
+/// single huge child (~/Library) no longer pins one thread while the others
+/// idle. Semantics match `dir_size_kb` exactly (symlinks counted as
+/// themselves, unreadable dirs skipped, the root counts as one item).
+pub fn measure_tree(root: &Path, cancel: &AtomicBool) -> Result<TreeSizes, Cancelled> {
+    let root_meta = fs::symlink_metadata(root).map_err(|_| Cancelled)?;
+    if !root_meta.is_dir() {
+        let mut dirs = std::collections::HashMap::new();
+        dirs.insert(root.to_path_buf(), (root_meta.blocks() * 512 / 1024, 1));
+        return Ok(TreeSizes { dirs });
+    }
+    let nodes = Mutex::new(vec![TreeNode {
+        name: root.as_os_str().to_os_string(),
+        parent: None,
+        blocks: root_meta.blocks(),
+        items: 1,
+    }]);
+    // Jobs: (path, node that receives this dir's totals, depth).
+    let queue: Mutex<Vec<(std::path::PathBuf, usize, usize)>> =
+        Mutex::new(vec![(root.to_path_buf(), 0, 0)]);
+    let in_flight = std::sync::atomic::AtomicUsize::new(1);
+
+    let workers = scan_workers(usize::MAX);
+    std::thread::scope(|scope| {
+        for _ in 0..workers {
+            scope.spawn(|| {
+                set_scan_thread_qos();
+                let Ok(_permit) = SCAN_LIMITER.acquire(cancel) else {
+                    return;
+                };
+                loop {
+                    if cancel.load(Ordering::Relaxed) {
+                        return;
+                    }
+                    let job = queue.lock().unwrap().pop();
+                    let Some((path, agg, depth)) = job else {
+                        if in_flight.load(Ordering::Acquire) == 0 {
+                            return;
+                        }
+                        std::thread::sleep(Duration::from_micros(200));
+                        continue;
+                    };
+                    let (mut blocks, mut items, subdirs) = list_one_level(&path);
+                    // Subdirectories: kept ones become nodes (owning their
+                    // own entry: 1 item + the dir's own blocks, like
+                    // dir_size_kb counts a root); deeper ones fold into `agg`.
+                    let mut new_jobs = Vec::with_capacity(subdirs.len());
+                    let mut nodes = nodes.lock().unwrap();
+                    for (name, dir_blocks) in subdirs {
+                        if depth < TREE_KEEP_DEPTH {
+                            let idx = nodes.len();
+                            nodes.push(TreeNode {
+                                name: name.clone(),
+                                parent: Some(agg),
+                                blocks: dir_blocks,
+                                items: 1,
+                            });
+                            new_jobs.push((path.join(name), idx, depth + 1));
+                        } else {
+                            blocks += dir_blocks;
+                            items += 1;
+                            new_jobs.push((path.join(name), agg, depth + 1));
+                        }
+                    }
+                    nodes[agg].blocks += blocks;
+                    nodes[agg].items += items;
+                    drop(nodes);
+                    in_flight.fetch_add(new_jobs.len(), Ordering::AcqRel);
+                    queue.lock().unwrap().extend(new_jobs);
+                    in_flight.fetch_sub(1, Ordering::AcqRel);
+                }
+            });
+        }
+    });
+    if cancel.load(Ordering::Relaxed) {
+        return Err(Cancelled);
+    }
+
+    // Roll totals up: children were always pushed after their parent, so a
+    // reverse pass sees every child before its parent.
+    let mut nodes = nodes.into_inner().unwrap();
+    for i in (1..nodes.len()).rev() {
+        let (blocks, items, parent) = (nodes[i].blocks, nodes[i].items, nodes[i].parent);
+        if let Some(p) = parent {
+            nodes[p].blocks += blocks;
+            nodes[p].items += items;
+        }
+    }
+    // Rebuild full paths top-down (parents have lower indices).
+    let mut paths: Vec<std::path::PathBuf> = Vec::with_capacity(nodes.len());
+    let mut dirs = std::collections::HashMap::with_capacity(nodes.len());
+    for node in &nodes {
+        let path = match node.parent {
+            None => std::path::PathBuf::from(&node.name),
+            Some(p) => paths[p].join(&node.name),
+        };
+        dirs.insert(path.clone(), (node.blocks * 512 / 1024, node.items));
+        paths.push(path);
+    }
+    Ok(TreeSizes { dirs })
+}
+
+/// List one directory: (blocks and count of NON-directory entries, then the
+/// subdirectories as (name, the dir entry's own blocks)). Bulk path first,
+/// stat fallback second — same rules as `walk_children`.
+fn list_one_level(dir: &Path) -> (u64, u64, Vec<(std::ffi::OsString, u64)>) {
+    let mut blocks = 0;
+    let mut items = 0;
+    let mut subdirs = Vec::new();
+    if let Some(entries) = bulk::list(dir) {
+        for entry in entries {
+            if entry.is_dir {
+                subdirs.push((entry.name, entry.alloc_bytes / 512));
+            } else {
+                items += 1;
+                blocks += entry.alloc_bytes / 512;
+            }
+        }
+        return (blocks, items, subdirs);
+    }
+    if let Ok(rd) = fs::read_dir(dir) {
+        for entry in rd.flatten() {
+            let Ok(meta) = fs::symlink_metadata(entry.path()) else {
+                continue;
+            };
+            if meta.is_dir() {
+                subdirs.push((entry.file_name(), meta.blocks()));
+            } else {
+                items += 1;
+                blocks += meta.blocks();
+            }
+        }
+    }
+    (blocks, items, subdirs)
 }
 
 /// Build a candidate for an existing path: snapshot identity and measure size.
@@ -191,7 +524,7 @@ mod tests {
     fn scan_worker_pool_is_bounded() {
         assert_eq!(scan_workers(0), 1);
         assert_eq!(scan_workers(1), 1);
-        assert_eq!(scan_workers(100), 2);
+        assert_eq!(scan_workers(100), 4);
     }
 
     /// Multiple product scans share one process-wide budget. Per-call worker
@@ -227,8 +560,10 @@ mod tests {
     fn directory_walk_waiting_for_global_budget_is_cancellable() {
         let (_guard, root) = fixture();
         let occupied_cancel = AtomicBool::new(false);
-        let _first = SCAN_LIMITER.acquire(&occupied_cancel).unwrap();
-        let _second = SCAN_LIMITER.acquire(&occupied_cancel).unwrap();
+        // Exhaust the whole process budget so the walk below must wait.
+        let _held: Vec<_> = (0..GLOBAL_SCAN_WORKERS)
+            .map(|_| SCAN_LIMITER.acquire(&occupied_cancel).unwrap())
+            .collect();
         let waiting_cancel = Arc::new(AtomicBool::new(false));
 
         let waiter = {
@@ -239,6 +574,89 @@ mod tests {
         waiting_cancel.store(true, Ordering::Relaxed);
 
         assert!(waiter.join().unwrap());
+    }
+
+    /// Reference walk: read_dir + stat for every entry (the pre-bulk path).
+    fn stat_walk(path: &Path, blocks: &mut u64, items: &mut u64) {
+        let Ok(meta) = fs::symlink_metadata(path) else {
+            return;
+        };
+        *blocks += meta.blocks();
+        *items += 1;
+        if meta.is_dir() {
+            if let Ok(rd) = fs::read_dir(path) {
+                for e in rd.flatten() {
+                    stat_walk(&e.path(), blocks, items);
+                }
+            }
+        }
+    }
+
+    /// The bulk lister must agree with the stat walk and with `du -sk`
+    /// (symlinks counted as themselves, never followed; hidden names kept).
+    #[test]
+    fn bulk_walk_matches_stat_walk_and_du() {
+        let (_guard, root) = fixture();
+        fs::write(root.join(".hidden"), vec![1u8; 8192]).unwrap();
+        std::os::unix::fs::symlink("/", root.join("a/rootlink")).unwrap();
+        fs::write(root.join("a/b/ünïcode name"), vec![2u8; 300]).unwrap();
+
+        let cancel = AtomicBool::new(false);
+        let (SizeKb::Known(kb), items) = dir_size_kb(&root, &cancel).unwrap() else {
+            panic!("size must be known");
+        };
+        let (mut blocks, mut ref_items) = (0, 0);
+        stat_walk(&root, &mut blocks, &mut ref_items);
+        assert_eq!(items, ref_items);
+        assert_eq!(kb, blocks * 512 / 1024);
+
+        let du = std::process::Command::new("du")
+            .args(["-skP"])
+            .arg(&root)
+            .output()
+            .unwrap();
+        let du_kb: u64 = String::from_utf8_lossy(&du.stdout)
+            .split_whitespace()
+            .next()
+            .unwrap()
+            .parse()
+            .unwrap();
+        assert_eq!(kb, du_kb);
+        assert!(
+            bulk::list(&root).is_some(),
+            "fixture volume supports bulk listing"
+        );
+    }
+
+    /// The parallel tree walk must agree with the serial walk for the root
+    /// and for every kept subdirectory.
+    #[test]
+    fn measure_tree_matches_dir_size_kb() {
+        let (_guard, root) = fixture();
+        std::os::unix::fs::symlink("/", root.join("a/rootlink")).unwrap();
+        // A chain deeper than TREE_KEEP_DEPTH: folded, still counted.
+        let mut deep = root.join("d");
+        for _ in 0..TREE_KEEP_DEPTH + 3 {
+            deep = deep.join("x");
+        }
+        fs::create_dir_all(&deep).unwrap();
+        fs::write(deep.join("leaf"), vec![7u8; 5000]).unwrap();
+
+        let cancel = AtomicBool::new(false);
+        let tree = measure_tree(&root, &cancel).unwrap();
+        for dir in [
+            root.clone(),
+            root.join("a"),
+            root.join("a/b"),
+            root.join("d"),
+        ] {
+            let (SizeKb::Known(kb), items) = dir_size_kb(&dir, &cancel).unwrap() else {
+                panic!()
+            };
+            assert_eq!(tree.dirs.get(&dir), Some(&(kb, items)), "{}", dir.display());
+        }
+        assert!(!tree.dirs.contains_key(&deep), "folded dirs get no entry");
+        assert!(measure_tree(&root, &AtomicBool::new(true)).is_err());
     }
 
     #[test]
@@ -285,4 +703,47 @@ pub fn parallel_candidates(
         .into_iter()
         .flatten()
         .collect()
+}
+
+#[cfg(test)]
+mod bench {
+    use super::*;
+    /// Manual timing: cargo test -p mole-ops bench_node_modules -- --ignored --nocapture
+    #[test]
+    #[ignore]
+    fn bench_node_modules() {
+        let path = std::env::var("BENCH_DIR").unwrap_or_else(|_| "../../ui/node_modules".into());
+        let p = Path::new(&path);
+        let cancel = AtomicBool::new(false);
+        fn stat_walk(path: &Path, blocks: &mut u64, items: &mut u64) {
+            let Ok(meta) = fs::symlink_metadata(path) else {
+                return;
+            };
+            *blocks += meta.blocks();
+            *items += 1;
+            if meta.is_dir() {
+                if let Ok(rd) = fs::read_dir(path) {
+                    for e in rd.flatten() {
+                        stat_walk(&e.path(), blocks, items);
+                    }
+                }
+            }
+        }
+        // Warm the cache once with each, then time both twice.
+        for round in 0..2 {
+            let t = std::time::Instant::now();
+            let (SizeKb::Known(kb), n) = dir_size_kb(p, &cancel).unwrap() else {
+                panic!()
+            };
+            eprintln!("round {round} bulk: {kb} KB, {n} items, {:?}", t.elapsed());
+            let t = std::time::Instant::now();
+            let (mut b, mut i) = (0, 0);
+            stat_walk(p, &mut b, &mut i);
+            eprintln!(
+                "round {round} stat: {} KB, {i} items, {:?}",
+                b * 512 / 1024,
+                t.elapsed()
+            );
+        }
+    }
 }

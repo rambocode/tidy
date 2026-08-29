@@ -3,7 +3,13 @@
 
 import { setKeepInTray, traySetVisible } from "./ipc";
 
-type Keys = "temp-unit" | "delete-mode" | "tray-visible" | "keep-in-tray";
+type Keys =
+  | "temp-unit"
+  | "delete-mode"
+  | "tray-visible"
+  | "keep-in-tray"
+  | "purge-idle-days"
+  | "docker-idle-months";
 
 /** Read a preference with a default. */
 export function pref(key: Keys, def: string): string {
@@ -26,6 +32,19 @@ export function formatTemp(celsius: number): string {
 
 /** Clean cache delete mode: "permanent" (default, CLI parity) or "trash". */
 export const cleanTrashMode = () => pref("delete-mode", "permanent") === "trash";
+
+/** Read a positive integer pref, falling back to the default when unset or
+ * malformed (an empty number input must never turn into "0 days"). */
+function intPref(key: Keys, def: number): number {
+  const n = Number.parseInt(pref(key, String(def)), 10);
+  return Number.isFinite(n) && n > 0 ? n : def;
+}
+
+/** Project deps idle for at least this many days are checked by default. */
+export const purgeIdleDays = () => intPref("purge-idle-days", 30);
+
+/** Docker images unused for at least this many months are checked by default. */
+export const dockerIdleMonths = () => intPref("docker-idle-months", 6);
 
 /** Push the backend-affecting prefs at boot. */
 export function applyBackendPrefs(): void {

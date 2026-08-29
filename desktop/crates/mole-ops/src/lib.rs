@@ -7,6 +7,7 @@ pub mod analyze;
 pub mod appmeta;
 pub mod celestial;
 pub mod clean;
+pub mod docker;
 pub mod engine;
 pub mod history;
 pub mod installer;

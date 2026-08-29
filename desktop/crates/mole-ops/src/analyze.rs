@@ -29,74 +29,130 @@ pub struct DirListing {
     pub truncated: bool,
 }
 
-/// Scan one directory level; per-entry sizes measured in parallel. The
-/// progress callback receives (entries_done, total_entries).
+/// Cached subtree sizes from previous scans. A top-level scan already
+/// visits every file below it, so drilling into a child is a lookup here
+/// instead of a fresh walk. Cleared on manual rescan, before any deletion,
+/// and after CACHE_TTL.
+#[derive(Default)]
+pub struct SizeCache {
+    inner: Mutex<Option<CacheState>>,
+}
+
+struct CacheState {
+    dirs: std::collections::HashMap<PathBuf, (u64, u64)>,
+    built: std::time::Instant,
+}
+
+/// Sizes older than this are re-measured (files change under us).
+const CACHE_TTL: std::time::Duration = std::time::Duration::from_secs(15 * 60);
+
+impl SizeCache {
+    /// Forget everything (before deletions, or on manual rescan).
+    pub fn clear(&self) {
+        *self.inner.lock().unwrap() = None;
+    }
+
+    /// Cached (kb, items) for a directory, if fresh.
+    fn get(&self, path: &Path) -> Option<(u64, u64)> {
+        let guard = self.inner.lock().unwrap();
+        let state = guard.as_ref()?;
+        if state.built.elapsed() > CACHE_TTL {
+            return None;
+        }
+        state.dirs.get(path).copied()
+    }
+
+    /// Merge one measured tree in. A stale cache is replaced, not merged.
+    fn insert(&self, tree: scanutil::TreeSizes) {
+        let mut guard = self.inner.lock().unwrap();
+        match guard.as_mut() {
+            Some(state) if state.built.elapsed() <= CACHE_TTL => state.dirs.extend(tree.dirs),
+            _ => {
+                *guard = Some(CacheState {
+                    dirs: tree.dirs,
+                    built: std::time::Instant::now(),
+                })
+            }
+        }
+    }
+}
+
+/// Scan one directory level. Cache hit: children are looked up (files
+/// stat'ed, dirs from the cache). Miss: one parallel walk of the whole
+/// subtree (`measure_tree`) fills the cache for this root AND every
+/// directory below it. The progress callback receives (dirs_visited, 0)
+/// during a walk — the total is unknown until the walk ends.
 pub fn scan_dir(
     root: &str,
     cancel: &CancelFlag,
+    cache: &SizeCache,
+    fresh: bool,
     progress: impl Fn(usize, usize) + Sync,
 ) -> std::io::Result<DirListing> {
     let root_path = Path::new(root);
+    if fresh {
+        cache.clear();
+    }
     let mut names: Vec<PathBuf> = std::fs::read_dir(root_path)?
         .flatten()
         .map(|e| e.path())
         .collect();
     names.sort();
 
-    let total = names.len();
-    let done = std::sync::atomic::AtomicUsize::new(0);
-    let results: Mutex<Vec<Option<DirEntryInfo>>> = Mutex::new(vec![None; total]);
-    let queue: Mutex<Vec<(usize, PathBuf)>> = Mutex::new(names.into_iter().enumerate().collect());
-
-    // Bounded pool on the Utility QoS band: full-speed default-QoS walks
-    // saturated every performance core (>700% CPU for a home-dir scan).
-    let workers = scanutil::scan_workers(total);
-    std::thread::scope(|scope| {
-        for _ in 0..workers {
-            scope.spawn(|| {
-                scanutil::set_scan_thread_qos();
-                loop {
-                    let job = queue.lock().unwrap().pop();
-                    let Some((idx, path)) = job else { break };
-                    if cancel.load(Ordering::Relaxed) {
-                        break;
-                    }
-                    let meta = match std::fs::symlink_metadata(&path) {
-                        Ok(m) => m,
-                        Err(_) => continue,
-                    };
-                    let is_dir = meta.is_dir();
-                    let (size_kb, item_count) = match scanutil::dir_size_kb(&path, cancel) {
-                        Ok(v) => v,
-                        Err(_) => break, // cancelled: leave the slot empty
-                    };
-                    let entry = DirEntryInfo {
-                        name: path
-                            .file_name()
-                            .map(|n| n.to_string_lossy().into_owned())
-                            .unwrap_or_default(),
-                        path: path.to_string_lossy().into_owned(),
-                        size_kb: match size_kb {
-                            SizeKb::Known(kb) => kb,
-                            SizeKb::Unknown => 0,
-                        },
-                        is_dir,
-                        item_count,
-                    };
-                    results.lock().unwrap()[idx] = Some(entry);
-                    progress(done.fetch_add(1, Ordering::Relaxed) + 1, total);
-                }
-            });
+    // Miss on the root itself → measure the whole subtree once. The walk
+    // is cancellable; a cancelled walk caches nothing.
+    if cache.get(root_path).is_none() {
+        progress(0, 0);
+        match scanutil::measure_tree(root_path, cancel) {
+            Ok(tree) => cache.insert(tree),
+            Err(scanutil::Cancelled) => {
+                return Ok(DirListing {
+                    root: root.to_string(),
+                    entries: Vec::new(),
+                    total_kb: 0,
+                    truncated: true,
+                })
+            }
         }
-    });
+    }
+
+    let mut entries = Vec::with_capacity(names.len());
+    for path in names {
+        if cancel.load(Ordering::Relaxed) {
+            break;
+        }
+        let Ok(meta) = std::fs::symlink_metadata(&path) else {
+            continue;
+        };
+        let is_dir = meta.is_dir();
+        let (size_kb, item_count) = if is_dir {
+            match cache.get(&path) {
+                Some(v) => v,
+                // Not kept (deeper than the walk's keep depth) or raced in
+                // after the walk: measure just this one.
+                None => match scanutil::dir_size_kb(&path, cancel) {
+                    Ok((SizeKb::Known(kb), n)) => (kb, n),
+                    Ok((SizeKb::Unknown, n)) => (0, n),
+                    Err(_) => break,
+                },
+            }
+        } else {
+            use std::os::unix::fs::MetadataExt;
+            (meta.blocks() * 512 / 1024, 1)
+        };
+        entries.push(DirEntryInfo {
+            name: path
+                .file_name()
+                .map(|n| n.to_string_lossy().into_owned())
+                .unwrap_or_default(),
+            path: path.to_string_lossy().into_owned(),
+            size_kb,
+            is_dir,
+            item_count,
+        });
+    }
 
     let truncated = cancel.load(Ordering::Relaxed);
-    let mut entries: Vec<DirEntryInfo> = results
-        .into_inner()
-        .unwrap()
-        .into_iter()
-        .flatten()
-        .collect();
     entries.sort_by_key(|e| std::cmp::Reverse(e.size_kb));
     let total_kb = entries.iter().map(|e| e.size_kb).sum();
     Ok(DirListing {
@@ -137,7 +193,15 @@ mod tests {
         std::fs::write(tmp.path().join("sub/child"), vec![0u8; 50_000]).unwrap();
 
         let cancel: CancelFlag = Arc::new(AtomicBool::new(false));
-        let listing = scan_dir(tmp.path().to_str().unwrap(), &cancel, |_, _| {}).unwrap();
+        let cache = SizeCache::default();
+        let listing = scan_dir(
+            tmp.path().to_str().unwrap(),
+            &cancel,
+            &cache,
+            false,
+            |_, _| {},
+        )
+        .unwrap();
         assert_eq!(listing.entries.len(), 3);
         assert_eq!(listing.entries[0].name, "big");
         assert!(!listing.truncated);
@@ -145,6 +209,16 @@ mod tests {
         let sub = listing.entries.iter().find(|e| e.name == "sub").unwrap();
         assert!(sub.is_dir);
         assert_eq!(sub.item_count, 2);
+
+        // Drill-down is served from the cache filled by the parent scan and
+        // agrees with a fresh measurement.
+        assert!(cache.get(&tmp.path().join("sub")).is_some());
+        let child = scan_dir(sub.path.as_str(), &cancel, &cache, false, |_, _| {}).unwrap();
+        assert_eq!(child.entries.len(), 1);
+        assert_eq!(child.total_kb, sub.size_kb);
+        // fresh=true drops the cache.
+        scan_dir(sub.path.as_str(), &cancel, &cache, true, |_, _| {}).unwrap();
+        assert!(cache.get(tmp.path()).is_none());
     }
 
     #[test]
@@ -152,7 +226,15 @@ mod tests {
         let tmp = tempfile::tempdir().unwrap();
         std::fs::write(tmp.path().join("a"), b"x").unwrap();
         let cancel: CancelFlag = Arc::new(AtomicBool::new(true));
-        let listing = scan_dir(tmp.path().to_str().unwrap(), &cancel, |_, _| {}).unwrap();
+        let cache = SizeCache::default();
+        let listing = scan_dir(
+            tmp.path().to_str().unwrap(),
+            &cancel,
+            &cache,
+            false,
+            |_, _| {},
+        )
+        .unwrap();
         assert!(listing.truncated);
     }
 
@@ -165,5 +247,30 @@ mod tests {
         let plan = plan_delete_paths(&[f.to_string_lossy().into_owned()], &cancel);
         assert_eq!(plan.candidates.len(), 1);
         assert!(plan.candidates[0].identity.is_some());
+    }
+}
+
+#[cfg(test)]
+mod bench {
+    use super::*;
+    use std::sync::atomic::AtomicBool;
+    use std::sync::Arc;
+    /// Manual: BENCH_DIR=~ cargo test -p mole-ops --release bench_scan_dir -- --ignored --nocapture
+    #[test]
+    #[ignore]
+    fn bench_scan_dir() {
+        let root = std::env::var("BENCH_DIR").unwrap_or_else(|_| std::env::var("HOME").unwrap());
+        let cancel: CancelFlag = Arc::new(AtomicBool::new(false));
+        let cache = SizeCache::default();
+        for round in 0..2 {
+            let t = std::time::Instant::now();
+            let l = scan_dir(&root, &cancel, &cache, round == 0, |_, _| {}).unwrap();
+            eprintln!(
+                "round {round}: {} entries, {} KB, {:?}",
+                l.entries.len(),
+                l.total_kb,
+                t.elapsed()
+            );
+        }
     }
 }

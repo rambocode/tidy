@@ -3,7 +3,7 @@
 // accepts (plan_id, selection ⊆ plan). Heavy work runs on blocking threads
 // with progress channels and cooperative cancellation.
 
-use crate::dto::{summarize, PlanSummary, ScanEvent};
+use crate::dto::{summarize, PlanItem, PlanSection, PlanSummary, ScanEvent};
 use crate::error::IpcError;
 use crate::state::{AppState, PlanConfig};
 use mole_core::probes::SystemProbes;
@@ -104,23 +104,25 @@ pub async fn celestial_catalog(
 // analyze
 // ---------------------------------------------------------------------------
 
-/// One-level directory listing with parallel physical sizes.
+/// One-level directory listing with parallel physical sizes. `fresh`
+/// (manual rescan) drops the subtree-size cache first.
 #[tauri::command]
 pub async fn analyze_scan(
     state: State<'_, AppState>,
     root: String,
     task_id: String,
+    fresh: bool,
     on_progress: Channel<ScanEvent>,
 ) -> Result<mole_ops::analyze::DirListing, IpcError> {
     let _busy = crate::tray_anim::busy();
     let (cancel, _task_guard) = state.begin_analyze(&task_id);
     let progress_cancel = cancel.clone();
+    let cache = state.analyze_cache.clone();
     let result = tauri::async_runtime::spawn_blocking(move || {
-        mole_ops::analyze::scan_dir(&root, &cancel, |done, total| {
-            // Progress granularity: every entry; the channel batches for us.
+        mole_ops::analyze::scan_dir(&root, &cancel, &cache, fresh, |done, _total| {
             if on_progress
                 .send(ScanEvent {
-                    label: format!("{done}/{total}"),
+                    label: String::new(),
                     count: done,
                 })
                 .is_err()
@@ -144,6 +146,8 @@ pub async fn plan_delete_paths(
     paths: Vec<String>,
     task_id: String,
 ) -> Result<PlanSummary, IpcError> {
+    // Deletion is imminent: every cached subtree size below is about to be wrong.
+    state.analyze_cache.clear();
     let _busy = crate::tray_anim::busy();
     let cancel = state.cancel_flag(&task_id);
     let plan = tauri::async_runtime::spawn_blocking(move || {
@@ -366,6 +370,158 @@ pub async fn plan_purge(
     })
 }
 
+/// Docker plan payload: preview plus the raw image rows (age / in-use).
+#[derive(Serialize)]
+pub struct DockerPlanPayload {
+    pub summary: PlanSummary,
+    pub images: Vec<mole_ops::docker::DockerImage>,
+}
+
+/// Docker images + unused build cache as one "docker" section. Item ids are
+/// the image ids (or "build-cache"); execute_docker only accepts those.
+#[tauri::command]
+pub async fn plan_docker(
+    state: State<'_, AppState>,
+    task_id: String,
+) -> Result<DockerPlanPayload, IpcError> {
+    let _busy = crate::tray_anim::busy();
+    let cancel = state.cancel_flag(&task_id);
+    let home = crate::home();
+    let catalog = tauri::async_runtime::spawn_blocking(move || mole_ops::docker::scan(&home))
+        .await
+        .map_err(|e| IpcError::new("io", e.to_string()))?;
+    state.clear_task(&task_id);
+    if cancel.load(std::sync::atomic::Ordering::Relaxed) {
+        return Err(IpcError::new("cancelled", "scan cancelled"));
+    }
+    let catalog = catalog.ok_or_else(|| IpcError::new("unavailable", "docker not running"))?;
+
+    let mut targets = std::collections::HashMap::new();
+    let mut items = Vec::new();
+    for img in &catalog.images {
+        targets.insert(
+            img.id.clone(),
+            crate::state::DockerTarget::Image(img.id.clone()),
+        );
+        let short: String = img
+            .id
+            .trim_start_matches("sha256:")
+            .chars()
+            .take(12)
+            .collect();
+        let name = if img.dangling {
+            format!("<none> ({short})")
+        } else {
+            format!("{}:{}", img.repository, img.tag)
+        };
+        items.push(PlanItem {
+            id: img.id.clone(),
+            path: name,
+            size_kb: Some(img.size_kb),
+            item_count: 1,
+            scope: "user",
+        });
+    }
+    if catalog.build_cache_unused_kb > 0 {
+        targets.insert("build-cache".into(), crate::state::DockerTarget::BuildCache);
+        items.push(PlanItem {
+            id: "build-cache".into(),
+            path: "Docker build cache".into(),
+            size_kb: Some(catalog.build_cache_unused_kb),
+            item_count: 1,
+            scope: "user",
+        });
+    }
+    let total_kb = items.iter().map(|i| i.size_kb.unwrap_or(0)).sum();
+    let count = items.len();
+    let plan_id = state.store_docker(targets);
+    Ok(DockerPlanPayload {
+        summary: PlanSummary {
+            plan_id,
+            sections: vec![PlanSection {
+                title: "docker".into(),
+                items,
+                total_kb,
+            }],
+            total_kb,
+            count,
+        },
+        images: catalog.images,
+    })
+}
+
+/// Remove the selected Docker items through the docker CLI. Images still
+/// used by a container are refused by docker and reported as failed.
+#[tauri::command]
+pub async fn execute_docker(
+    state: State<'_, AppState>,
+    plan_id: String,
+    selection: Vec<String>,
+    on_progress: Channel<ExecItem>,
+) -> Result<ExecReport, IpcError> {
+    let _busy = crate::tray_anim::busy();
+    let mut targets = Vec::new();
+    for id in &selection {
+        let target = state.docker_target(&plan_id, id).map_err(|code| {
+            IpcError::new(
+                code_static(code),
+                "docker scan unavailable — re-run the scan",
+            )
+        })?;
+        targets.push((id.clone(), target));
+    }
+    let home = crate::home();
+    let report = tauri::async_runtime::spawn_blocking(move || {
+        let mut report = ExecReport {
+            items: Vec::new(),
+            total_freed_kb: 0,
+            skipped: 0,
+            failed: 0,
+        };
+        let Some(docker) = mole_ops::docker::find_docker(&home) else {
+            report.failed = targets.len() as u64;
+            return report;
+        };
+        for (id, target) in targets {
+            let (path, result) = match &target {
+                crate::state::DockerTarget::Image(image) => (
+                    image.clone(),
+                    mole_ops::docker::remove_image(&docker, image),
+                ),
+                crate::state::DockerTarget::BuildCache => (
+                    "Docker build cache".to_string(),
+                    mole_ops::docker::prune_build_cache(&docker),
+                ),
+            };
+            let item = match result {
+                Ok(()) => ExecItem {
+                    id,
+                    path,
+                    outcome: "removed".into(),
+                    size_kb: None,
+                    error: None,
+                },
+                Err(e) => {
+                    report.failed += 1;
+                    ExecItem {
+                        id,
+                        path,
+                        outcome: "failed".into(),
+                        size_kb: None,
+                        error: Some(e),
+                    }
+                }
+            };
+            let _ = on_progress.send(item.clone());
+            report.items.push(item);
+        }
+        report
+    })
+    .await
+    .map_err(|e| IpcError::new("io", e.to_string()))?;
+    Ok(report)
+}
+
 /// Installer artifact plan (Trash-routed).
 #[tauri::command]
 pub async fn plan_installer(
@@ -532,6 +688,18 @@ pub async fn app_icon(
     Ok(data_url)
 }
 
+/// Drop the cached app inventory and every extracted icon.
+///
+/// Backs the Apps view's manual refresh: both caches are deliberately sticky
+/// (the inventory is even mirrored to disk for an instant cold start), so an
+/// app installed or re-signed while Tidy was running — or an icon that failed
+/// to extract once — stays stale until something clears them.
+#[tauri::command]
+pub fn refresh_app_cache(state: State<'_, AppState>) {
+    state.apps.invalidate();
+    state.icons_clear();
+}
+
 /// Leftover preview for the expandable app rows: same discovery as
 /// plan_uninstall but nothing is stored — expanding is not selecting, and a
 /// preview must never become executable by id.
@@ -688,18 +856,6 @@ pub fn set_app_update_ignored(
     Ok(())
 }
 
-/// Drop the cached app inventory and every extracted icon.
-///
-/// Backs the Apps view's manual refresh: both caches are deliberately sticky
-/// (the inventory is even mirrored to disk for an instant cold start), so an
-/// app installed or re-signed while Tidy was running — or an icon that failed
-/// to extract once — stays stale until something clears them.
-#[tauri::command]
-pub fn refresh_app_cache(state: State<'_, AppState>) {
-    state.apps.invalidate();
-    state.icons_clear();
-}
-
 /// Login items (launch agents/daemons) with launchd enabled state.
 #[tauri::command]
 pub async fn list_login_items() -> Result<Vec<mole_ops::appmeta::LoginItem>, IpcError> {
@@ -805,6 +961,230 @@ pub fn open_fda_settings() -> Result<(), IpcError> {
         .map_err(|e| IpcError::new("io", e.to_string()))
 }
 
+/// Height of the floating "drag Tidy into the list" helper (logical px);
+/// its width follows the System Settings window it docks under.
+const FDA_HELPER_HEIGHT: f64 = 150.0;
+const FDA_HELPER_MIN_WIDTH: f64 = 460.0;
+
+/// PIDs of running System Settings / System Preferences processes. The
+/// executable name is stable across locales (the window owner NAME is not:
+/// it shows as "系统设置" on a Chinese system).
+fn system_settings_pids() -> Vec<i64> {
+    let mut pids = Vec::new();
+    for name in ["System Settings", "System Preferences"] {
+        if let Ok(out) = std::process::Command::new("pgrep")
+            .args(["-x", name])
+            .output()
+        {
+            pids.extend(
+                String::from_utf8_lossy(&out.stdout)
+                    .lines()
+                    .filter_map(|l| l.trim().parse::<i64>().ok()),
+            );
+        }
+    }
+    pids
+}
+
+/// Screen rectangle (logical px, top-left origin) of the frontmost
+/// System Settings window, via CGWindowList matched by owner PID. Bounds
+/// and owner PIDs need no TCC permission (only window titles would). None
+/// when not open yet.
+fn system_settings_frame() -> Option<(f64, f64, f64, f64)> {
+    let pids = system_settings_pids();
+    if pids.is_empty() {
+        return None;
+    }
+    use core_foundation::array::CFArray;
+    use core_foundation::base::{CFType, TCFType};
+    use core_foundation::dictionary::CFDictionary;
+    use core_foundation::number::CFNumber;
+    use core_foundation::string::CFString;
+    use core_graphics::display::{
+        kCGNullWindowID, kCGWindowListExcludeDesktopElements, kCGWindowListOptionOnScreenOnly,
+        CGWindowListCopyWindowInfo,
+    };
+    // SAFETY: plain CG query; the returned array is owned and wrapped
+    // immediately so it is released with the wrapper.
+    let list = unsafe {
+        let raw = CGWindowListCopyWindowInfo(
+            kCGWindowListOptionOnScreenOnly | kCGWindowListExcludeDesktopElements,
+            kCGNullWindowID,
+        );
+        if raw.is_null() {
+            return None;
+        }
+        CFArray::<CFDictionary<CFString, CFType>>::wrap_under_create_rule(raw)
+    };
+    let pid_key = CFString::new("kCGWindowOwnerPID");
+    let layer_key = CFString::new("kCGWindowLayer");
+    let bounds_key = CFString::new("kCGWindowBounds");
+    for win in list.iter() {
+        let pid = win
+            .find(&pid_key)
+            .and_then(|v| v.downcast::<CFNumber>())
+            .and_then(|n| n.to_i64());
+        if !pid.is_some_and(|p| pids.contains(&p)) {
+            continue;
+        }
+        // Layer 0 = normal windows (skips menus, tooltips, the status item).
+        let layer = win
+            .find(&layer_key)
+            .and_then(|v| v.downcast::<CFNumber>())
+            .and_then(|n| n.to_i64())
+            .unwrap_or(-1);
+        if layer != 0 {
+            continue;
+        }
+        // Downcast to the untyped dictionary, then re-key it as string→any.
+        let Some(bounds) = win
+            .find(&bounds_key)
+            .and_then(|v| v.downcast::<CFDictionary>())
+            .map(|d| unsafe {
+                // SAFETY: the bounds dictionary's keys are CFStrings and its
+                // values CFNumbers; the retain keeps it alive with `d`.
+                CFDictionary::<CFString, CFType>::wrap_under_get_rule(d.as_concrete_TypeRef())
+            })
+        else {
+            continue;
+        };
+        let num = |k: &str| {
+            bounds
+                .find(CFString::new(k))
+                .and_then(|v| v.downcast::<CFNumber>())
+                .and_then(|n| n.to_f64())
+        };
+        let (Some(x), Some(y), Some(w), Some(h)) =
+            (num("X"), num("Y"), num("Width"), num("Height"))
+        else {
+            continue;
+        };
+        // The list is front-to-back, so the first real-sized window is the
+        // pane; tiny ones are sheets/popovers.
+        if w >= 300.0 && h >= 200.0 {
+            return Some((x, y, w, h));
+        }
+    }
+    None
+}
+
+/// Show the floating drag helper docked right under the System Settings
+/// window (same width, 8 px gap). System Settings may still be launching
+/// when this runs, so its window is polled for up to ~3 s; if it never
+/// shows up the helper falls back to the bottom-center of the main
+/// window's screen. Idempotent: an existing helper is re-docked, not
+/// duplicated.
+#[tauri::command]
+pub async fn fda_helper_show(app: tauri::AppHandle) -> Result<(), IpcError> {
+    let frame = tauri::async_runtime::spawn_blocking(|| {
+        for _ in 0..30 {
+            if let Some(f) = system_settings_frame() {
+                return Some(f);
+            }
+            std::thread::sleep(std::time::Duration::from_millis(100));
+        }
+        None
+    })
+    .await
+    .map_err(|e| IpcError::new("io", e.to_string()))?;
+
+    let h = FDA_HELPER_HEIGHT;
+    let (x, y, w) = match frame {
+        Some((sx, sy, sw, sh)) => {
+            let w = sw.max(FDA_HELPER_MIN_WIDTH);
+            (sx + (sw - w) / 2.0, sy + sh + 8.0, w)
+        }
+        None => {
+            let monitor = app
+                .get_webview_window("main")
+                .and_then(|m| m.current_monitor().ok().flatten())
+                .or_else(|| app.primary_monitor().ok().flatten());
+            let w = FDA_HELPER_MIN_WIDTH;
+            match monitor {
+                Some(m) => {
+                    let scale = m.scale_factor();
+                    let size = m.size().to_logical::<f64>(scale);
+                    let pos = m.position().to_logical::<f64>(scale);
+                    (
+                        pos.x + (size.width - w) / 2.0,
+                        pos.y + size.height - h - 24.0,
+                        w,
+                    )
+                }
+                None => (200.0, 600.0, w),
+            }
+        }
+    };
+
+    if let Some(win) = app.get_webview_window("fda-helper") {
+        let _ = win.set_size(tauri::LogicalSize::new(w, h));
+        let _ = win.set_position(tauri::LogicalPosition::new(x, y));
+        let _ = win.show();
+        let _ = win.set_focus();
+        return Ok(());
+    }
+    tauri::WebviewWindowBuilder::new(
+        &app,
+        "fda-helper",
+        tauri::WebviewUrl::App("index.html#/fda-helper".into()),
+    )
+    .title("Tidy")
+    .inner_size(w, h)
+    .position(x, y)
+    .resizable(false)
+    .decorations(false)
+    .always_on_top(true)
+    .skip_taskbar(true)
+    .build()
+    .map(|_| ())
+    .map_err(|e| IpcError::new("window", e.to_string()))
+}
+
+/// Close the drag helper (permission granted, or the user dismissed it).
+#[tauri::command]
+pub fn fda_helper_hide(app: tauri::AppHandle) {
+    if let Some(win) = app.get_webview_window("fda-helper") {
+        let _ = win.close();
+    }
+}
+
+/// What the helper drags: the .app bundle (or the bare binary in dev) plus
+/// an icon file for the drag image.
+#[derive(Serialize)]
+pub struct FdaDragSource {
+    pub app_path: String,
+    pub icon_path: String,
+}
+
+/// Resolve the running bundle and a drag icon on disk. The icon is the
+/// bundle's icns when bundled; in dev the embedded PNG is written to a temp
+/// file because webview assets are not files the OS can read.
+#[tauri::command]
+pub fn fda_drag_source() -> Result<FdaDragSource, IpcError> {
+    let exe = std::env::current_exe().map_err(|e| IpcError::new("io", e.to_string()))?;
+    let bundle = exe
+        .ancestors()
+        .find(|p| p.extension().is_some_and(|x| x == "app"))
+        .map(std::path::Path::to_path_buf);
+    let app_path = bundle.clone().unwrap_or(exe);
+    let icns = bundle.map(|b| b.join("Contents/Resources/icon.icns"));
+    let icon_path = match icns {
+        Some(p) if p.is_file() => p,
+        _ => {
+            let p = std::env::temp_dir().join("tidy-drag-icon.png");
+            if !p.is_file() {
+                std::fs::write(&p, include_bytes!("../icons/128x128@2x.png"))
+                    .map_err(|e| IpcError::new("io", e.to_string()))?;
+            }
+            p
+        }
+    };
+    Ok(FdaDragSource {
+        app_path: app_path.to_string_lossy().into_owned(),
+        icon_path: icon_path.to_string_lossy().into_owned(),
+    })
+}
+
 /// LaunchAgent path for an app identifier under the invoking user's home.
 fn autostart_plist_for(identifier: &str) -> std::path::PathBuf {
     std::path::Path::new(&crate::home())
@@ -897,4 +1277,15 @@ pub fn tray_set_visible(app: tauri::AppHandle, visible: bool) -> Result<(), IpcE
 #[tauri::command]
 pub fn set_keep_in_tray(enable: bool) {
     crate::KEEP_IN_TRAY.store(enable, std::sync::atomic::Ordering::Relaxed);
+}
+
+#[cfg(test)]
+mod fda_helper_tests {
+    /// Manual: open System Settings, then
+    /// cargo test -p tidy system_settings_frame_is_found -- --ignored --nocapture
+    #[test]
+    #[ignore]
+    fn system_settings_frame_is_found() {
+        eprintln!("frame = {:?}", super::system_settings_frame());
+    }
 }

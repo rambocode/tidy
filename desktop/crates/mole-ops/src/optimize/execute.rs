@@ -551,27 +551,27 @@ fn command_task_result(
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-enum CommandStatus {
+pub(crate) enum CommandStatus {
     Success,
     Failed,
     TimedOut,
     Unavailable,
 }
 
-struct CommandResult {
-    status: CommandStatus,
-    output: String,
+pub(crate) struct CommandResult {
+    pub(crate) status: CommandStatus,
+    pub(crate) output: String,
 }
 
 impl CommandResult {
-    fn success(&self) -> bool {
+    pub(crate) fn success(&self) -> bool {
         self.status == CommandStatus::Success
     }
 }
 
 /// Bounded argv execution. No shell is involved, locale is pinned for every
 /// parsed system tool, and timeout kills the child before returning.
-fn run_bounded(argv: &[String], timeout: Duration) -> CommandResult {
+pub(crate) fn run_bounded(argv: &[String], timeout: Duration) -> CommandResult {
     let Some((program, arguments)) = argv.split_first() else {
         return CommandResult {
             status: CommandStatus::Failed,
@@ -602,6 +602,31 @@ fn run_bounded(argv: &[String], timeout: Duration) -> CommandResult {
         }
     };
 
+    // Drain stdout/stderr on their own threads WHILE waiting: a child that
+    // prints more than the pipe buffer (64 KB) would otherwise block on
+    // write, never exit, and be reported as a timeout.
+    let drain = |pipe: Option<Box<dyn Read + Send>>| {
+        thread::spawn(move || {
+            let mut bytes = Vec::new();
+            if let Some(mut pipe) = pipe {
+                let _ = pipe.read_to_end(&mut bytes);
+            }
+            bytes
+        })
+    };
+    let stdout_reader = drain(
+        child
+            .stdout
+            .take()
+            .map(|s| Box::new(s) as Box<dyn Read + Send>),
+    );
+    let stderr_reader = drain(
+        child
+            .stderr
+            .take()
+            .map(|s| Box::new(s) as Box<dyn Read + Send>),
+    );
+
     let deadline = Instant::now() + timeout;
     let status = loop {
         match child.try_wait() {
@@ -628,13 +653,8 @@ fn run_bounded(argv: &[String], timeout: Duration) -> CommandResult {
             }
         }
     };
-    let mut bytes = Vec::new();
-    if let Some(mut stdout) = child.stdout.take() {
-        let _ = stdout.read_to_end(&mut bytes);
-    }
-    if let Some(mut stderr) = child.stderr.take() {
-        let _ = stderr.read_to_end(&mut bytes);
-    }
+    let mut bytes = stdout_reader.join().unwrap_or_default();
+    bytes.extend(stderr_reader.join().unwrap_or_default());
     let mut output = String::from_utf8_lossy(&bytes).trim().to_string();
     if status == CommandStatus::TimedOut {
         output = format!("{} timed out after {}s", program, timeout.as_secs());
@@ -652,6 +672,16 @@ fn strings(parts: &[&str]) -> Vec<String> {
 mod tests {
     use super::*;
     use std::collections::HashSet;
+
+    /// Output larger than the pipe buffer must be drained, not deadlock.
+    #[test]
+    fn bounded_runner_drains_large_output() {
+        let result = run_bounded(
+            &strings(&["/usr/bin/head", "-c", "300000", "/dev/zero"]),
+            Duration::from_secs(5),
+        );
+        assert_eq!(result.status, CommandStatus::Success);
+    }
 
     #[test]
     fn bounded_runner_reports_missing_tools_by_cause() {
