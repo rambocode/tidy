@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="44" height="44" viewBox="0 0 44 44">
+  <!--
+    The tray glyph is the product's T reduced to its two defining strokes:
+    the horizontal bar becomes the axe head and the vertical bar becomes
+    the handle. `generate.sh` rotates it around the handle end at (22, 36).
+  -->
+  <rect x="12" y="13" width="20" height="7" rx="3.5" fill="#18232d"/>
+  <path d="M19 17h7v16.5a3.5 3.5 0 0 1-7 0Z" fill="#10c6c9"/>
+</svg>

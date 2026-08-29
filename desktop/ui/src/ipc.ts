@@ -2,6 +2,7 @@
 // invoke() with a raw string. Progress streams use Tauri channels.
 
 import { Channel, invoke } from "@tauri-apps/api/core";
+import type { CelestialCatalog } from "./explore";
 import type {
   AppInfo,
   AppMeta,
@@ -45,6 +46,7 @@ export const whitelistSet = (patterns: string[]) =>
   invoke<string[]>("whitelist_set", { patterns });
 export const purgePathsGet = () => invoke<string[] | null>("purge_paths_get");
 export const touchidStatus = () => invoke<TouchIdStatus>("touchid_status");
+export const celestialCatalog = () => invoke<CelestialCatalog>("celestial_catalog");
 
 export const analyzeScan = (
   root: string,

@@ -48,6 +48,11 @@ const SECTION_ICONS: Record<string, string> = {
   "Installer artifacts": "📦",
 };
 
+/** Match the software list's outlined disclosure icon. The SVG rotates as a
+ * whole so collapsed and expanded states keep identical stroke geometry. */
+const CHEVRON_SVG =
+  '<svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6l4 4 4-4"/></svg>';
+
 /** Render the flow into a container (fresh instance per mount). */
 export function renderFlow(container: HTMLElement, taskId: string, opts: FlowOptions): void {
   container.innerHTML = `
@@ -143,7 +148,7 @@ function renderPreview(body: HTMLElement, summaries: PlanSummary[], opts: FlowOp
           </div>
           <div class="spacer"></div>
           <div class="sec-size" data-secsize="${idx}"></div>
-          <button class="chev" data-chev="${idx}">▾</button>
+          <button class="chev" data-chev="${idx}">${CHEVRON_SVG}</button>
         </div>
         <div class="sec-items" data-items="${idx}" hidden></div>
       </div>`;
@@ -289,11 +294,11 @@ function renderPreview(body: HTMLElement, summaries: PlanSummary[], opts: FlowOp
       const holder = body.querySelector<HTMLElement>(`[data-items="${idx}"]`)!;
       if (holder.hidden) {
         holder.hidden = false;
-        btn.textContent = "▴";
+        btn.classList.add("open");
         renderItems(idx);
       } else {
         holder.hidden = true;
-        btn.textContent = "▾";
+        btn.classList.remove("open");
       }
     });
   });

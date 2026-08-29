@@ -7,16 +7,21 @@
 import {
   appMeta,
   cancelTask,
+  celestialCatalog,
   newTaskId,
   planClean,
   planInstaller,
   planPurge,
 } from "../ipc";
 import { renderFlow } from "../flow";
-import { mountParticles } from "../particles";
+import {
+  mountParticles,
+  type CelestialPreset,
+  type ParticleController,
+} from "../particles";
 import { cleanTrashMode } from "../prefs";
 import { esc, humanKb } from "../format";
-import { t } from "../i18n";
+import { lang, t } from "../i18n";
 import type { View } from "../router";
 import type { BlockedCaches, PlanSummary, ProjectReport } from "../types";
 
@@ -24,13 +29,141 @@ export const clean: View = {
   mount(container) {
     container.innerHTML = `
       <div class="hero">
+        <button class="explore-toggle" id="explore-toggle" aria-pressed="false">
+          <span aria-hidden="true">✦</span>
+          <span id="explore-toggle-label">${t("clean.explore")}</span>
+        </button>
+        <section class="explore-card" id="explore-card" aria-live="polite" hidden>
+          <div class="explore-presets" role="group" aria-label="${t("clean.explore.presets")}">
+            <button class="active" data-preset="all">${t("clean.explore.all")}</button>
+            <button data-preset="solar-system">${t("clean.explore.solar")}</button>
+            <button data-preset="earth-moon">${t("clean.explore.earthMoon")}</button>
+          </div>
+          <div class="explore-card-head">
+            <span id="explore-progress">${t("clean.explore.loading")}</span>
+            <span class="explore-new" id="explore-new" hidden>${t("clean.explore.new")}</span>
+          </div>
+          <div class="explore-visual" id="explore-visual" data-kind="planet" aria-hidden="true">
+            <div class="explore-visual-orbit"></div>
+            <div class="explore-visual-body" id="explore-visual-body"></div>
+            <img class="explore-visual-image" id="explore-visual-image" alt="" hidden />
+            <span id="explore-visual-caption">${t("clean.explore.illustration")}</span>
+          </div>
+          <div class="explore-name" id="explore-name">${t("clean.explore.prompt")}</div>
+          <div class="explore-meta" id="explore-meta">${t("clean.explore.hint")}</div>
+          <div class="explore-size" id="explore-size">${t("clean.explore.scale")}</div>
+          <p class="explore-summary" id="explore-summary"></p>
+          <div class="explore-source" id="explore-source"></div>
+          <button class="explore-reset" id="explore-reset">${t("clean.explore.reset")}</button>
+        </section>
         <div class="big" style="font-size:24px">${t("clean.ready")}</div>
         <div class="sub">${t("clean.ready.sub")}</div>
         <button class="cta primary" id="scan">${t("clean.scan")}</button>
       </div>`;
-    // Default hero: the floating junk-particle field (replaces the Earth).
-    mountParticles(container.querySelector<HTMLElement>(".hero")!, "idle", "ember");
-    container.querySelector("#scan")!.addEventListener("click", async () => {
+    const hero = container.querySelector<HTMLElement>(".hero")!;
+    const toggle = container.querySelector<HTMLButtonElement>("#explore-toggle")!;
+    const toggleLabel = container.querySelector<HTMLElement>("#explore-toggle-label")!;
+    const card = container.querySelector<HTMLElement>("#explore-card")!;
+    const readyTitle = container.querySelector<HTMLElement>(".hero > .big")!;
+    const readySubtitle = container.querySelector<HTMLElement>(".hero > .sub")!;
+    const scanButton = container.querySelector<HTMLButtonElement>("#scan")!;
+    const progress = container.querySelector<HTMLElement>("#explore-progress")!;
+    const discoveryName = container.querySelector<HTMLElement>("#explore-name")!;
+    const discoveryMeta = container.querySelector<HTMLElement>("#explore-meta")!;
+    const discoverySize = container.querySelector<HTMLElement>("#explore-size")!;
+    const discoverySummary = container.querySelector<HTMLElement>("#explore-summary")!;
+    const catalogSource = container.querySelector<HTMLElement>("#explore-source")!;
+    const newBadge = container.querySelector<HTMLElement>("#explore-new")!;
+    const preview = container.querySelector<HTMLElement>("#explore-visual")!;
+    const previewBody = container.querySelector<HTMLElement>("#explore-visual-body")!;
+    const previewImage = container.querySelector<HTMLImageElement>("#explore-visual-image")!;
+    const previewCaption = container.querySelector<HTMLElement>("#explore-visual-caption")!;
+    const presetButtons = Array.from(
+      container.querySelectorAll<HTMLButtonElement>("[data-preset]"),
+    );
+    let exploring = false;
+    let particles: ParticleController | null = null;
+
+    /** Keep the optional entertainment layer separate from the primary clean
+     * action. Leaving explorer mode restores the original quiet hero. */
+    const setExploring = (active: boolean) => {
+      exploring = active;
+      hero.classList.toggle("exploring", active);
+      card.hidden = !active;
+      toggle.setAttribute("aria-pressed", String(active));
+      toggleLabel.textContent = t(active ? "clean.explore.exit" : "clean.explore");
+      readyTitle.setAttribute("aria-hidden", String(active));
+      readySubtitle.setAttribute("aria-hidden", String(active));
+      scanButton.disabled = active;
+      particles?.setExploring(active);
+      if (!active) toggle.focus({ preventScroll: true });
+    };
+
+    particles = mountParticles(hero, "idle", "ember", {
+      interactive: true,
+      targets: [],
+      ariaLabel: t("clean.explore.aria"),
+      onExit: () => setExploring(false),
+      onDiscovery: ({ target, discovered, total, isNew }) => {
+        progress.textContent = t("clean.explore.progress", { n: discovered, total });
+        discoveryName.textContent = localizedCelestialName(target.id, target.name);
+        const type = t(`explore.type.${target.bodyType}`);
+        const distance =
+          target.distanceLy === null
+            ? t("clean.explore.distanceUnknown")
+            : target.distanceLy < 0.000_001
+            ? t("clean.explore.local")
+            : t("clean.explore.distance", { distance: formatDistance(target.distanceLy) });
+        discoveryMeta.textContent = `${type} · ${distance}`;
+        discoverySize.textContent =
+          target.radiusKm === null
+            ? t("clean.explore.radiusUnknown")
+            : t("clean.explore.radius", { radius: formatRadius(target.radiusKm) });
+        discoverySummary.textContent = lang() === "zh" ? target.summaryZh : target.summaryEn;
+        catalogSource.textContent = t("clean.explore.objectSource", {
+          source: target.sourceUrl.includes("science.nasa.gov")
+            ? "NASA Solar System"
+            : "NASA Exoplanet Archive",
+        });
+        renderCelestialPreview(preview, previewBody, previewImage, previewCaption, target);
+        newBadge.hidden = !isNew;
+      },
+    });
+
+    // Catalog loading is independent of the cleaning flow. SQLite opens and
+    // any network refresh run on a blocking backend worker, so the main action
+    // and the ambient animation remain responsive.
+    void celestialCatalog()
+      .then((catalog) => {
+        particles?.setTargets(catalog.objects);
+        progress.textContent = t("clean.explore.progress", {
+          n: 0,
+          total: catalog.objects.length,
+        });
+        catalogSource.textContent = catalog.archiveComplete
+          ? t("clean.explore.catalog", { source: catalog.sourceName })
+          : t("clean.explore.offlineCatalog");
+        if (catalog.warning) catalogSource.title = catalog.warning;
+      })
+      .catch(() => {
+        progress.textContent = t("clean.explore.loadFailed");
+        catalogSource.textContent = t("clean.explore.loadFailedHint");
+      });
+    toggle.addEventListener("click", () => setExploring(!exploring));
+    const setPreset = (preset: CelestialPreset) => {
+      particles?.focusPreset(preset);
+      for (const button of presetButtons) {
+        button.classList.toggle("active", button.dataset.preset === preset);
+      }
+    };
+    for (const button of presetButtons) {
+      button.addEventListener("click", () => setPreset(button.dataset.preset as CelestialPreset));
+    }
+    container
+      .querySelector("#explore-reset")!
+      .addEventListener("click", () => setPreset("all"));
+
+    scanButton.addEventListener("click", async () => {
       const meta = await appMeta();
       let blocked: BlockedCaches | null = null;
       let projects: ProjectReport[] = [];
@@ -102,4 +235,80 @@ export const clean: View = {
 /** Shorten a project path for progress/badge display. */
 function shorten(path: string): string {
   return path.split("/").slice(-2).join("/");
+}
+
+/** Compact scientific distances without rounding nearby objects to zero. */
+function formatDistance(lightYears: number): string {
+  if (lightYears < 0.01) return lightYears.toExponential(2);
+  if (lightYears < 100) return lightYears.toFixed(2);
+  return Math.round(lightYears).toLocaleString();
+}
+
+/** Physical radius shown in km; marker rendering applies the documented
+ * logarithmic scale separately so this factual value is never distorted. */
+function formatRadius(radiusKm: number): string {
+  return Math.round(radiusKm).toLocaleString();
+}
+
+/** Solar System common names are localized; catalog designations remain
+ * untouched because identifiers such as K2-9 or HD 2039 are proper names. */
+function localizedCelestialName(id: string, fallback: string): string {
+  const solarIds = new Set([
+    "sun",
+    "mercury",
+    "venus",
+    "earth",
+    "moon",
+    "mars",
+    "jupiter",
+    "saturn",
+    "uranus",
+    "neptune",
+    "ceres",
+    "pluto",
+    "eris",
+  ]);
+  return solarIds.has(id) ? t(`explore.name.${id}`) : fallback;
+}
+
+const REAL_TEXTURES: Readonly<Record<string, string>> = {
+  earth: "/planet-earth.jpg",
+  mars: "/planet-mars.jpg",
+  jupiter: "/planet-jupiter.jpg",
+};
+
+/** Render an honest visual companion to the catalog prose. Three bundled NASA
+ * textures are identified as real textures; every other body gets a stable,
+ * explicitly labelled data illustration derived from its type and id. */
+function renderCelestialPreview(
+  preview: HTMLElement,
+  body: HTMLElement,
+  image: HTMLImageElement,
+  caption: HTMLElement,
+  target: import("../explore").CelestialTarget,
+): void {
+  const texture = REAL_TEXTURES[target.id];
+  const hue = stableHue(target.id);
+  preview.dataset.kind = target.bodyType;
+  preview.style.setProperty("--preview-hue", String(hue));
+  image.hidden = !texture;
+  body.hidden = Boolean(texture);
+  if (texture) {
+    image.src = texture;
+    caption.textContent = t("clean.explore.realTexture");
+  } else {
+    image.removeAttribute("src");
+    caption.textContent = t("clean.explore.illustration");
+  }
+}
+
+/** FNV-1a produces a stable color identity without persisting presentation
+ * fields in the scientific catalog. */
+function stableHue(id: string): number {
+  let hash = 2_166_136_261;
+  for (const char of id) {
+    hash ^= char.charCodeAt(0);
+    hash = Math.imul(hash, 16_777_619);
+  }
+  return Math.abs(hash) % 360;
 }

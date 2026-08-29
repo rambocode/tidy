@@ -51,7 +51,10 @@ fn setup_tray(app: &tauri::App) -> tauri::Result<()> {
     }
     let menu = builder.build()?;
 
-    let icon = tauri::image::Image::from_bytes(include_bytes!("../icons/icon.png"))?;
+    // Use the authored 44px tray asset directly. The 512px application icon
+    // belongs to app packaging; sending it through the status-item API would
+    // make macOS resize and PNG-encode far more pixels than it can display.
+    let icon = tauri::image::Image::from_bytes(include_bytes!("../icons/tray-axe/idle.png"))?;
     TrayIconBuilder::with_id("mole-tray")
         .icon(icon)
         .icon_as_template(false)
@@ -164,6 +167,7 @@ pub fn run() {
             commands::whitelist_set,
             commands::purge_paths_get,
             commands::touchid_status,
+            commands::celestial_catalog,
             commands::analyze_scan,
             commands::plan_delete_paths,
             commands::plan_clean,

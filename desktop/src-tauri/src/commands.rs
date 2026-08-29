@@ -12,7 +12,7 @@ use mole_macos::{AdminRunner, FinderTrash};
 use mole_ops::engine::{self, ExecItem, ExecOptions, ExecReport, Providers};
 use serde::Serialize;
 use tauri::ipc::Channel;
-use tauri::State;
+use tauri::{Manager, State};
 
 /// App/build metadata for the About row.
 #[derive(Serialize)]
@@ -80,6 +80,24 @@ pub fn purge_paths_get() -> Option<Vec<String>> {
 #[tauri::command]
 pub fn touchid_status() -> mole_ops::touchid::TouchIdStatus {
     mole_ops::touchid::status()
+}
+
+/// Persistent real-object catalog for the optional celestial explorer. The
+/// database lives in the app data directory, outside every cleanup candidate
+/// root, and refresh failures degrade to the last cached snapshot.
+#[tauri::command]
+pub async fn celestial_catalog(
+    app: tauri::AppHandle,
+) -> Result<mole_ops::celestial::CelestialCatalog, IpcError> {
+    let database = app
+        .path()
+        .app_data_dir()
+        .map_err(|error| IpcError::new("io", error.to_string()))?
+        .join("celestial.sqlite3");
+    tauri::async_runtime::spawn_blocking(move || mole_ops::celestial::catalog(&database))
+        .await
+        .map_err(|error| IpcError::new("io", error.to_string()))?
+        .map_err(|error| IpcError::new("catalog", error.to_string()))
 }
 
 // ---------------------------------------------------------------------------
@@ -751,7 +769,7 @@ pub async fn run_optimize(
 // ---------------------------------------------------------------------------
 
 /// Bundle identifier shared with `tauri.conf.json` and the user LaunchAgent.
-const APP_IDENTIFIER: &str = "com.tw93.tidy";
+const APP_IDENTIFIER: &str = "com.zhichi.tidy";
 
 /// Exact placeholder identifier used by pre-Tidy development builds.
 const LEGACY_APP_IDENTIFIER: &str = "com.cleaner.desktop";
@@ -808,7 +826,7 @@ mod autostart_tests {
         let config: serde_json::Value =
             serde_json::from_str(include_str!("../tauri.conf.json")).unwrap();
         assert_eq!(config["identifier"], APP_IDENTIFIER);
-        assert!(autostart_plist_for(APP_IDENTIFIER).ends_with("com.tw93.tidy.plist"));
+        assert!(autostart_plist_for(APP_IDENTIFIER).ends_with("com.zhichi.tidy.plist"));
         assert!(autostart_plist_for(LEGACY_APP_IDENTIFIER).ends_with("com.cleaner.desktop.plist"));
     }
 }

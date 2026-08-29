@@ -5,6 +5,7 @@
 
 pub mod analyze;
 pub mod appmeta;
+pub mod celestial;
 pub mod clean;
 pub mod engine;
 pub mod history;

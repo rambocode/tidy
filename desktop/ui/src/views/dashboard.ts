@@ -477,7 +477,7 @@ async function openProcessModal(pid: number): Promise<void> {
 /** Sort indicator for a column header. */
 function arrow(col: string): string {
   if (col !== sortCol) return "⇅";
-  return sortDesc ? "▾" : "▴";
+  return `<svg class="sort-chev ${sortDesc ? "" : "ascending"}" width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6l4 4 4-4"/></svg>`;
 }
 
 /** Sorted process rows with CPU bars and hot flames. */

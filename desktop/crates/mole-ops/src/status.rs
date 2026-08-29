@@ -273,7 +273,7 @@ pub fn snapshot() -> StatusSnapshot {
     sampler.last_refresh = std::time::Instant::now();
     let networks = &sampler.networks;
     let (mut rx_rate, mut tx_rate) = (0f64, 0f64);
-    for (_, data) in networks.iter() {
+    for data in networks.values() {
         rx_rate += data.received() as f64 / secs;
         tx_rate += data.transmitted() as f64 / secs;
     }

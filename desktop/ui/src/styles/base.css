@@ -178,6 +178,279 @@ h1 {
   text-shadow: 0 1px 12px rgba(0, 0, 0, 0.55);
 }
 
+/* Optional clean-page celestial explorer. Controls stay at the hero edges so
+   the primary cleaning action retains the center of the composition. */
+.hero .explore-toggle {
+  position: absolute;
+  top: 12px;
+  right: 4px;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 8px 13px;
+  border: 1px solid rgba(190, 214, 255, 0.18);
+  border-radius: 999px;
+  background: rgba(18, 25, 46, 0.42);
+  backdrop-filter: blur(12px);
+  color: rgba(224, 235, 255, 0.76);
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+  transition:
+    color var(--motion-fast) var(--ease-standard),
+    border-color var(--motion-fast) var(--ease-standard),
+    background var(--motion-fast) var(--ease-standard);
+}
+
+.hero .explore-toggle:hover,
+.hero .explore-toggle[aria-pressed="true"] {
+  color: var(--fg);
+  border-color: rgba(174, 207, 255, 0.42);
+  background: rgba(36, 48, 81, 0.66);
+}
+
+.hero .explore-card {
+  position: absolute;
+  top: 12px;
+  left: 4px;
+  width: min(328px, calc(100% - 132px));
+  padding: 14px 15px 13px;
+  border: 1px solid rgba(173, 201, 246, 0.17);
+  border-radius: 14px;
+  background: rgba(14, 20, 38, 0.66);
+  backdrop-filter: blur(16px);
+  box-shadow: 0 14px 36px rgba(4, 8, 20, 0.24);
+  text-align: left;
+}
+
+.explore-presets {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 4px;
+  margin-bottom: 12px;
+  padding: 3px;
+  border: 1px solid rgba(174, 207, 255, 0.1);
+  border-radius: 10px;
+  background: rgba(5, 10, 24, 0.3);
+}
+
+.explore-presets button {
+  min-width: 0;
+  padding: 5px 4px;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--fg-faint);
+  font-family: var(--font-mono);
+  font-size: 9px;
+  cursor: pointer;
+}
+
+.explore-presets button:hover,
+.explore-presets button.active {
+  background: rgba(132, 170, 229, 0.13);
+  color: rgba(230, 240, 255, 0.94);
+}
+
+.explore-card-head {
+  display: flex;
+  align-items: center;
+  min-height: 18px;
+  color: var(--fg-faint);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+/* Observatory-style image window. It uses the bundled NASA texture when one
+   exists and a clearly labelled procedural body otherwise. */
+.explore-visual {
+  --preview-hue: 212;
+  position: relative;
+  height: 92px;
+  margin-top: 9px;
+  overflow: hidden;
+  border: 1px solid rgba(175, 205, 250, 0.12);
+  border-radius: 11px;
+  background:
+    radial-gradient(circle at 18% 28%, rgba(255, 255, 255, 0.3) 0 1px, transparent 1.5px),
+    radial-gradient(circle at 35% 72%, rgba(255, 255, 255, 0.22) 0 1px, transparent 1.5px),
+    radial-gradient(circle at 74% 18%, rgba(255, 255, 255, 0.2) 0 1px, transparent 1.5px),
+    linear-gradient(135deg, rgba(8, 14, 31, 0.88), rgba(19, 31, 58, 0.64));
+}
+
+.explore-visual::after {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, rgba(7, 12, 27, 0.52), transparent 58%);
+  content: "";
+  pointer-events: none;
+}
+
+.explore-visual-orbit {
+  position: absolute;
+  top: 17px;
+  right: 6px;
+  width: 112px;
+  height: 58px;
+  border: 1px solid hsla(var(--preview-hue), 65%, 78%, 0.22);
+  border-radius: 50%;
+  transform: rotate(-12deg);
+}
+
+.explore-visual-body,
+.explore-visual-image {
+  position: absolute;
+  z-index: 1;
+  top: 11px;
+  right: 28px;
+  width: 70px;
+  height: 70px;
+  border: 1px solid hsla(var(--preview-hue), 70%, 84%, 0.32);
+  border-radius: 50%;
+  box-shadow:
+    -13px 9px 18px rgba(0, 0, 0, 0.5) inset,
+    0 0 22px hsla(var(--preview-hue), 78%, 62%, 0.24);
+}
+
+.explore-visual-body {
+  background:
+    radial-gradient(circle at 34% 30%, hsla(var(--preview-hue), 68%, 82%, 0.95), transparent 23%),
+    radial-gradient(circle at 42% 38%, hsl(var(--preview-hue), 54%, 58%), hsl(calc(var(--preview-hue) + 26), 44%, 18%) 72%);
+}
+
+.explore-visual[data-kind="star"] .explore-visual-body {
+  border-color: rgba(255, 236, 188, 0.7);
+  background: radial-gradient(circle, #fff 0 8%, #ffe2a3 18%, #e89845 46%, rgba(218, 102, 38, 0.12) 72%);
+  box-shadow:
+    0 0 18px rgba(255, 205, 115, 0.66),
+    0 0 42px rgba(234, 125, 49, 0.35);
+}
+
+.explore-visual[data-kind="moon"] .explore-visual-body,
+.explore-visual[data-kind="dwarf_planet"] .explore-visual-body {
+  background:
+    radial-gradient(circle at 30% 62%, rgba(30, 34, 45, 0.45) 0 5px, transparent 6px),
+    radial-gradient(circle at 61% 31%, rgba(28, 32, 42, 0.36) 0 8px, transparent 9px),
+    radial-gradient(circle at 40% 35%, #d8d7d1, #777982 72%);
+}
+
+.explore-visual-image {
+  object-fit: cover;
+  filter: brightness(1.14) saturate(1.08);
+}
+
+.explore-visual > span {
+  position: absolute;
+  z-index: 2;
+  left: 12px;
+  bottom: 10px;
+  color: rgba(196, 216, 247, 0.62);
+  font-family: var(--font-mono);
+  font-size: 8px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.explore-new {
+  margin-left: auto;
+  padding: 2px 6px;
+  border-radius: 999px;
+  background: rgba(83, 214, 215, 0.13);
+  color: var(--brand-teal-bright);
+}
+
+.explore-name {
+  margin-top: 7px;
+  color: var(--fg);
+  font-size: 15px;
+  font-weight: 620;
+  letter-spacing: 0.01em;
+}
+
+.explore-meta {
+  min-height: 18px;
+  margin-top: 4px;
+  color: var(--fg-dim);
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+.explore-size {
+  margin-top: 7px;
+  color: rgba(197, 220, 255, 0.82);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  line-height: 1.45;
+}
+
+.explore-summary {
+  max-height: 74px;
+  margin: 9px 0 0;
+  overflow: auto;
+  color: var(--fg-dim);
+  font-size: 11px;
+  line-height: 1.55;
+  text-shadow: none;
+}
+
+.explore-summary:empty {
+  display: none;
+}
+
+.explore-source {
+  margin-top: 8px;
+  overflow: hidden;
+  color: var(--fg-faint);
+  font-size: 9px;
+  line-height: 1.4;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.explore-reset {
+  margin-top: 10px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: rgba(176, 204, 247, 0.78);
+  font: inherit;
+  font-size: 11px;
+  cursor: pointer;
+}
+
+.explore-reset:hover {
+  color: var(--fg);
+}
+
+.hero > .big,
+.hero > .sub,
+.hero > .cta {
+  transition:
+    opacity var(--motion-base) var(--ease-standard),
+    transform var(--motion-base) var(--ease-standard);
+}
+
+.hero.exploring > .big,
+.hero.exploring > .sub,
+.hero.exploring > .cta {
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(10px);
+}
+
+.hero.exploring .particles:focus-visible {
+  outline: none;
+}
+
+.hero.exploring .particles:focus-visible ~ .explore-card {
+  border-color: rgba(174, 207, 255, 0.34);
+  box-shadow:
+    0 14px 36px rgba(4, 8, 20, 0.24),
+    0 0 0 1px rgba(174, 207, 255, 0.08);
+}
+
 /* Small particle host (analyze sidebar) where a planet sphere used to sit. */
 .particle-box {
   position: relative;
@@ -1095,6 +1368,24 @@ a { color: var(--accent); }
   white-space: nowrap;
 }
 
+/* Match the software list's outlined disclosure glyph while preserving the
+   clean card's existing pill hit target. */
+.clean-card .chev {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.clean-card .chev svg {
+  width: 16px;
+  height: 16px;
+  transition: transform var(--motion-fast) var(--ease-standard);
+}
+
+.clean-card .chev.open svg {
+  transform: rotate(180deg);
+}
+
 .clean-card .sec-items {
   border-top: 1px solid var(--border);
   padding: 6px 18px 10px 30px;
@@ -1293,6 +1584,16 @@ a { color: var(--accent); }
 th.sortable {
   cursor: pointer;
   user-select: none;
+}
+
+.sort-chev {
+  display: inline-block;
+  vertical-align: -2px;
+  transition: transform var(--motion-fast) var(--ease-standard);
+}
+
+.sort-chev.ascending {
+  transform: rotate(180deg);
 }
 
 th.sortable:hover {
