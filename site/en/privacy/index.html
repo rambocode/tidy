@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Privacy — Tidy</title>
+<meta name="description" content="How the Tidy site and desktop app handle data: no cookies or analytics on the site; app state and history stay local, and the app reaches the network only during update checks.">
+<link rel="canonical" href="https://tidy.example.com/en/privacy/">
+<link rel="alternate" hreflang="zh-Hans" href="https://tidy.example.com/zh/privacy/">
+<link rel="alternate" hreflang="en" href="https://tidy.example.com/en/privacy/">
+<link rel="alternate" hreflang="x-default" href="https://tidy.example.com/zh/privacy/">
+<link rel="icon" href="/assets/tidy-logo.png">
+<link rel="stylesheet" href="/assets/site.css">
+<meta name="robots" content="index,follow">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="site-header">
+  <div class="wrap">
+    <a class="brand" href="/en/"><img src="/assets/tidy-logo.png" alt="Tidy logo" width="26" height="26"><span>Tidy</span></a>
+    <nav class="site-nav" aria-label="Main">
+      <a href="/en/#capabilities">Features</a>
+      <a href="/en/#trust">Safety</a>
+      <a href="/en/blog/">Blog</a>
+      <span class="lang-switch"><a href="/zh/privacy/">中</a>/<a href="/en/privacy/" aria-current="true">EN</a></span>
+      <a class="btn btn-primary" href="https://github.com/tw93/mole" target="_blank" rel="noopener noreferrer">View source</a>
+    </nav>
+  </div>
+</header>
+
+<main id="main" class="wrap legal">
+  <h1>Privacy</h1>
+  <p>Last updated 2026-08-17. This page describes behavior implemented in the repository today, not future plans.</p>
+
+  <h2>This website</h2>
+  <p>The site is a set of static pages. It sets no cookies, loads no analytics or third-party tracking scripts, and has no accounts, forms, or comments. The only outbound links point at GitHub.</p>
+  <p>A static host may keep operational access logs (IP, user agent, request path). That data is processed by the hosting provider and is outside this project's control; once a provider is chosen, this section will name it.</p>
+
+  <h2>The desktop app</h2>
+  <p>Tidy runs locally on your Mac. The repository contains no analytics, telemetry, or crash-reporting code, and the app window's content security policy is limited to <code>default-src 'self'</code>.</p>
+
+  <h3>What is stored locally</h3>
+  <ul>
+    <li><code>~/.config/mole</code> — shared state including language preference and the whitelist.</li>
+    <li><code>~/Library/Logs/mole</code> — operation history in <code>operations.log</code> and deletion history in <code>deletions.log</code>, both byte-compatible with the Mole CLI.</li>
+  </ul>
+  <p>These files are never uploaded. Deleting them clears the history; the app recreates them on the next operation.</p>
+
+  <h3>When the app uses the network</h3>
+  <p>Only when you deliberately run a software update check, and only to:</p>
+  <ul>
+    <li>Apple's bundle-ID lookup, to resolve the exact Mac App Store product page;</li>
+    <li>the Sparkle feed an installed app declares for itself (HTTPS);</li>
+    <li>the provider declared in an Electron app's <code>app-update.yml</code>, and the GitHub release API.</li>
+  </ul>
+  <p>The Homebrew path reads local <code>brew</code> output and makes no additional network request. Requests carry only the app identifier and version needed to compare releases — never file paths, file contents, clipboard data, or personal information. A scan result expires after 15 minutes.</p>
+
+  <h3>What does not happen</h3>
+  <ul>
+    <li>Your document contents are never read or uploaded.</li>
+    <li>Scanned paths, filenames, and sizes are never sent to any server.</li>
+    <li>Nothing is deleted in the background: every deletion requires your selection and confirmation in the preview.</li>
+  </ul>
+
+  <h2>Permissions</h2>
+  <p>The app touches the filesystem only within the scope you choose. System-scope actions require the privileged helper, which has not shipped, so they refuse with <code>requires_admin</code> instead of prompting for shell elevation.</p>
+
+  <h2>Changes and contact</h2>
+  <p>This page is updated alongside changes in app behavior. If anything here disagrees with the code, please say so in <a href="https://github.com/tw93/mole/issues" target="_blank" rel="noopener noreferrer">GitHub Issues</a>.</p>
+</main>
+
+<footer class="site-footer">
+  <div class="wrap">
+    <p class="footer-note" style="margin-top:0;border:0;padding-top:0">
+      <a href="/en/">Tidy home</a> · <a href="/en/terms/">Terms</a> · <a href="/en/blog/">Blog</a> · <a href="/zh/privacy/">中文</a>
+    </p>
+  </div>
+</footer>
+</body>
+</html>

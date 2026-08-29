@@ -1,0 +1,160 @@
+<!doctype html>
+<html lang="zh-Hans">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>把 App 拖进废纸篓之后，硬盘上还剩下什么 — Tidy</title>
+<meta name="description" content="macOS 的拖拽卸载只删掉 .app 本体。这篇列出十类常见残留、各自的位置，以及为什么有些应用必须用官方卸载器。">
+<link rel="canonical" href="https://tidy.example.com/zh/blog/what-remains-after-uninstall/">
+<link rel="alternate" hreflang="zh-Hans" href="https://tidy.example.com/zh/blog/what-remains-after-uninstall/">
+<link rel="alternate" hreflang="x-default" href="https://tidy.example.com/zh/blog/what-remains-after-uninstall/">
+
+<link rel="icon" href="/assets/tidy-logo.png">
+<link rel="apple-touch-icon" href="/assets/tidy-app-icon.png">
+<link rel="alternate" type="application/rss+xml" title="Tidy Blog" href="/zh/blog/rss.xml">
+<link rel="stylesheet" href="/assets/site.css">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="Tidy">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:title" content="把 App 拖进废纸篓之后，硬盘上还剩下什么 — Tidy">
+<meta property="og:description" content="macOS 的拖拽卸载只删掉 .app 本体。这篇列出十类常见残留、各自的位置，以及为什么有些应用必须用官方卸载器。">
+<meta property="og:url" content="https://tidy.example.com/zh/blog/what-remains-after-uninstall/">
+<meta property="og:image" content="https://tidy.example.com/assets/tidy-app-icon.png">
+<meta name="twitter:card" content="summary">
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"BlogPosting","headline":"把 App 拖进废纸篓之后，硬盘上还剩下什么","description":"macOS 的拖拽卸载只删掉 .app 本体。这篇列出十类常见残留、各自的位置，以及为什么有些应用必须用官方卸载器。","inLanguage":"zh","datePublished":"2026-08-14","dateModified":"2026-08-14","mainEntityOfPage":{"@type":"WebPage","@id":"https://tidy.example.com/zh/blog/what-remains-after-uninstall/"},"url":"https://tidy.example.com/zh/blog/what-remains-after-uninstall/","author":{"@type":"Person","name":"Tidy","url":"https://github.com/tw93/mole"},"articleSection":"apps","keywords":"磁盘空间, 卸载"}</script>
+</head>
+<body>
+<a class="skip" href="#main">跳到正文</a>
+<header class="site-header">
+  <div class="wrap">
+    <a class="brand" href="/zh/"><img src="/assets/tidy-logo.png" alt="Tidy logo" width="26" height="26"><span>Tidy</span></a>
+    <nav class="site-nav" aria-label="主导航">
+      <a href="/zh/#capabilities">功能</a>
+      <a href="/zh/#trust">安全</a>
+      <a href="/zh/blog/" aria-current="page">Blog</a>
+      <span class="lang-switch"><a href="/zh/blog/what-remains-after-uninstall/" aria-current="true">中</a>/<a href="/en/blog/">EN</a></span>
+      <a class="btn btn-primary" href="https://github.com/tw93/mole" target="_blank" rel="noopener noreferrer">查看源码</a>
+    </nav>
+  </div>
+</header>
+<main id="main" class="wrap article-layout">
+  <header class="article-head">
+    <p class="eyebrow"><a href="/zh/blog/#cat-apps">软件管理</a></p>
+    <h1>把 App 拖进废纸篓之后，硬盘上还剩下什么</h1>
+    <div class="article-meta">
+      <span>2026 年 8 月 14 日</span>
+      
+      <span>约 2 分钟</span>
+      <span>Tidy</span>
+      
+    </div>
+  </header>
+  <article class="article">
+    <div class="prose">
+<h2 id="拖拽卸载只做了一件事">拖拽卸载只做了一件事</h2>
+<p>把 <code>/Applications/Example.app</code> 拖进废纸篓，删掉的就是这个 bundle 本身。App 在安装和使用过程中写到别处的东西，一样不少地留着。</p>
+<p>对一个用了两年的应用，残留常常比 bundle 本身还大。</p>
+<h2 id="十类常见残留">十类常见残留</h2>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<table><thead><tr><th>类别</th><th>典型位置</th></tr></thead><tbody><tr><td>App Support</td><td><code>~/Library/Application Support/&#x3C;bundle-id></code></td></tr><tr><td>缓存</td><td><code>~/Library/Caches/&#x3C;bundle-id></code></td></tr><tr><td>日志</td><td><code>~/Library/Logs/&#x3C;app></code></td></tr><tr><td>偏好设置</td><td><code>~/Library/Preferences/&#x3C;bundle-id>.plist</code></td></tr><tr><td>Launch Agents</td><td><code>~/Library/LaunchAgents/&#x3C;bundle-id>.plist</code></td></tr><tr><td>HTTP 存储</td><td><code>~/Library/HTTPStorages/&#x3C;bundle-id></code></td></tr><tr><td>WebKit</td><td><code>~/Library/WebKit/&#x3C;bundle-id></code></td></tr><tr><td>Saved State</td><td><code>~/Library/Saved Application State/&#x3C;bundle-id>.savedState</code></td></tr><tr><td>容器</td><td><code>~/Library/Containers/&#x3C;bundle-id></code>、<code>~/Library/Group Containers/&#x3C;group-id></code></td></tr><tr><td>其它</td><td>应用自定义的目录，命名不一定跟 bundle id 相关</td></tr></tbody></table>
+<p>最后一类是手动清理最容易漏的：不是所有应用都规规矩矩用 bundle identifier 命名，有些会在 <code>~/Documents</code> 或 <code>~/Library</code> 下建一个人类可读的目录名。</p>
+<h2 id="为什么不能只按名字搜">为什么不能只按名字搜</h2>
+<p>一个很常见的做法是拿应用显示名去全盘 <code>find</code>，然后把命中的都删掉。这个做法有两个问题：</p>
+<p>第一，<strong>显示名会误伤</strong>。搜 "Notes" 会命中一堆和 Apple 备忘录无关的目录。</p>
+<p>第二，<strong>同一个厂商的应用共用目录</strong>。删掉 <code>~/Library/Group Containers/group.com.example</code> 可能同时影响你还在用的另一个应用。</p>
+<p>可靠的做法是从已安装应用的 <code>Info.plist</code> 里读出真实的 <code>CFBundleIdentifier</code>，再按这个标识去匹配，而不是按屏幕上显示的名字。</p>
+<h2 id="有些应用必须用官方卸载器">有些应用必须用官方卸载器</h2>
+<p>以下几类不要手动删：</p>
+<ul>
+<li><strong>装了系统扩展或内核扩展的</strong>：VPN 客户端、虚拟机、杀毒软件、部分驱动。手动删掉主体会留下已注册的扩展，可能导致开机异常。</li>
+<li><strong>装了特权守护进程的</strong>：<code>/Library/LaunchDaemons</code> 与 <code>/Library/PrivilegedHelperTools</code> 下的东西属于系统范围，需要管理员权限，也需要按正确顺序注销。</li>
+<li><strong>Mac App Store 安装的沙盒应用</strong>：从 Launchpad 删除会一并处理容器，比手动删干净。</li>
+</ul>
+<h2 id="tidy-在这里的做法">Tidy 在这里的做法</h2>
+<p><a href="/zh/">Tidy</a> 的「软件」页读取已安装应用清单，按上面这十类把每个残留文件列出来，标明各自体积；正在运行的应用、系统组件、以及"必须使用官方卸载器"的应用会被挡下来并写明原因，而不是让你先删了再说。</p>
+<p>它不会用显示名做通配匹配——保护名单在编译期由 <code>build.rs</code> 从数据文件生成成 Rust 常量，遇到无法识别的行直接让构建失败，所以名单本身不会因为一次误编辑而悄悄放宽。名单的 <code>DATA_SHA256</code> 显示在关于页，可以核对。</p>
+<div class="callout callout-warning">
+<p>系统范围的卸载（<code>/Library</code> 下的守护进程与特权助手工具）目前不会被执行。特权助手的传输层还没发布，这类操作会以 <code>requires_admin</code> 直接拒绝，不会退回到 shell 提权。这类残留仍然需要你用官方卸载器处理。</p>
+</div>
+<p>删除同样走废纸篓，执行范围严格等于你在预览里勾选的那一份，逐项都能展开复核。</p>
+<p>相关：<a href="/zh/blog/can-you-delete-library-caches">~/Library/Caches 能不能整个删掉</a>。</p>
+    </div>
+    
+    <section class="article-cta">
+      <h2>想确认这些说法？源码是公开的</h2>
+      <p>Tidy 的删除边界、保护名单与日志格式全部可以在仓库里直接查证。目前还没有发布安装包，需要自行构建。</p>
+      <a class="btn btn-secondary" href="https://github.com/tw93/mole" target="_blank" rel="noopener noreferrer">在 GitHub 上查看源码</a>
+    </section>
+    <section class="related">
+      <h2>相关阅读</h2>
+      <ul class="post-list">
+        <li class="post-card"><h3><a href="/zh/blog/can-you-delete-library-caches/">~/Library/Caches 能不能整个删掉</a></h3><p>可以，但不该。这篇说明这个目录里到底有什么、哪几类删了会有真实代价、正在运行的 App 为什么是例外，以及怎么安全地清。</p></li></ul>
+    </section>
+  </article>
+  <aside class="toc" aria-label="目录">
+    <h2>目录</h2>
+    <ul><li class="d2"><a href="#%E6%8B%96%E6%8B%BD%E5%8D%B8%E8%BD%BD%E5%8F%AA%E5%81%9A%E4%BA%86%E4%B8%80%E4%BB%B6%E4%BA%8B">拖拽卸载只做了一件事</a></li><li class="d2"><a href="#%E5%8D%81%E7%B1%BB%E5%B8%B8%E8%A7%81%E6%AE%8B%E7%95%99">十类常见残留</a></li><li class="d2"><a href="#%E4%B8%BA%E4%BB%80%E4%B9%88%E4%B8%8D%E8%83%BD%E5%8F%AA%E6%8C%89%E5%90%8D%E5%AD%97%E6%90%9C">为什么不能只按名字搜</a></li><li class="d2"><a href="#%E6%9C%89%E4%BA%9B%E5%BA%94%E7%94%A8%E5%BF%85%E9%A1%BB%E7%94%A8%E5%AE%98%E6%96%B9%E5%8D%B8%E8%BD%BD%E5%99%A8">有些应用必须用官方卸载器</a></li><li class="d2"><a href="#tidy-%E5%9C%A8%E8%BF%99%E9%87%8C%E7%9A%84%E5%81%9A%E6%B3%95">Tidy 在这里的做法</a></li></ul>
+  </aside>
+</main>
+<footer class="site-footer">
+  <div class="wrap">
+    <p class="footer-note" style="margin-top:0;border:0;padding-top:0">
+      <a href="/zh/">Tidy 首页</a> ·
+      <a href="/zh/blog/">Blog</a> ·
+      <a href="/zh/blog/rss.xml">RSS</a> ·
+      <a href="/zh/privacy/">隐私说明</a> ·
+      <a href="/zh/terms/">使用条款</a> ·
+      <a href="/en/blog/">English</a>
+    </p>
+  </div>
+</footer>
+</body>
+</html>

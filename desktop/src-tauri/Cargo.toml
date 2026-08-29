@@ -1,0 +1,34 @@
+# src-tauri: the Tauri 2 app shell. A thin IPC layer only — deletion policy,
+# protection checks, and Trash routing all live in mole-core (mirrors the
+# "mole is a router only" rule).
+[package]
+name = "tidy"
+version = "0.1.0"
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[lib]
+name = "tidy_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+# Binary/process name (what ps and Activity Monitor show), capitalized to
+# match the product name; cargo package names stay lowercase by convention.
+[[bin]]
+name = "Tidy"
+path = "src/main.rs"
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+mole-core = { path = "../crates/mole-core" }
+mole-macos = { path = "../crates/mole-macos" }
+mole-ops = { path = "../crates/mole-ops" }
+base64 = "0.22"
+serde.workspace = true
+serde_json.workspace = true
+tauri = { version = "2", features = ["tray-icon", "image-png"] }
+
+[dev-dependencies]
+tempfile.workspace = true

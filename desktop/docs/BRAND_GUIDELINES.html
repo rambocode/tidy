@@ -1,0 +1,1097 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="Tidy brand identity and UI guidelines." />
+    <title>Tidy Brand and UI Guidelines</title>
+    <link rel="icon" type="image/png" href="../ui/public/tidy-logo.png" />
+    <style>
+      :root {
+        --paper: #ffffff;
+        --mist: #eaf8f7;
+        --teal: #0cc2c7;
+        --teal-bright: #53d6d7;
+        --graphite: #1e262f;
+        --graphite-raised: #27323d;
+        --ink: #172027;
+        --muted: #66747a;
+        --line: #dce4e6;
+        --success: #55c790;
+        --warning: #d6a73b;
+        --danger: #e06056;
+        --font-ui: -apple-system, BlinkMacSystemFont, "SF Pro Text", "PingFang SC", sans-serif;
+        --font-display: -apple-system, BlinkMacSystemFont, "SF Pro Display", "PingFang SC", sans-serif;
+        --font-mono: "SF Mono", ui-monospace, Menlo, monospace;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html {
+        scroll-behavior: smooth;
+      }
+
+      body {
+        margin: 0;
+        background: #11181e;
+        color: var(--ink);
+        font-family: var(--font-ui);
+        font-size: 15px;
+        line-height: 1.65;
+        -webkit-font-smoothing: antialiased;
+      }
+
+      a {
+        color: inherit;
+      }
+
+      a:focus-visible,
+      button:focus-visible {
+        outline: 2px solid var(--teal-bright);
+        outline-offset: 3px;
+      }
+
+      .layout {
+        display: grid;
+        grid-template-columns: 264px minmax(0, 1fr);
+        max-width: 1440px;
+        min-height: 100vh;
+        margin: 0 auto;
+      }
+
+      .rail {
+        position: sticky;
+        top: 0;
+        height: 100vh;
+        padding: 34px 30px;
+        color: #d9e2e4;
+        overflow-y: auto;
+      }
+
+      .brand-lockup {
+        display: flex;
+        align-items: center;
+        gap: 13px;
+        margin-bottom: 42px;
+      }
+
+      .brand-lockup img {
+        width: 46px;
+        height: 46px;
+        border-radius: 12px;
+      }
+
+      .brand-name {
+        font-family: var(--font-display);
+        font-size: 22px;
+        font-weight: 700;
+        letter-spacing: -0.02em;
+      }
+
+      .brand-edition {
+        color: #829299;
+        font-family: var(--font-mono);
+        font-size: 10px;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+      }
+
+      .rail nav {
+        display: grid;
+        gap: 4px;
+      }
+
+      .rail nav a {
+        position: relative;
+        padding: 8px 12px 8px 18px;
+        border-radius: 8px;
+        color: #92a1a7;
+        font-size: 13px;
+        text-decoration: none;
+      }
+
+      .rail nav a::before {
+        content: "";
+        position: absolute;
+        top: 50%;
+        left: 2px;
+        width: 5px;
+        height: 5px;
+        border-radius: 50%;
+        background: #42515a;
+        transform: translateY(-50%);
+      }
+
+      .rail nav a:hover {
+        background: rgba(255, 255, 255, 0.045);
+        color: var(--paper);
+      }
+
+      .rail nav a:hover::before {
+        background: var(--teal-bright);
+      }
+
+      .rail-note {
+        margin-top: 38px;
+        padding-top: 20px;
+        border-top: 1px solid rgba(255, 255, 255, 0.08);
+        color: #6f8088;
+        font-family: var(--font-mono);
+        font-size: 10px;
+        line-height: 1.7;
+      }
+
+      main {
+        min-width: 0;
+        background: var(--paper);
+      }
+
+      .hero {
+        position: relative;
+        min-height: 620px;
+        padding: 88px clamp(44px, 7vw, 104px) 72px;
+        background: var(--mist);
+        overflow: hidden;
+      }
+
+      .hero::after {
+        content: "";
+        position: absolute;
+        right: -100px;
+        bottom: -240px;
+        width: 540px;
+        height: 650px;
+        border-radius: 300px 0 0 0;
+        background: var(--teal);
+        opacity: 0.95;
+      }
+
+      .hero-mark {
+        position: relative;
+        z-index: 1;
+        width: 92px;
+        height: 92px;
+        margin-bottom: 48px;
+        border-radius: 24px;
+        box-shadow: 0 16px 36px rgba(30, 38, 47, 0.12);
+      }
+
+      .eyebrow {
+        position: relative;
+        z-index: 1;
+        margin: 0 0 15px;
+        color: #4d6267;
+        font-family: var(--font-mono);
+        font-size: 11px;
+        font-weight: 600;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+      }
+
+      h1 {
+        position: relative;
+        z-index: 1;
+        max-width: 760px;
+        margin: 0;
+        font-family: var(--font-display);
+        font-size: clamp(48px, 7vw, 82px);
+        font-weight: 750;
+        line-height: 0.98;
+        letter-spacing: -0.06em;
+      }
+
+      .promise {
+        position: relative;
+        z-index: 1;
+        max-width: 560px;
+        margin: 34px 0 0;
+        color: #425259;
+        font-size: 20px;
+        line-height: 1.5;
+      }
+
+      .meta-strip {
+        position: absolute;
+        z-index: 2;
+        right: clamp(44px, 7vw, 104px);
+        bottom: 50px;
+        display: grid;
+        gap: 4px;
+        color: #083f43;
+        font-family: var(--font-mono);
+        font-size: 11px;
+        text-align: right;
+      }
+
+      .content {
+        max-width: 980px;
+        padding: 30px clamp(44px, 7vw, 104px) 110px;
+      }
+
+      section {
+        padding: 74px 0;
+        border-bottom: 1px solid var(--line);
+        scroll-margin-top: 20px;
+      }
+
+      section:last-child {
+        border-bottom: 0;
+      }
+
+      .section-head {
+        display: grid;
+        grid-template-columns: 150px minmax(0, 1fr);
+        gap: 34px;
+        margin-bottom: 38px;
+      }
+
+      .section-kicker {
+        padding-top: 6px;
+        color: var(--teal);
+        font-family: var(--font-mono);
+        font-size: 11px;
+        font-weight: 700;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+      }
+
+      h2 {
+        margin: 0 0 12px;
+        font-family: var(--font-display);
+        font-size: 34px;
+        line-height: 1.15;
+        letter-spacing: -0.035em;
+      }
+
+      h3 {
+        margin: 38px 0 12px;
+        font-family: var(--font-display);
+        font-size: 20px;
+        letter-spacing: -0.02em;
+      }
+
+      p {
+        margin: 0 0 16px;
+      }
+
+      .lead {
+        max-width: 650px;
+        color: var(--muted);
+        font-size: 17px;
+      }
+
+      code {
+        padding: 2px 6px;
+        border-radius: 5px;
+        background: #eef2f3;
+        color: #314048;
+        font-family: var(--font-mono);
+        font-size: 0.86em;
+      }
+
+      .callout {
+        margin: 30px 0;
+        padding: 24px 26px;
+        border-left: 4px solid var(--teal);
+        background: var(--mist);
+        color: #34474b;
+      }
+
+      .logo-stage {
+        display: grid;
+        grid-template-columns: 290px minmax(0, 1fr);
+        gap: 42px;
+        align-items: center;
+        padding: 36px;
+        border-radius: 18px;
+        background: var(--graphite);
+        color: #dce6e8;
+      }
+
+      .logo-stage img {
+        display: block;
+        width: 100%;
+        border-radius: 28%;
+      }
+
+      .logo-stage strong {
+        display: block;
+        margin-bottom: 8px;
+        color: var(--paper);
+        font-family: var(--font-display);
+        font-size: 30px;
+      }
+
+      .rules {
+        display: grid;
+        gap: 12px;
+        margin: 26px 0 0;
+        padding: 0;
+        list-style: none;
+      }
+
+      .rules li {
+        position: relative;
+        padding-left: 24px;
+      }
+
+      .rules li::before {
+        content: "";
+        position: absolute;
+        top: 0.68em;
+        left: 0;
+        width: 8px;
+        height: 8px;
+        border-radius: 2px 8px 8px 8px;
+        background: var(--teal);
+      }
+
+      .swatches {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 14px;
+      }
+
+      .swatch {
+        min-height: 174px;
+        padding: 18px;
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        background: var(--swatch);
+        color: var(--swatch-ink, var(--ink));
+      }
+
+      .swatch-name {
+        font-weight: 650;
+      }
+
+      .swatch code {
+        display: inline-block;
+        margin-top: 74px;
+        padding: 0;
+        background: transparent;
+        color: inherit;
+      }
+
+      .semantic-row {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 12px;
+        margin-top: 26px;
+      }
+
+      .semantic {
+        padding: 14px 16px;
+        border-radius: 10px;
+        background: color-mix(in srgb, var(--tone) 13%, white);
+        color: color-mix(in srgb, var(--tone) 72%, black);
+        font-weight: 600;
+      }
+
+      .type-grid {
+        display: grid;
+        gap: 0;
+        border-top: 1px solid var(--line);
+      }
+
+      .type-row {
+        display: grid;
+        grid-template-columns: 150px 1fr 90px;
+        gap: 24px;
+        align-items: baseline;
+        padding: 22px 0;
+        border-bottom: 1px solid var(--line);
+      }
+
+      .type-label,
+      .type-spec {
+        color: var(--muted);
+        font-family: var(--font-mono);
+        font-size: 11px;
+      }
+
+      .type-sample.display {
+        font-family: var(--font-display);
+        font-size: 44px;
+        font-weight: 700;
+        line-height: 1.12;
+        letter-spacing: -0.04em;
+      }
+
+      .type-sample.title {
+        font-family: var(--font-display);
+        font-size: 22px;
+        font-weight: 600;
+      }
+
+      .type-sample.section-title {
+        font-size: 15px;
+        font-weight: 600;
+      }
+
+      .type-sample.body {
+        font-size: 13px;
+      }
+
+      .type-sample.caption {
+        color: var(--muted);
+        font-size: 12px;
+      }
+
+      .spacing-scale {
+        display: grid;
+        gap: 14px;
+      }
+
+      .spacing-item {
+        display: grid;
+        grid-template-columns: 90px 1fr 52px;
+        gap: 18px;
+        align-items: center;
+        font-family: var(--font-mono);
+        font-size: 11px;
+      }
+
+      .spacing-bar {
+        height: 8px;
+        width: calc(var(--units) * 4px);
+        max-width: 100%;
+        border-radius: 999px;
+        background: var(--teal);
+      }
+
+      .component-stage {
+        padding: 32px;
+        border-radius: 18px;
+        background: var(--graphite);
+        color: #edf4f5;
+        overflow: hidden;
+      }
+
+      .demo-nav {
+        display: inline-flex;
+        align-items: center;
+        gap: 3px;
+        padding: 5px;
+        border: 1px solid rgba(255, 255, 255, 0.06);
+        border-radius: 999px;
+        background: rgba(0, 0, 0, 0.22);
+      }
+
+      .demo-nav img {
+        width: 34px;
+        height: 34px;
+        margin-right: 5px;
+        border-radius: 8px;
+      }
+
+      .demo-nav span {
+        padding: 7px 13px;
+        border-radius: 999px;
+        color: #9eacb1;
+        font-size: 12px;
+      }
+
+      .demo-nav .active {
+        background: var(--paper);
+        color: var(--graphite);
+        font-weight: 650;
+      }
+
+      .button-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-top: 30px;
+      }
+
+      .button {
+        min-height: 36px;
+        padding: 8px 18px;
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        border-radius: 999px;
+        background: transparent;
+        color: #e7eff1;
+        font: 600 12px var(--font-ui);
+      }
+
+      .button.primary {
+        border-color: var(--paper);
+        background: var(--paper);
+        color: var(--graphite);
+      }
+
+      .button.danger {
+        border-color: var(--danger);
+        color: #ff8d84;
+      }
+
+      .button:disabled {
+        opacity: 0.42;
+      }
+
+      .flow-sequence {
+        display: grid;
+        grid-template-columns: repeat(5, 1fr);
+        gap: 6px;
+        margin: 26px 0;
+        padding: 6px;
+        border-radius: 999px;
+        background: #edf2f3;
+      }
+
+      .flow-sequence span {
+        padding: 10px 8px;
+        border-radius: 999px;
+        color: #68777d;
+        font-size: 12px;
+        text-align: center;
+      }
+
+      .flow-sequence span:nth-child(2) {
+        background: var(--graphite);
+        color: var(--paper);
+      }
+
+      .check-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 12px;
+      }
+
+      .check {
+        padding: 17px 18px;
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        color: #46565d;
+      }
+
+      .check::before {
+        content: "✓";
+        display: inline-grid;
+        place-items: center;
+        width: 22px;
+        height: 22px;
+        margin-right: 10px;
+        border-radius: 50%;
+        background: var(--mist);
+        color: #087f83;
+        font-weight: 800;
+      }
+
+      .file-map {
+        display: grid;
+        gap: 2px;
+        overflow: hidden;
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        background: var(--line);
+      }
+
+      .file-row {
+        display: grid;
+        grid-template-columns: 190px 1fr;
+        gap: 18px;
+        padding: 15px 18px;
+        background: var(--paper);
+      }
+
+      .file-row code {
+        padding: 0;
+        background: transparent;
+      }
+
+      footer {
+        padding: 40px clamp(44px, 7vw, 104px);
+        background: var(--graphite);
+        color: #83949b;
+        font-family: var(--font-mono);
+        font-size: 11px;
+      }
+
+      @media (max-width: 920px) {
+        .layout {
+          display: block;
+        }
+
+        .rail {
+          position: relative;
+          width: 100%;
+          height: auto;
+          padding: 20px 24px;
+        }
+
+        .brand-lockup {
+          margin: 0;
+        }
+
+        .rail nav,
+        .rail-note {
+          display: none;
+        }
+
+        .hero {
+          min-height: 540px;
+          padding-top: 62px;
+        }
+
+        .hero::after {
+          right: -250px;
+          bottom: -360px;
+        }
+
+        .meta-strip {
+          left: clamp(44px, 7vw, 104px);
+          right: auto;
+          text-align: left;
+        }
+
+        .section-head,
+        .logo-stage {
+          grid-template-columns: 1fr;
+        }
+
+        .logo-stage img {
+          max-width: 280px;
+        }
+      }
+
+      @media (max-width: 640px) {
+        .hero,
+        .content {
+          padding-right: 24px;
+          padding-left: 24px;
+        }
+
+        .hero {
+          min-height: 500px;
+        }
+
+        .meta-strip {
+          display: none;
+        }
+
+        .hero-mark {
+          width: 72px;
+          height: 72px;
+          margin-bottom: 36px;
+        }
+
+        .swatches,
+        .semantic-row,
+        .check-grid {
+          grid-template-columns: 1fr;
+        }
+
+        .component-stage {
+          padding: 20px;
+        }
+
+        .demo-nav {
+          display: flex;
+          max-width: 100%;
+          overflow-x: auto;
+          scrollbar-width: none;
+        }
+
+        .demo-nav::-webkit-scrollbar {
+          display: none;
+        }
+
+        .type-row {
+          grid-template-columns: 1fr;
+          gap: 8px;
+        }
+
+        .type-spec {
+          display: none;
+        }
+
+        .flow-sequence {
+          grid-template-columns: 1fr;
+          border-radius: 14px;
+        }
+
+        .file-row {
+          grid-template-columns: 1fr;
+          gap: 5px;
+        }
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        html {
+          scroll-behavior: auto;
+        }
+      }
+
+      @media print {
+        body {
+          background: white;
+        }
+
+        .layout {
+          display: block;
+        }
+
+        .rail {
+          display: none;
+        }
+
+        .hero {
+          min-height: auto;
+          break-after: page;
+        }
+
+        section {
+          break-inside: avoid;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="layout">
+      <aside class="rail" aria-label="Brand guideline navigation">
+        <div class="brand-lockup">
+          <img src="../ui/public/tidy-logo.png" alt="Tidy logo" />
+          <div>
+            <div class="brand-name">Tidy</div>
+            <div class="brand-edition">Identity manual</div>
+          </div>
+        </div>
+        <nav>
+          <a href="#foundation">Brand foundation</a>
+          <a href="#logo">Logo system</a>
+          <a href="#color">Color</a>
+          <a href="#type">Typography &amp; voice</a>
+          <a href="#layout">Layout &amp; spacing</a>
+          <a href="#components">Component rules</a>
+          <a href="#flow">Destructive flows</a>
+          <a href="#accessibility">Motion &amp; accessibility</a>
+          <a href="#implementation">Implementation map</a>
+        </nav>
+        <div class="rail-note">
+          DESKTOP / BRAND<br />
+          SOURCE OF TRUTH<br />
+          2026-08-17
+        </div>
+      </aside>
+
+      <main>
+        <header class="hero">
+          <img class="hero-mark" src="../ui/public/tidy-app-icon.png" alt="Tidy Flow app icon" />
+          <p class="eyebrow">Brand and interface system</p>
+          <h1>See clearly.<br />Tidy safely.</h1>
+          <p class="promise">
+            A calm, reviewable desktop surface for understanding reclaimable space and approving
+            maintenance with confidence.
+          </p>
+          <div class="meta-strip">
+            <span>PUBLIC NAME / TIDY</span>
+            <span>CORE / MOLE</span>
+            <span>SURFACE / MACOS</span>
+          </div>
+        </header>
+
+        <div class="content">
+          <section id="foundation">
+            <div class="section-head">
+              <div class="section-kicker">Foundation</div>
+              <div>
+                <h2>Calm by design.<br />Safe by behavior.</h2>
+                <p class="lead">
+                  Tidy helps macOS power users understand reclaimable space and approve maintenance
+                  without surrendering control.
+                </p>
+              </div>
+            </div>
+            <p>
+              The brand promise is <strong>“See clearly. Tidy safely.”</strong> This is a behavioral
+              standard, not marketing decoration: preview precedes execution, refusals name their
+              cause, and destructive actions remain reversible where supported.
+            </p>
+            <p>
+              Public product surfaces use <strong>Tidy</strong>. Rust crate names, IPC compatibility
+              events, shared operation logs, and references to the Mole CLI keep their existing
+              names. This preserves interoperability while giving the desktop app a distinct
+              identity.
+            </p>
+            <div class="callout">
+              Shared state remains under <code>~/.config/mole</code>; operation and deletion history
+              remain under <code>~/Library/Logs/mole</code>. The native bundle and LaunchAgent use
+              <code>com.tw93.tidy</code> and migrate the exact legacy placeholder identifier.
+            </div>
+          </section>
+
+          <section id="logo">
+            <div class="section-head">
+              <div class="section-kicker">Logo</div>
+              <div>
+                <h2>The Flow mark</h2>
+                <p class="lead">
+                  A capital T formed by a graphite crossbar and turquoise folded stem. The curved
+                  seam represents a candidate moving from inspection into an intentional action.
+                </p>
+              </div>
+            </div>
+            <div class="logo-stage">
+              <img src="../ui/public/tidy-app-icon.png" alt="Tidy Flow logo on white tile" />
+              <div>
+                <strong>Tidy</strong>
+                <p>
+                  Use the complete white tile as one indivisible mark. Its restraint is part of the
+                  identity: one fold, one direction, one decision.
+                </p>
+                <code>ui/public/tidy-app-icon.png</code>
+              </div>
+            </div>
+            <ul class="rules">
+              <li>Use the 1024 px master for app artwork and the 128 px asset for compact UI.</li>
+              <li>Keep clear space equal to one quarter of the crossbar height.</li>
+              <li>Minimum sizes are 24 px in UI and 32 px for standalone digital use.</li>
+              <li>Place the full tile on graphite, neutral, or photographic surfaces.</li>
+              <li>Do not recolor, rotate, outline, add effects, or extract the T from its tile.</li>
+            </ul>
+            <h3>Asset provenance</h3>
+            <p>
+              The Flow direction was selected by the project owner on 2026-08-17. The production
+              PNG master was generated from that approved concept with OpenAI ImageGen and contains
+              no third-party source artwork. Until a hand-tuned vector master exists, the 1024 px
+              PNG is the geometry and color reference.
+            </p>
+          </section>
+
+          <section id="color">
+            <div class="section-head">
+              <div class="section-kicker">Color</div>
+              <div>
+                <h2>One accent.<br />Clear meaning.</h2>
+                <p class="lead">
+                  Flow teal communicates selection and forward progress. Semantic colors remain
+                  separate so that brand expression never obscures system meaning.
+                </p>
+              </div>
+            </div>
+            <div class="swatches" aria-label="Tidy brand palette">
+              <div class="swatch" style="--swatch: #ffffff">
+                <div class="swatch-name">Paper</div><code>#FFFFFF</code>
+              </div>
+              <div class="swatch" style="--swatch: #eaf8f7">
+                <div class="swatch-name">Mist</div><code>#EAF8F7</code>
+              </div>
+              <div class="swatch" style="--swatch: #0cc2c7; --swatch-ink: #083f43">
+                <div class="swatch-name">Flow teal</div><code>#0CC2C7</code>
+              </div>
+              <div class="swatch" style="--swatch: #53d6d7; --swatch-ink: #103e42">
+                <div class="swatch-name">Bright teal</div><code>#53D6D7</code>
+              </div>
+              <div class="swatch" style="--swatch: #1e262f; --swatch-ink: #ffffff">
+                <div class="swatch-name">Graphite</div><code>#1E262F</code>
+              </div>
+              <div class="swatch" style="--swatch: #27323d; --swatch-ink: #ffffff">
+                <div class="swatch-name">Raised graphite</div><code>#27323D</code>
+              </div>
+            </div>
+            <div class="semantic-row" aria-label="Semantic colors">
+              <div class="semantic" style="--tone: var(--success)">Success · #55C790</div>
+              <div class="semantic" style="--tone: var(--warning)">Caution · #D6A73B</div>
+              <div class="semantic" style="--tone: var(--danger)">Failure · #E06056</div>
+            </div>
+            <p class="callout">
+              Never rely on color alone. Pair every status color with an icon and a literal label.
+              Teal does not mean “success.”
+            </p>
+          </section>
+
+          <section id="type">
+            <div class="section-head">
+              <div class="section-kicker">Typography</div>
+              <div>
+                <h2>Native, precise,<br />quietly technical.</h2>
+                <p class="lead">
+                  SF Pro carries the interface; SF Mono distinguishes paths, bytes, hashes, and
+                  logs. Chinese falls back to PingFang SC.
+                </p>
+              </div>
+            </div>
+            <div class="type-grid">
+              <div class="type-row">
+                <div class="type-label">Display</div>
+                <div class="type-sample display">128.4 GB</div>
+                <div class="type-spec">44 / 52 · 700</div>
+              </div>
+              <div class="type-row">
+                <div class="type-label">Page title</div>
+                <div class="type-sample title">Review reclaimable space</div>
+                <div class="type-spec">22 / 28 · 600</div>
+              </div>
+              <div class="type-row">
+                <div class="type-label">Section title</div>
+                <div class="type-sample section-title">Developer caches</div>
+                <div class="type-spec">15 / 22 · 600</div>
+              </div>
+              <div class="type-row">
+                <div class="type-label">Body</div>
+                <div class="type-sample body">Preview every candidate before anything changes.</div>
+                <div class="type-spec">13 / 20 · 400</div>
+              </div>
+              <div class="type-row">
+                <div class="type-label">Caption</div>
+                <div class="type-sample caption">Last scanned 2 minutes ago</div>
+                <div class="type-spec">12 / 16 · 400</div>
+              </div>
+            </div>
+            <h3>Voice</h3>
+            <p>
+              Write calm, literal interface copy. Name the action the user controls: “Review 12
+              items”, “Move to Trash”, or “Try scan again”. Confirmation and completion use the same
+              verb. Errors state the cause and the next available action; avoid vague messages and
+              promotional language.
+            </p>
+          </section>
+
+          <section id="layout">
+            <div class="section-head">
+              <div class="section-kicker">Layout</div>
+              <div>
+                <h2>Dense enough to inspect.<br />Open enough to decide.</h2>
+                <p class="lead">
+                  The interface uses a 4 px base unit, restrained radii, and one clear hierarchy per
+                  screen: title, current measurement or task, primary action, then detail.
+                </p>
+              </div>
+            </div>
+            <div class="spacing-scale" aria-label="Spacing scale">
+              <div class="spacing-item"><span>space-1</span><div class="spacing-bar" style="--units: 1"></div><span>4 px</span></div>
+              <div class="spacing-item"><span>space-2</span><div class="spacing-bar" style="--units: 2"></div><span>8 px</span></div>
+              <div class="spacing-item"><span>space-3</span><div class="spacing-bar" style="--units: 3"></div><span>12 px</span></div>
+              <div class="spacing-item"><span>space-4</span><div class="spacing-bar" style="--units: 4"></div><span>16 px</span></div>
+              <div class="spacing-item"><span>space-5</span><div class="spacing-bar" style="--units: 6"></div><span>24 px</span></div>
+              <div class="spacing-item"><span>space-6</span><div class="spacing-bar" style="--units: 8"></div><span>32 px</span></div>
+            </div>
+            <p class="callout">
+              Default content width is 980 px with 28 px window gutters. Dense rows are 44–52 px
+              high; controls are at least 32 px. Use 8 px radii for compact controls, 12 px for
+              panels, and 18 px for sheets. Reserve pills for navigation, filters, and statuses.
+            </p>
+          </section>
+
+          <section id="components">
+            <div class="section-head">
+              <div class="section-kicker">Components</div>
+              <div>
+                <h2>Stable landmarks.<br />Literal actions.</h2>
+                <p class="lead">
+                  Components make state visible. Decoration never competes with candidate evidence,
+                  confirmation, or refusal causes.
+                </p>
+              </div>
+            </div>
+            <div class="component-stage">
+              <div class="demo-nav" aria-label="Navigation example">
+                <img src="../ui/public/tidy-logo.png" alt="" />
+                <span class="active">Clean</span><span>Apps</span><span>Optimize</span><span>Analyze</span><span>Status</span>
+              </div>
+              <div class="button-row" aria-label="Button examples">
+                <button class="button primary" type="button">Review 12 items</button>
+                <button class="button" type="button">Cancel</button>
+                <button class="button danger" type="button">Move to Trash</button>
+                <button class="button" type="button" disabled title="Requires Full Disk Access">Unavailable</button>
+              </div>
+            </div>
+            <h3>Navigation</h3>
+            <p>
+              The centered graphite pill is the stable app landmark. Show the 34 px Tidy tile first,
+              followed by short nouns. The active destination uses white fill and graphite text;
+              navigation never changes position between routes.
+            </p>
+            <h3>Buttons and controls</h3>
+            <ul class="rules">
+              <li>Use one primary action per region: white fill on dark, graphite text.</li>
+              <li>Secondary actions use transparent or raised graphite with a visible border.</li>
+              <li>Use red only for the final confirmed destructive action.</li>
+              <li>Keyboard focus uses a 2 px bright-teal ring with a 2 px offset.</li>
+              <li>Disabled controls retain their label and expose the reason nearby.</li>
+            </ul>
+            <h3>Panels, lists, and data</h3>
+            <p>
+              Panels separate meaning, not decoration. Align file sizes and percentages by decimal
+              position. Paths use SF Mono, truncate in the middle when necessary, and reveal their
+              full value on hover or focus. Empty states state what was checked and offer the next
+              useful action.
+            </p>
+          </section>
+
+          <section id="flow">
+            <div class="section-head">
+              <div class="section-kicker">Safety flow</div>
+              <div>
+                <h2>One plan.<br />Five visible states.</h2>
+                <p class="lead">
+                  Every destructive surface follows the same candidate set from discovery through
+                  result reporting.
+                </p>
+              </div>
+            </div>
+            <div class="flow-sequence" aria-label="Destructive action sequence">
+              <span>Scan</span><span>Preview</span><span>Confirm</span><span>Execute</span><span>Results</span>
+            </div>
+            <p>
+              Candidate count and bytes remain stable across preview and confirmation. The final
+              button names the outcome, such as “Move 12 items to Trash”. Results separate
+              completed, refused, and failed items; partial success is never rendered as total
+              success.
+            </p>
+          </section>
+
+          <section id="accessibility">
+            <div class="section-head">
+              <div class="section-kicker">Access</div>
+              <div>
+                <h2>Motion clarifies.<br />Access is structural.</h2>
+                <p class="lead">
+                  Tidy uses one signature Flow sweep for scan-to-preview or execute progress. All
+                  other movement stays quiet and optional.
+                </p>
+              </div>
+            </div>
+            <div class="check-grid">
+              <div class="check">140 ms hover and focus feedback</div>
+              <div class="check">220 ms sheets and state changes</div>
+              <div class="check">Reduced motion removes transitions</div>
+              <div class="check">Body text targets WCAG AA</div>
+              <div class="check">Icon controls have accessible names</div>
+              <div class="check">Status changes use live regions</div>
+              <div class="check">Keyboard operation is complete</div>
+              <div class="check">Test at 800×560 in EN and ZH</div>
+            </div>
+          </section>
+
+          <section id="implementation">
+            <div class="section-head">
+              <div class="section-kicker">Implementation</div>
+              <div>
+                <h2>One rule.<br />One source.</h2>
+                <p class="lead">
+                  When a token or interaction rule changes, update this guide and the source in the
+                  same change. Components consume semantic tokens rather than copied hex values.
+                </p>
+              </div>
+            </div>
+            <div class="file-map">
+              <div class="file-row"><strong>Product identity</strong><code>ui/src/brand.ts</code></div>
+              <div class="file-row"><strong>Design tokens</strong><code>ui/src/styles/tokens.css</code></div>
+              <div class="file-row"><strong>Shared components</strong><code>ui/src/styles/base.css</code></div>
+              <div class="file-row"><strong>Browser artwork</strong><code>ui/public/</code></div>
+              <div class="file-row"><strong>Native artwork</strong><code>src-tauri/icons/icon.png</code></div>
+              <div class="file-row"><strong>Native identity</strong><code>src-tauri/tauri.conf.json</code></div>
+            </div>
+          </section>
+        </div>
+
+        <footer>TIDY BRAND SYSTEM · SOURCE: BRAND_GUIDELINES.md · 2026-08-17</footer>
+      </main>
+    </div>
+  </body>
+</html>

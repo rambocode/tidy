@@ -1,0 +1,17 @@
+# macOS
+.DS_Store
+
+# Rust
+desktop/target/
+desktop/src-tauri/target/
+desktop/src-tauri/gen/
+
+# Node / Vite
+node_modules/
+desktop/ui/dist/
+site/tools/node_modules/
+
+# Editor / logs
+*.log
+.vscode/
+.idea/

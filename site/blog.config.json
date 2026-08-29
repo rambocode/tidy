@@ -1,0 +1,40 @@
+{
+  "contentDir": "content/blog",
+  "outDir": ".blog-build",
+  "siteUrl": "https://tidy.example.com",
+  "primaryLocale": "zh",
+  "locales": [
+    "zh",
+    "en"
+  ],
+  "articleRoute": "/{locale}/blog/{permalink}/",
+  "indexRoute": "/{locale}/blog/",
+  "rssRoute": "/{locale}/blog/rss.xml",
+  "categories": [
+    "space",
+    "apps",
+    "maintenance",
+    "safety"
+  ],
+  "defaultAuthor": {
+    "name": "Tidy",
+    "url": "https://github.com/tw93/mole"
+  },
+  "readingTime": {
+    "cjkCharsPerMinute": 350,
+    "wordsPerMinute": 220,
+    "minMinutes": 1
+  },
+  "allowedIframeHosts": [],
+  "rss": {
+    "mode": "summary",
+    "maxItems": 20
+  },
+  "ctaBlocks": [
+    "source",
+    "issues"
+  ],
+  "missingTranslation": "hide",
+  "permalinkLockFile": "content/blog/_permalinks.lock.json",
+  "redirectsFile": "content/blog/_redirects.json"
+}

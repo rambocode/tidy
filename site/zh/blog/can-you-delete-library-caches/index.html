@@ -1,0 +1,164 @@
+<!doctype html>
+<html lang="zh-Hans">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>~/Library/Caches 能不能整个删掉 — Tidy</title>
+<meta name="description" content="可以，但不该。这篇说明这个目录里到底有什么、哪几类删了会有真实代价、正在运行的 App 为什么是例外，以及怎么安全地清。">
+<link rel="canonical" href="https://tidy.example.com/zh/blog/can-you-delete-library-caches/">
+<link rel="alternate" hreflang="en" href="https://tidy.example.com/en/blog/can-you-delete-library-caches/">
+<link rel="alternate" hreflang="zh-Hans" href="https://tidy.example.com/zh/blog/can-you-delete-library-caches/">
+<link rel="alternate" hreflang="x-default" href="https://tidy.example.com/zh/blog/can-you-delete-library-caches/">
+
+<link rel="icon" href="/assets/tidy-logo.png">
+<link rel="apple-touch-icon" href="/assets/tidy-app-icon.png">
+<link rel="alternate" type="application/rss+xml" title="Tidy Blog" href="/zh/blog/rss.xml">
+<link rel="stylesheet" href="/assets/site.css">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="Tidy">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:title" content="~/Library/Caches 能不能整个删掉 — Tidy">
+<meta property="og:description" content="可以，但不该。这篇说明这个目录里到底有什么、哪几类删了会有真实代价、正在运行的 App 为什么是例外，以及怎么安全地清。">
+<meta property="og:url" content="https://tidy.example.com/zh/blog/can-you-delete-library-caches/">
+<meta property="og:image" content="https://tidy.example.com/assets/tidy-app-icon.png">
+<meta name="twitter:card" content="summary">
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"BlogPosting","headline":"~/Library/Caches 能不能整个删掉","description":"可以，但不该。这篇说明这个目录里到底有什么、哪几类删了会有真实代价、正在运行的 App 为什么是例外，以及怎么安全地清。","inLanguage":"zh","datePublished":"2026-08-10","dateModified":"2026-08-10","mainEntityOfPage":{"@type":"WebPage","@id":"https://tidy.example.com/zh/blog/can-you-delete-library-caches/"},"url":"https://tidy.example.com/zh/blog/can-you-delete-library-caches/","author":{"@type":"Person","name":"Tidy","url":"https://github.com/tw93/mole"},"articleSection":"space","keywords":"磁盘空间, 缓存"}</script>
+</head>
+<body>
+<a class="skip" href="#main">跳到正文</a>
+<header class="site-header">
+  <div class="wrap">
+    <a class="brand" href="/zh/"><img src="/assets/tidy-logo.png" alt="Tidy logo" width="26" height="26"><span>Tidy</span></a>
+    <nav class="site-nav" aria-label="主导航">
+      <a href="/zh/#capabilities">功能</a>
+      <a href="/zh/#trust">安全</a>
+      <a href="/zh/blog/" aria-current="page">Blog</a>
+      <span class="lang-switch"><a href="/zh/blog/can-you-delete-library-caches/" aria-current="true">中</a>/<a href="/en/blog/can-you-delete-library-caches/">EN</a></span>
+      <a class="btn btn-primary" href="https://github.com/tw93/mole" target="_blank" rel="noopener noreferrer">查看源码</a>
+    </nav>
+  </div>
+</header>
+<main id="main" class="wrap article-layout">
+  <header class="article-head">
+    <p class="eyebrow"><a href="/zh/blog/#cat-space">空间与清理</a></p>
+    <h1>~/Library/Caches 能不能整个删掉</h1>
+    <div class="article-meta">
+      <span>2026 年 8 月 10 日</span>
+      
+      <span>约 3 分钟</span>
+      <span>Tidy</span>
+      <span><a href="/en/blog/can-you-delete-library-caches/">English</a></span>
+    </div>
+  </header>
+  <article class="article">
+    <div class="prose">
+<h2 id="简短回答">简短回答</h2>
+<p>技术上可以：<code>~/Library/Caches</code> 里的东西按定义都是可重建的，删光之后 macOS 和绝大多数 App 都还能正常启动。</p>
+<p>但整个删是个笨办法。它会让你付出一些本来不必付的代价——重新登录、重新下载、下一次构建慢十几分钟——而这些代价换来的空间，其实集中在少数几个目录里。</p>
+<h2 id="这个目录里到底是什么">这个目录里到底是什么</h2>
+<p><code>~/Library/Caches</code> 是用户级缓存的约定位置，每个 App 用自己的 bundle identifier 建一个子目录。你可以先看一眼分布：</p>
+<pre><code class="language-bash">du -sh ~/Library/Caches/* 2>/dev/null | sort -rh | head -20
+</code></pre>
+<p>典型情况下前几名会是这几类：</p>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<table><thead><tr><th>目录</th><th>里面是什么</th><th>删掉的代价</th></tr></thead><tbody><tr><td><code>com.apple.dt.Xcode</code>、<code>org.swift.swiftpm</code></td><td>Xcode 与 SwiftPM 的构建产物、下载的依赖</td><td>下一次构建明显变慢，需要重新拉依赖</td></tr><tr><td><code>Homebrew</code></td><td>下载过的 bottle 压缩包</td><td>重装同一个包时需要重新下载</td></tr><tr><td><code>com.google.Chrome</code>、<code>Firefox</code> 等</td><td>浏览器磁盘缓存</td><td>前几次访问慢一点；登录状态与历史记录不在这里</td></tr><tr><td><code>Figma</code>、<code>Sketch</code> 等</td><td>设计工具的资源与字体缓存</td><td>重新拉取一次；作品文件不在这里</td></tr><tr><td><code>com.tencent.xinWeChat</code> 等</td><td>聊天软件的图片与视频缓存</td><td>旧图片视频需要重新下载</td></tr></tbody></table>
+<h2 id="哪几类删了基本没代价">哪几类删了基本没代价</h2>
+<ul>
+<li><strong>浏览器缓存</strong>：Cookie、登录态、历史记录保存在 <code>~/Library/Application Support</code> 下，不在 Caches 里。删缓存不会把你登出。</li>
+<li><strong>日志类缓存</strong>：诊断用途，App 会按需重建。</li>
+<li><strong>残留的安装包</strong>：这个严格说不在 Caches 里，但常常和缓存一起被忽略——下载文件夹和各处残留的 <code>.dmg</code> / <code>.pkg</code> / <code>.xip</code> 往往比缓存还大，而且删了完全没代价。</li>
+</ul>
+<h2 id="哪几类删了有真实代价">哪几类删了有真实代价</h2>
+<ul>
+<li><strong>Xcode 相关</strong>：<code>DerivedData</code> 和 SwiftPM 的缓存删掉之后，下一次 clean build 可能要多花十几分钟。空间紧张时值得删，日常不值得。</li>
+<li><strong>Homebrew 的 bottle 缓存</strong>：<code>brew cleanup</code> 本来就会处理，手动删没问题，只是重装时要重新下载。</li>
+<li><strong>正在运行的 App 的缓存</strong>：见下一节。</li>
+</ul>
+<h2 id="正在运行的-app-是个例外">正在运行的 App 是个例外</h2>
+<p>这是整个目录里唯一真正会出问题的地方。一个 App 正在运行时，它可能持有缓存文件的句柄，也可能在内存里维护着和缓存内容对应的索引。这时候把文件从底下抽走，轻则下次启动时缓存重建，重则 App 当场出现找不到资源的错误状态。</p>
+<p>所以正确顺序是：<strong>先退出 App，再清它的缓存</strong>。</p>
+<p>在 Finder 里这一步很难做对，因为你看不出哪个目录属于哪个正在运行的进程。命令行可以查：</p>
+<pre><code class="language-bash">lsof +D ~/Library/Caches/com.example.app 2>/dev/null | head
+</code></pre>
+<p>但对着二十几个目录一个个查显然不现实。</p>
+<h2 id="tidy-在这里省掉的那一步">Tidy 在这里省掉的那一步</h2>
+<p><a href="/zh/">Tidy</a> 的清理页把上面这套判断做成了扫描结果的一部分：候选按 App 缓存、日志、开发工具、AI 工具、浏览器、设计工具、通讯工具、安装包分组列出，每一项标明体积；<strong>正在运行的应用会被单独标出来</strong>，并写清楚"关闭 微信 后可再清理 2.2 GB"这样的具体数字，而不是笼统地提示你注意。</p>
+<p>关键在于执行边界：扫描结果会被存下来，执行阶段只接受你在预览里勾选的那个子集，确认之后不会重新扫描。也就是说，你看到的那份清单就是最终会被删掉的东西，不多不少。删除走废纸篓，删错了能拿回来。</p>
+<div class="callout callout-note">
+<p>系统级缓存（<code>/Library/Caches</code> 而不是 <code>~/Library/Caches</code>）需要特权助手。这部分传输层还没发布，所以 Tidy 目前会直接以 <code>requires_admin</code> 拒绝，而不是弹一个 sudo 提示框。</p>
+</div>
+<h2 id="一个务实的做法">一个务实的做法</h2>
+<ol>
+<li>先看分布，确认空间到底被谁吃掉了；</li>
+<li>优先清浏览器、通讯工具、设计工具这类删了没代价的；</li>
+<li>清理残留的安装包，这一项通常性价比最高；</li>
+<li>空间实在紧张时再动 Xcode 和 Homebrew，并且知道下次构建会慢；</li>
+<li>动任何 App 的缓存之前先把它退出。</li>
+</ol>
+<p>另一个经常被忽略的空间来源是卸载残留：<a href="/zh/blog/what-remains-after-uninstall">把 App 拖进废纸篓之后，硬盘上还剩下什么</a>。</p>
+    </div>
+    
+    <section class="article-cta">
+      <h2>想确认这些说法？源码是公开的</h2>
+      <p>Tidy 的删除边界、保护名单与日志格式全部可以在仓库里直接查证。目前还没有发布安装包，需要自行构建。</p>
+      <a class="btn btn-secondary" href="https://github.com/tw93/mole" target="_blank" rel="noopener noreferrer">在 GitHub 上查看源码</a>
+    </section>
+    <section class="related">
+      <h2>相关阅读</h2>
+      <ul class="post-list">
+        <li class="post-card"><h3><a href="/zh/blog/what-remains-after-uninstall/">把 App 拖进废纸篓之后，硬盘上还剩下什么</a></h3><p>macOS 的拖拽卸载只删掉 .app 本体。这篇列出十类常见残留、各自的位置，以及为什么有些应用必须用官方卸载器。</p></li></ul>
+    </section>
+  </article>
+  <aside class="toc" aria-label="目录">
+    <h2>目录</h2>
+    <ul><li class="d2"><a href="#%E7%AE%80%E7%9F%AD%E5%9B%9E%E7%AD%94">简短回答</a></li><li class="d2"><a href="#%E8%BF%99%E4%B8%AA%E7%9B%AE%E5%BD%95%E9%87%8C%E5%88%B0%E5%BA%95%E6%98%AF%E4%BB%80%E4%B9%88">这个目录里到底是什么</a></li><li class="d2"><a href="#%E5%93%AA%E5%87%A0%E7%B1%BB%E5%88%A0%E4%BA%86%E5%9F%BA%E6%9C%AC%E6%B2%A1%E4%BB%A3%E4%BB%B7">哪几类删了基本没代价</a></li><li class="d2"><a href="#%E5%93%AA%E5%87%A0%E7%B1%BB%E5%88%A0%E4%BA%86%E6%9C%89%E7%9C%9F%E5%AE%9E%E4%BB%A3%E4%BB%B7">哪几类删了有真实代价</a></li><li class="d2"><a href="#%E6%AD%A3%E5%9C%A8%E8%BF%90%E8%A1%8C%E7%9A%84-app-%E6%98%AF%E4%B8%AA%E4%BE%8B%E5%A4%96">正在运行的 App 是个例外</a></li><li class="d2"><a href="#tidy-%E5%9C%A8%E8%BF%99%E9%87%8C%E7%9C%81%E6%8E%89%E7%9A%84%E9%82%A3%E4%B8%80%E6%AD%A5">Tidy 在这里省掉的那一步</a></li><li class="d2"><a href="#%E4%B8%80%E4%B8%AA%E5%8A%A1%E5%AE%9E%E7%9A%84%E5%81%9A%E6%B3%95">一个务实的做法</a></li></ul>
+  </aside>
+</main>
+<footer class="site-footer">
+  <div class="wrap">
+    <p class="footer-note" style="margin-top:0;border:0;padding-top:0">
+      <a href="/zh/">Tidy 首页</a> ·
+      <a href="/zh/blog/">Blog</a> ·
+      <a href="/zh/blog/rss.xml">RSS</a> ·
+      <a href="/zh/privacy/">隐私说明</a> ·
+      <a href="/zh/terms/">使用条款</a> ·
+      <a href="/en/blog/">English</a>
+    </p>
+  </div>
+</footer>
+</body>
+</html>

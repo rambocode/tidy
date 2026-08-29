@@ -1,0 +1,159 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Can you just delete ~/Library/Caches? — Tidy</title>
+<meta name="description" content="You can, but you shouldn&#39;t. What lives in that directory, which parts cost you something to remove, and why running apps are the exception.">
+<link rel="canonical" href="https://tidy.example.com/en/blog/can-you-delete-library-caches/">
+<link rel="alternate" hreflang="en" href="https://tidy.example.com/en/blog/can-you-delete-library-caches/">
+<link rel="alternate" hreflang="zh-Hans" href="https://tidy.example.com/zh/blog/can-you-delete-library-caches/">
+<link rel="alternate" hreflang="x-default" href="https://tidy.example.com/zh/blog/can-you-delete-library-caches/">
+
+<link rel="icon" href="/assets/tidy-logo.png">
+<link rel="apple-touch-icon" href="/assets/tidy-app-icon.png">
+<link rel="alternate" type="application/rss+xml" title="Tidy Blog" href="/en/blog/rss.xml">
+<link rel="stylesheet" href="/assets/site.css">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="Tidy">
+<meta property="og:locale" content="en_US">
+<meta property="og:title" content="Can you just delete ~/Library/Caches? — Tidy">
+<meta property="og:description" content="You can, but you shouldn&#39;t. What lives in that directory, which parts cost you something to remove, and why running apps are the exception.">
+<meta property="og:url" content="https://tidy.example.com/en/blog/can-you-delete-library-caches/">
+<meta property="og:image" content="https://tidy.example.com/assets/tidy-app-icon.png">
+<meta name="twitter:card" content="summary">
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"BlogPosting","headline":"Can you just delete ~/Library/Caches?","description":"You can, but you shouldn't. What lives in that directory, which parts cost you something to remove, and why running apps are the exception.","inLanguage":"en","datePublished":"2026-08-10","dateModified":"2026-08-10","mainEntityOfPage":{"@type":"WebPage","@id":"https://tidy.example.com/en/blog/can-you-delete-library-caches/"},"url":"https://tidy.example.com/en/blog/can-you-delete-library-caches/","author":{"@type":"Person","name":"Tidy","url":"https://github.com/tw93/mole"},"articleSection":"space","keywords":"disk space, cache"}</script>
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="site-header">
+  <div class="wrap">
+    <a class="brand" href="/en/"><img src="/assets/tidy-logo.png" alt="Tidy logo" width="26" height="26"><span>Tidy</span></a>
+    <nav class="site-nav" aria-label="Main">
+      <a href="/en/#capabilities">Features</a>
+      <a href="/en/#trust">Safety</a>
+      <a href="/en/blog/" aria-current="page">Blog</a>
+      <span class="lang-switch"><a href="/zh/blog/can-you-delete-library-caches/">中</a>/<a href="/en/blog/can-you-delete-library-caches/" aria-current="true">EN</a></span>
+      <a class="btn btn-primary" href="https://github.com/tw93/mole" target="_blank" rel="noopener noreferrer">View source</a>
+    </nav>
+  </div>
+</header>
+<main id="main" class="wrap article-layout">
+  <header class="article-head">
+    <p class="eyebrow"><a href="/en/blog/#cat-space">Space &amp; cleaning</a></p>
+    <h1>Can you just delete ~/Library/Caches?</h1>
+    <div class="article-meta">
+      <span>Aug 10, 2026</span>
+      
+      <span>3 min read</span>
+      <span>Tidy</span>
+      <span><a href="/zh/blog/can-you-delete-library-caches/">中文</a></span>
+    </div>
+  </header>
+  <article class="article">
+    <div class="prose">
+<h2 id="the-short-answer">The short answer</h2>
+<p>Technically yes. Everything under <code>~/Library/Caches</code> is rebuildable by definition, and macOS plus almost every app will start fine after you wipe it.</p>
+<p>But wiping it is a blunt instrument. It costs you things you did not need to pay — signing in again, downloading again, a build that takes fifteen extra minutes — and the space you get back is concentrated in a handful of directories anyway.</p>
+<h2 id="what-is-actually-in-there">What is actually in there</h2>
+<p><code>~/Library/Caches</code> is the conventional location for user-level caches. Each app creates a subdirectory named after its bundle identifier. Start by looking at the distribution:</p>
+<pre><code class="language-bash">du -sh ~/Library/Caches/* 2>/dev/null | sort -rh | head -20
+</code></pre>
+<p>The top entries are usually some mix of these:</p>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<table><thead><tr><th>Directory</th><th>What it holds</th><th>Cost of removing it</th></tr></thead><tbody><tr><td><code>com.apple.dt.Xcode</code>, <code>org.swift.swiftpm</code></td><td>Xcode build products, fetched dependencies</td><td>The next build is noticeably slower and re-fetches</td></tr><tr><td><code>Homebrew</code></td><td>Downloaded bottle archives</td><td>Reinstalling the same package downloads again</td></tr><tr><td><code>com.google.Chrome</code>, <code>Firefox</code>, …</td><td>Browser disk caches</td><td>The first few page loads are slower; logins and history are elsewhere</td></tr><tr><td><code>Figma</code>, <code>Sketch</code>, …</td><td>Design tool assets and font caches</td><td>Fetched again on next use; your files are elsewhere</td></tr><tr><td>Messaging apps</td><td>Cached images and video</td><td>Old media re-downloads when needed</td></tr></tbody></table>
+<h2 id="what-costs-you-almost-nothing">What costs you almost nothing</h2>
+<ul>
+<li><strong>Browser caches.</strong> Cookies, sessions, and history live under <code>~/Library/Application Support</code>, not in Caches. Clearing the cache does not sign you out.</li>
+<li><strong>Log-style caches.</strong> Diagnostic material the app rebuilds on demand.</li>
+<li><strong>Leftover installers.</strong> Strictly not in Caches, but ignored alongside it — stray <code>.dmg</code> / <code>.pkg</code> / <code>.xip</code> files are often larger than the caches and cost nothing to delete.</li>
+</ul>
+<h2 id="what-genuinely-costs-something">What genuinely costs something</h2>
+<ul>
+<li><strong>Xcode.</strong> Removing <code>DerivedData</code> and the SwiftPM cache can add fifteen minutes to the next clean build. Worth it when you are out of space, not worth it routinely.</li>
+<li><strong>Homebrew bottles.</strong> <code>brew cleanup</code> already handles this; removing them by hand is fine, you just re-download on reinstall.</li>
+<li><strong>Caches of running apps.</strong> See the next section.</li>
+</ul>
+<h2 id="running-apps-are-the-exception">Running apps are the exception</h2>
+<p>This is the one place in the directory where something can actually break. A running app may hold open handles to its cache files and may keep an in-memory index that corresponds to what is on disk. Pull the files out from under it and, at best, the cache rebuilds on next launch; at worst the app lands in an error state because a resource it expected has vanished.</p>
+<p>So the correct order is: <strong>quit the app, then clear its cache.</strong></p>
+<p>That step is hard to get right in Finder, because you cannot tell which directory belongs to which running process. The command line can tell you:</p>
+<pre><code class="language-bash">lsof +D ~/Library/Caches/com.example.app 2>/dev/null | head
+</code></pre>
+<p>Doing that for two dozen directories one at a time is not realistic.</p>
+<h2 id="the-step-tidy-removes">The step Tidy removes</h2>
+<p><a href="/en/">Tidy</a> folds this judgement into the scan itself. Candidates are grouped by app caches, logs, developer tools, AI tools, browsers, design tools, messaging, and installers, each with its size — and <strong>running apps are called out separately</strong>, with a concrete number like "Close Slack to reclaim another 2.2 GB" rather than a vague warning.</p>
+<p>The part that matters is the execution boundary: the scan result is stored, and execution accepts only the subset you ticked in the preview. Nothing is re-scanned after confirmation. The list you looked at is exactly what gets removed — no more, no less. Deletions go to the Trash, so a mistake is recoverable.</p>
+<div class="callout callout-note">
+<p>System-level caches (<code>/Library/Caches</code> rather than <code>~/Library/Caches</code>) need the privileged helper. That transport has not shipped, so Tidy refuses those with <code>requires_admin</code> instead of showing a sudo prompt.</p>
+</div>
+<h2 id="a-practical-order">A practical order</h2>
+<ol>
+<li>Look at the distribution first and find out what is actually consuming the space.</li>
+<li>Clear the free ones: browsers, messaging, design tools.</li>
+<li>Remove leftover installers — usually the best ratio of space to regret.</li>
+<li>Only touch Xcode and Homebrew when space is genuinely tight, knowing the next build is slower.</li>
+<li>Quit an app before clearing its cache.</li>
+</ol>
+    </div>
+    
+    <section class="article-cta">
+      <h2>Want to check these claims? The source is public</h2>
+      <p>Tidy&#39;s deletion boundary, protection lists, and log formats can all be verified in the repository. No installer has shipped yet, so you build it yourself.</p>
+      <a class="btn btn-secondary" href="https://github.com/tw93/mole" target="_blank" rel="noopener noreferrer">View the source on GitHub</a>
+    </section>
+    
+  </article>
+  <aside class="toc" aria-label="Contents">
+    <h2>Contents</h2>
+    <ul><li class="d2"><a href="#the-short-answer">The short answer</a></li><li class="d2"><a href="#what-is-actually-in-there">What is actually in there</a></li><li class="d2"><a href="#what-costs-you-almost-nothing">What costs you almost nothing</a></li><li class="d2"><a href="#what-genuinely-costs-something">What genuinely costs something</a></li><li class="d2"><a href="#running-apps-are-the-exception">Running apps are the exception</a></li><li class="d2"><a href="#the-step-tidy-removes">The step Tidy removes</a></li><li class="d2"><a href="#a-practical-order">A practical order</a></li></ul>
+  </aside>
+</main>
+<footer class="site-footer">
+  <div class="wrap">
+    <p class="footer-note" style="margin-top:0;border:0;padding-top:0">
+      <a href="/en/">Tidy home</a> ·
+      <a href="/en/blog/">Blog</a> ·
+      <a href="/en/blog/rss.xml">RSS</a> ·
+      <a href="/en/privacy/">Privacy</a> ·
+      <a href="/en/terms/">Terms</a> ·
+      <a href="/zh/blog/">中文</a>
+    </p>
+  </div>
+</footer>
+</body>
+</html>

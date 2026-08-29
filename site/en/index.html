@@ -1,0 +1,425 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tidy — see clearly, tidy safely on macOS</title>
+<meta name="description" content="Tidy is Mole's open-source macOS desktop app. Clean, uninstall, optimize, and analyze all preview the exact candidates first; execution is limited to the set you selected.">
+<link rel="canonical" href="https://tidy.example.com/en/">
+<link rel="alternate" hreflang="zh-Hans" href="https://tidy.example.com/zh/">
+<link rel="alternate" hreflang="en" href="https://tidy.example.com/en/">
+<link rel="alternate" hreflang="x-default" href="https://tidy.example.com/zh/">
+<link rel="icon" href="/assets/tidy-logo.png">
+<link rel="apple-touch-icon" href="/assets/tidy-app-icon.png">
+<link rel="alternate" type="application/rss+xml" title="Tidy Blog" href="/en/blog/rss.xml">
+<link rel="stylesheet" href="/assets/site.css">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Tidy">
+<meta property="og:locale" content="en_US">
+<meta property="og:locale:alternate" content="zh_CN">
+<meta property="og:title" content="Tidy — see clearly, tidy safely on macOS">
+<meta property="og:description" content="Clean, uninstall, optimize, and analyze all preview the exact candidates first; execution is limited to the set you selected.">
+<meta property="og:url" content="https://tidy.example.com/en/">
+<meta property="og:image" content="https://tidy.example.com/assets/media/apps-uninstall@1x.png">
+<meta property="og:image:width" content="1080">
+<meta property="og:image:height" content="720">
+<meta property="og:image:alt" content="Tidy Uninstall: 131 apps sorted by size, each row expandable for review">
+<meta name="twitter:card" content="summary">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  "name": "Tidy",
+  "applicationCategory": "UtilitiesApplication",
+  "operatingSystem": "macOS",
+  "softwareVersion": "0.1.0",
+  "inLanguage": ["zh-Hans", "en"],
+  "isAccessibleForFree": true,
+  "url": "https://tidy.example.com/en/",
+  "codeRepository": "https://github.com/tw93/mole",
+  "description": "Mole's open-source macOS desktop app: clean, uninstall, optimize, and analyze with a preview-before-execute contract that limits execution to the user's selected candidates."
+}
+</script>
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+
+<header class="site-header">
+  <div class="wrap">
+    <a class="brand" href="/en/"><img src="/assets/tidy-logo.png" alt="Tidy logo" width="26" height="26"><span>Tidy</span></a>
+    <nav class="site-nav" aria-label="Main">
+      <a href="#capabilities">Features</a>
+      <a href="#trust">Safety</a>
+      <a href="#build" data-optional>Build</a>
+      <a href="#faq" data-optional>FAQ</a>
+      <a href="/en/blog/">Blog</a>
+      <span class="lang-switch"><a href="/zh/">中</a>/<a href="/en/" aria-current="true">EN</a></span>
+      <a class="btn btn-primary" href="https://github.com/tw93/mole" target="_blank" rel="noopener noreferrer">View source</a>
+    </nav>
+  </div>
+</header>
+
+<main id="main">
+
+  <section class="hero">
+    <div class="wrap">
+      <p class="eyebrow">Open source · macOS · Rust + Tauri 2</p>
+      <h1>See clearly. Tidy safely.</h1>
+      <p class="lead">Tidy is Mole's open-source macOS desktop app. Cleaning, uninstalling, optimizing, and disk analysis all put the full candidate list in front of you first. Whatever you tick is exactly what gets removed — the architecture makes one extra file impossible.</p>
+      <div class="hero-actions">
+        <a class="btn btn-primary btn-lg" href="https://github.com/tw93/mole" target="_blank" rel="noopener noreferrer">View the source on GitHub</a>
+        <a class="btn btn-secondary btn-lg" href="#build">How to build it</a>
+      </div>
+      <p class="requirements">
+        <span>macOS</span><span>Rust stable + Node ≥ 20</span><span>English / 中文</span><span>Version 0.1.0</span>
+      </p>
+      <p class="notice">
+        <strong>In development.</strong> <code>bundle.active</code> is still <code>false</code> in the repository; no prebuilt installer has been released and there is no download page. For now the way to run it is to clone the repository and build it yourself. This section changes when that does.
+      </p>
+
+      <figure class="shot shot-hero">
+        <picture>
+          <source type="image/webp"
+                  srcset="/assets/media/clean-scan@1x.webp 1080w, /assets/media/clean-scan@2x.webp 2160w"
+                  sizes="(max-width: 900px) 100vw, 1080px">
+          <img src="/assets/media/clean-scan@1x.png"
+               alt="The Tidy Clean view before a scan, reading &quot;Ready to scan reclaimable space&quot; over the subtitle &quot;Caches · logs · dev leftovers, fully previewable&quot;, with a Start Scan button below and the Clean, Apps, Optimize, Analyze, Status navigation above"
+               width="2160" height="1440" fetchpriority="high" decoding="async">
+        </picture>
+        <figcaption>Where Clean starts. The product states the promise itself: fully previewable. Captured from a 0.1.0 local build; no installer has been released.</figcaption>
+      </figure>
+    </div>
+  </section>
+
+  <section id="proof">
+    <div class="wrap">
+      <div class="proof">
+        <div>
+          <h3>One place in the whole workspace can delete</h3>
+          <p><code>clippy.toml</code> bans every <code>std::fs::remove_*</code> outside <code>mole-core::sink</code> through <code>disallowed-methods</code>. The workspace contains exactly one <code>#[allow]</code>, inside the sink; new destructive behavior has to go through a <code>DeletionPlan</code>.</p>
+          <span class="src">Source: desktop/clippy.toml, crates/mole-core/src/sink.rs</span>
+        </div>
+        <div>
+          <h3>Preview and execution share one candidate set</h3>
+          <p><code>plan_*</code> commands scan and store the preview in a PlanStore; <code>execute_plan</code> accepts only <code>(plan_id, your selected subset)</code>. Nothing is re-scanned after confirmation, so the UI cannot execute anything it never previewed.</p>
+          <span class="src">Source: the two-phase IPC contract in src-tauri</span>
+        </div>
+        <div>
+          <h3>Deletions route to Trash, history matches the CLI</h3>
+          <p>Removals go through NSFileManager into the Trash. <code>operations.log</code> and <code>deletions.log</code> are byte-compatible with the Mole CLI and pinned by golden tests, so <code>mo history</code> reads both surfaces.</p>
+          <span class="src">Source: crates/mole-macos, the mole-core log writers</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="evidence">
+    <div class="wrap">
+      <p class="eyebrow">The interface</p>
+      <h2>The list comes before the deletion</h2>
+      <p class="lead section-intro">The Uninstall view lists every app on the machine and what it occupies; expand any row to see everything that app left behind. Whatever you tick is the entire set that moves to the Trash — nothing is re-scanned after you confirm.</p>
+
+      <figure class="shot" style="margin-top:32px">
+        <picture>
+          <source type="image/webp"
+                  srcset="/assets/media/apps-uninstall@1x.webp 1080w, /assets/media/apps-uninstall@2x.webp 2160w"
+                  sizes="(max-width: 900px) 100vw, 1080px">
+          <img src="/assets/media/apps-uninstall@1x.png"
+               alt="The Tidy Apps view listing 131 installed applications sorted by size — Xcode 4.25GB, IntelliJ IDEA 4.22GB, GoLand 3.61GB, MounRiver Studio 2 3.24GB, Android Studio 2.65GB and more — each row ending in an expand arrow and a checkbox"
+               width="2160" height="1440" loading="lazy" decoding="async">
+        </picture>
+        <figcaption>Uninstall: 131 installed apps sorted by size. The expand arrow on each row lists that app's App Support, caches, logs, preferences, and containers; the checkbox decides what actually runs. Captured from a 0.1.0 local build.</figcaption>
+      </figure>
+    </div>
+  </section>
+
+  <section id="workflows">
+    <div class="wrap">
+      <p class="eyebrow">Workflows</p>
+      <h2>Four jobs, each one able to stop at preview</h2>
+      <div class="flows" style="margin-top:32px">
+
+        <article class="flow">
+          <div>
+            <h3>Reclaim the space caches ate</h3>
+            <p>Before: you know <code>~/Library/Caches</code> is huge but will not delete it wholesale.</p>
+          </div>
+          <ol>
+            <li><b>You</b><span>Press Start Scan</span></li>
+            <li><b>Tidy</b><span>Lists every item and its size grouped by App caches, logs, developer tools, AI tools, browsers, design tools, messaging, and installers; running apps are called out with how much more closing them would free</span></li>
+            <li><b>Result</b><span>Selected items move to Trash, the view reports what was freed, and the run is written to operations.log</span></li>
+          </ol>
+        </article>
+
+        <article class="flow">
+          <div>
+            <h3>Actually finish an uninstall</h3>
+            <p>Before: drag to Trash, leave Application Support, containers, and LaunchAgents behind.</p>
+          </div>
+          <ol>
+            <li><b>You</b><span>Select an app under Apps</span></li>
+            <li><b>Tidy</b><span>Lists each leftover by category — App, App Support, Cache, Logs, Preferences, Launch Agents, HTTP Storage, WebKit, Saved State, Containers. System components and apps that require their official uninstaller are blocked with the reason shown</span></li>
+            <li><b>Result</b><span>Review item by item, then remove in one pass — still to Trash, still recoverable</span></li>
+          </ol>
+        </article>
+
+        <article class="flow">
+          <div>
+            <h3>See what actually needs updating</h3>
+            <p>Before: open each app and click Check for Updates.</p>
+          </div>
+          <ol>
+            <li><b>You</b><span>Open Apps → Updates</span></li>
+            <li><b>Tidy</b><span>Groups by Homebrew / App Store / Sparkle / Electron / Website. Homebrew is read-only here and only produces an exact Terminal command; other sources open the app's own updater or the precise App Store product page</span></li>
+            <li><b>Result</b><span>Sources that failed to probe are listed under Source diagnostics — a failed probe is never reported as "all up to date"</span></li>
+          </ol>
+          <figure class="shot flow-shot">
+            <picture>
+              <source type="image/webp"
+                      srcset="/assets/media/apps-updates@1x.webp 1080w, /assets/media/apps-updates@2x.webp 2160w"
+                      sizes="(max-width: 900px) 100vw, 1080px">
+              <img src="/assets/media/apps-updates@1x.png"
+                   alt="The Tidy Updates view: a collapsible &quot;Source diagnostics (9)&quot; panel on top, then 28 apps updatable inside Tidy — Apifox (Electron), BetterDisplay (Sparkle), Bitwarden (App Store) and others — each row showing current version to new version with Ignore and Update actions"
+                   width="2160" height="1440" loading="lazy" decoding="async">
+            </picture>
+            <figcaption>Updates: the source is labelled on every row, and sources that failed to probe are collected in the "Source diagnostics (9)" panel rather than counted as up to date. Captured from a 0.1.0 local build.</figcaption>
+          </figure>
+        </article>
+
+        <article class="flow">
+          <div>
+            <h3>Run a bounded maintenance pass</h3>
+            <p>Before: paste a command from the internet and hope you know what it changes.</p>
+          </div>
+          <ol>
+            <li><b>You</b><span>Press Optimize once</span></li>
+            <li><b>Tidy</b><span>Runs four task areas: launch speed, system databases, network and search, system maintenance. It installs no packages, resets no privacy permissions, and deletes no personal documents</span></li>
+            <li><b>Result</b><span>Each task reports done / skipped / failed, and a skip names its cause: unchanged, apps_running, probe_failed, requires_admin, skipped</span></li>
+          </ol>
+        </article>
+
+      </div>
+    </div>
+  </section>
+
+  <section id="capabilities">
+    <div class="wrap">
+      <p class="eyebrow">Five modules</p>
+      <h2>Five destinations, and they never move</h2>
+      <div class="caps" style="margin-top:32px">
+        <div class="cap">
+          <h3>Clean</h3>
+          <p>Reclaimable space grouped by origin.</p>
+          <ul>
+            <li>App caches, logs, developer tools</li>
+            <li>AI tools, browsers, design tools, messaging</li>
+            <li>Leftover dmg / pkg / xip installers</li>
+          </ul>
+          <span class="limit">System caches and logs need the privileged helper and currently refuse with requires_admin</span>
+        </div>
+        <div class="cap">
+          <h3>Apps</h3>
+          <p>Uninstall, Updates, and Login Items.</p>
+          <ul>
+            <li>Every leftover expanded by category</li>
+            <li>Updates grouped by source, with diagnostics</li>
+            <li>Login items and background services</li>
+          </ul>
+          <span class="limit">Homebrew is read-only in the desktop app; system login items are display-only</span>
+        </div>
+        <div class="cap">
+          <h3>Optimize</h3>
+          <p>One bounded maintenance pass.</p>
+          <ul>
+            <li>Launch speed: QuickLook, fonts, Launch Services</li>
+            <li>System databases: compaction, notification history</li>
+            <li>Network and search: DNS, route caches, Spotlight</li>
+          </ul>
+          <span class="limit">Installs nothing, resets no privacy permissions, deletes no personal documents</span>
+        </div>
+        <div class="cap">
+          <h3>Analyze</h3>
+          <p>A treemap of the disk or the current folder.</p>
+          <ul>
+            <li>Click a folder to drill down</li>
+            <li>Scans can be cancelled at any point</li>
+            <li>Move a selected directory straight to Trash</li>
+          </ul>
+          <span class="limit">A cancelled scan is labelled "results incomplete" rather than presented as a conclusion</span>
+        </div>
+        <div class="cap">
+          <h3>Status</h3>
+          <p>What this Mac is busy with right now.</p>
+          <ul>
+            <li>CPU, memory, disk, network, battery, GPU</li>
+            <li>Fan speeds (fanless models show passive cooling)</li>
+            <li>Process detail: threads, open files, disk I/O, listening ports</li>
+          </ul>
+          <span class="limit">Processes listening on public interfaces are flagged explicitly</span>
+        </div>
+        <div class="cap">
+          <h3>Settings</h3>
+          <p>Language, whitelist, history.</p>
+          <ul>
+            <li>English / 中文, following the system by default</li>
+            <li>Whitelist: paths never offered as candidates</li>
+            <li>Operation and deletion history</li>
+          </ul>
+          <span class="limit">Shared state lives in ~/.config/mole, history in ~/Library/Logs/mole</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="trust">
+    <div class="wrap">
+      <p class="eyebrow">Safety boundary</p>
+      <h2>Every destructive action goes down one funnel</h2>
+      <p class="lead section-intro">This is code structure, not a copywriting promise: each destructive feature builds a <code>DeletionPlan</code> and can only execute through the single sink. Whitelist checks, session markers, logging, and progress reporting therefore cannot diverge between features.</p>
+
+      <ul class="funnel">
+        <li><i>1</i><b>Scan</b><span>Enumerate candidates without modifying anything</span></li>
+        <li><i>2</i><b>Preview</b><span>Every path, category, and size, plus the reason anything is blocked</span></li>
+        <li><i>3</i><b>Confirm</b><span>Candidate count and byte total stay identical between preview and confirmation</span></li>
+        <li><i>4</i><b>Execute</b><span>Only your selected subset, with cooperative cancellation</span></li>
+        <li><i>5</i><b>Results</b><span>Completed, refused, and failed are separated; partial success is never rendered as total success</span></li>
+      </ul>
+
+      <div class="facts">
+        <div>
+          <h3>Data stays on the machine</h3>
+          <p>Shared state lives in <code>~/.config/mole</code>; operation and deletion history in <code>~/Library/Logs/mole</code>. The repository contains no analytics, telemetry, or crash-reporting code, and the window CSP is <code>default-src 'self'</code>.</p>
+        </div>
+        <div>
+          <h3>Network access only during update checks</h3>
+          <p>An update scan reaches Apple's bundle-ID lookup, an app's own Sparkle feed, and the GitHub release API, and reads local Homebrew output. A scan expires after 15 minutes, and update buttons carry only opaque backend-issued IDs.</p>
+        </div>
+        <div>
+          <h3>Protection lists are generated at compile time</h3>
+          <p><code>build.rs</code> parses <code>app_protection_data.sh</code> into Rust constants and fails the build on any unrecognized line. The list's <code>DATA_SHA256</code> is surfaced in the About row so it can be checked.</p>
+        </div>
+        <div>
+          <h3>When unsure, refuse</h3>
+          <p>The helper's in-helper re-validation and mutable-ancestor refusal already ship in the repository, but the SMAppService/XPC transport does not. System-scope actions therefore refuse with <code>requires_admin</code> rather than falling back to a shell elevation prompt.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="build">
+    <div class="wrap">
+      <p class="eyebrow">Getting it</p>
+      <h2>Open source, and for now you build it yourself</h2>
+      <p class="lead section-intro">The source lives in the <code>desktop/</code> directory of <a href="https://github.com/tw93/mole" target="_blank" rel="noopener noreferrer">github.com/tw93/mole</a>. You need Rust stable and Node ≥ 20.</p>
+      <pre><code>git clone https://github.com/tw93/mole.git
+cd mole/desktop
+
+# backend checks
+cargo test --workspace
+cargo clippy --workspace -- -D warnings
+
+# run the desktop app
+cd ui &amp;&amp; npm install &amp;&amp; npx tauri dev</code></pre>
+      <p style="margin-top:24px;font-size:14px">
+        Known caveat: the <code>mole-core</code> test <code>dangerous_paths_corpus_all_rejected</code> reads an adversarial corpus from the parent repository. In a checkout containing only <code>desktop/</code>, that one test fails, and that is expected.
+      </p>
+    </div>
+  </section>
+
+  <section id="faq">
+    <div class="wrap">
+      <p class="eyebrow">FAQ</p>
+      <h2>What people ask before trying it</h2>
+      <div class="faq" style="margin-top:28px">
+        <details>
+          <summary>Can I download an installer today?</summary>
+          <p>No. The repository is at 0.1.0 with <code>bundle.active</code> still <code>false</code>. No dmg has been released and there is no signing or notarization pipeline yet, so building from source is the only way to run it. This page changes when that changes.</p>
+        </details>
+        <details>
+          <summary>Can I get something back if I delete the wrong thing?</summary>
+          <p>User-scope deletions all go to the Trash through NSFileManager and can be restored from there. System-scope actions are not executed at all right now — they refuse with <code>requires_admin</code> — so there is no path that quietly removes a system file. Every run is written to <code>~/Library/Logs/mole</code>.</p>
+        </details>
+        <details>
+          <summary>Does it upload my files or usage data?</summary>
+          <p>The repository has no analytics, telemetry, or crash-reporting code, and the window CSP is limited to <code>default-src 'self'</code>. The only outbound requests happen when you deliberately check for software updates: Apple's bundle-ID lookup, an app's own Sparkle feed, and the GitHub release API.</p>
+        </details>
+        <details>
+          <summary>How does this relate to the Mole CLI?</summary>
+          <p>Tidy is Mole's desktop surface, and its safety layer is a Rust port of the CLI's. Public product copy uses Tidy; internal crate names, compatibility events, and shared logs keep the Mole name. <code>operations.log</code> and <code>deletions.log</code> stay byte-compatible, so <code>mo history</code> reads both.</p>
+        </details>
+        <details>
+          <summary>Why are some rows not actionable?</summary>
+          <p>The interface names the cause: <code>unchanged</code> (target missing or already healthy), <code>apps_running</code> (close the named app first), <code>probe_failed</code> (the step could not be proven safe), <code>requires_admin</code> (needs the unreleased privileged helper), <code>skipped</code> (whitelisted or blocked by another safety condition). Disabled controls keep their label and expose the reason instead of just dimming.</p>
+        </details>
+        <details>
+          <summary>Is there a Windows or Linux build?</summary>
+          <p>Not currently. The adapter layer is <code>mole-macos</code> and depends on NSFileManager Trash semantics and the macOS privileged-helper model; no other platform implementation exists yet.</p>
+        </details>
+      </div>
+    </div>
+  </section>
+
+  <section id="feedback">
+    <div class="wrap">
+      <p class="eyebrow">Feedback</p>
+      <h2>If a refusal reason does not make sense, open an issue</h2>
+      <div class="feedback">
+        <p>There is no installer yet, so there are no public user reviews — which is why this page carries no testimonials. The one feedback channel today is GitHub Issues. Paste the refusal code you saw (<code>probe_failed</code>, <code>requires_admin</code>, and so on) together with the matching lines from <code>~/Library/Logs/mole</code>; that locates a problem far faster than a description of the symptom.</p>
+        <p style="margin-bottom:0"><a class="btn btn-secondary" href="https://github.com/tw93/mole/issues" target="_blank" rel="noopener noreferrer">Open an issue on GitHub</a></p>
+      </div>
+    </div>
+  </section>
+
+  <section class="final">
+    <div class="wrap">
+      <h2>See it first, then decide what to remove</h2>
+      <p class="lead">Source, safety boundary, and log formats are all public and checkable.</p>
+      <div class="hero-actions">
+        <a class="btn btn-primary btn-lg" href="https://github.com/tw93/mole" target="_blank" rel="noopener noreferrer">View the source on GitHub</a>
+        <a class="btn btn-secondary btn-lg" href="/en/blog/">Read the blog</a>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<footer class="site-footer">
+  <div class="wrap">
+    <div class="footer-grid">
+      <div>
+        <a class="brand" href="/en/"><img src="/assets/tidy-logo.png" alt="" width="26" height="26"><span>Tidy</span></a>
+        <p style="font-size:13px;margin-top:12px">Mole's open-source macOS desktop app.<br>Version 0.1.0 · no installer released yet.</p>
+      </div>
+      <div>
+        <h4>Product</h4>
+        <ul>
+          <li><a href="#capabilities">Features</a></li>
+          <li><a href="#trust">Safety boundary</a></li>
+          <li><a href="#build">Build it</a></li>
+          <li><a href="#faq">FAQ</a></li>
+        </ul>
+      </div>
+      <div>
+        <h4>Resources</h4>
+        <ul>
+          <li><a href="/en/blog/">Blog</a></li>
+          <li><a href="/en/blog/rss.xml">RSS</a></li>
+          <li><a href="https://github.com/tw93/mole" target="_blank" rel="noopener noreferrer">GitHub</a></li>
+          <li><a href="https://github.com/tw93/mole/issues" target="_blank" rel="noopener noreferrer">Issues</a></li>
+        </ul>
+      </div>
+      <div>
+        <h4>Legal</h4>
+        <ul>
+          <li><a href="/en/privacy/">Privacy</a></li>
+          <li><a href="/en/terms/">Terms</a></li>
+          <li><a href="/zh/">中文</a></li>
+        </ul>
+      </div>
+    </div>
+    <p class="footer-note">This site sets no cookies and loads no analytics scripts. Every product statement here corresponds to released behavior in the repository.</p>
+  </div>
+</footer>
+
+</body>
+</html>

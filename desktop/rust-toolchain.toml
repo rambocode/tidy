@@ -1,0 +1,3 @@
+# Pin the channel for rustup users; Homebrew-installed cargo ignores this file.
+[toolchain]
+channel = "stable"

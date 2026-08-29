@@ -1,0 +1,223 @@
+# Tidy product-site specification.
+# Every claim on the site must map to an entry under `facts` or `evidence`.
+# Anything under `unknowns` stays out of public copy until it is verified.
+version: 2
+
+project:
+  name: Tidy
+  repository: https://github.com/tw93/mole
+  production_url: null            # UNKNOWN — site uses https://tidy.example.com as a placeholder
+  framework: static-html          # zero-dependency HTML + CSS; Node only for the Blog pipeline
+  primary_locale: zh
+  locales: [zh, en]
+  deployment_provider: null       # UNKNOWN
+
+scope:
+  mode: build
+  deploy_requested: false
+  reference_urls:
+    - https://mole.fit/zh/
+
+audience:
+  primary_users:
+    - macOS 重度使用者，磁盘空间长期紧张
+    - 开发者：Xcode / npm / Homebrew 缓存占用巨大
+    - 不信任"一键加速"类工具、想知道到底删了什么的人
+  situations:
+    - 磁盘剩余空间告警，不知道空间被谁吃掉
+    - 卸载应用后残留大量 Application Support / 容器 / LaunchAgent
+    - 想做系统维护但不敢照抄网上的命令
+  problems:
+    - 清理工具不告诉你具体删了哪些文件
+    - 预览与实际执行不一致
+    - 破坏性操作不可恢复
+
+positioning:
+  promised_result: 在删除之前看到完整候选清单，执行范围严格等于你勾选的那一份
+  product_category: macOS 清理与维护桌面应用
+  differentiators:
+    - 全 workspace 只有 mole-core::sink 允许删除文件（clippy disallowed-methods 强制）
+    - 两阶段执行：execute_plan 只接受 (plan_id, selection ⊆ plan)，确认后不重新扫描
+    - 删除走废纸篓；日志与 Mole CLI 逐字节兼容
+    - 保护名单编译期 fail-closed 生成，DATA_SHA256 可核对
+    - 拿不准就拒绝：系统范围操作以 requires_admin 拒绝，不退回 shell 提权
+  primary_cta:
+    label: 在 GitHub 上查看源码
+    destination: https://github.com/tw93/mole
+  secondary_cta:
+    label: 怎么自行构建
+    destination: /zh/#build
+
+facts:
+  released_capabilities:
+    - Clean：按 App 缓存 / 日志 / 开发工具 / AI 工具 / 浏览器 / 设计工具 / 通讯工具 / 安装包分组的可清理候选
+    - Apps：卸载（10 类残留分类）、更新（Homebrew / App Store / Sparkle / Electron / 官网）、登录项
+    - Optimize：启动速度、系统数据库、网络与搜索、系统维护四类有边界任务
+    - Analyze：整盘或当前目录树图，可下钻、可取消
+    - Status：CPU / 内存 / 磁盘 / 网络 / 电池 / GPU / 风扇 + 进程明细
+    - Settings：中英文切换、白名单、历史记录
+  limitations:
+    - 未发布预编译安装包（bundle.active = false，版本 0.1.0）
+    - 无代码签名与公证流程
+    - 特权助手 SMAppService/XPC 传输未发布：系统范围操作以 requires_admin 拒绝
+    - Homebrew 在桌面端只读，只输出终端命令提示
+    - 系统级登录项只读
+    - 仅 macOS；适配层为 mole-macos
+    - 本 checkout 缺父仓库 fuzz corpus，dangerous_paths_corpus_all_rejected 测试失败
+  platforms: [macOS]
+  minimum_versions: []            # UNKNOWN — 仓库未声明最低 macOS 版本
+  permissions:
+    - 用户选择范围内的文件系统访问
+    - 系统范围操作需要特权助手（未发布）
+  network_requirements:
+    - 仅检查软件更新时联网：Apple bundle ID 查询、Sparkle feed、GitHub release API
+  account_requirements: []
+  free_offer: 开源，自行构建
+  paid_offer: null
+  price: null
+  billing_model: null
+  refund_terms: null
+  privacy_rules:
+    - 共享状态 ~/.config/mole
+    - 操作与删除历史 ~/Library/Logs/mole
+    - 仓库中无 analytics / telemetry / 崩溃上报代码
+    - 窗口 CSP：default-src 'self'
+  failure_behavior:
+    - 跳过原因：unchanged / apps_running / probe_failed / requires_admin / skipped
+    - 探测失败的更新来源不会被计入"全部已是最新"
+    - 取消的扫描标注"结果不完整"
+    - 部分成功不渲染为全部成功
+
+evidence:
+  product_screens:
+    - 清理页起始态（真实截图，0.1.0 本地构建）— assets/media/clean-scan
+    - 软件页卸载列表，131 个应用按体积排序（真实截图）— assets/media/apps-uninstall
+    - 软件页更新列表，含来源标注与「来源诊断 (9)」（真实截图）— assets/media/apps-updates
+    - 缺口：清理页的预览/确认态尚无截图，而它是「执行范围 = 你勾选的那一份」这条主张最直接的证据
+  reproducible_workflows:
+    - 清理缓存、卸载应用、检查更新、系统优化四条端到端流程
+  release_notes: []               # UNKNOWN — 尚无 release
+  sourced_testimonials: []        # 无：尚未发布，没有公开评价
+  verified_metrics: []            # 无：不使用未经验证的数字
+
+prohibited_claims:
+  - 任何下载量、评分、用户数
+  - 客户 logo 或推荐语
+  - "可释放 X GB" 之类未测量的具体数字
+  - 具体开源许可证名称（本 checkout 无 LICENSE，以父仓库为准）
+  - 退款、订阅、价格
+  - 路线图上的功能当作已发布能力
+
+unknowns:
+  - 正式域名与托管服务商
+  - 最低 macOS 版本
+  - 发布时间与签名/公证方案
+  - 许可证名称
+
+information_architecture:
+  homepage_sections:
+    [header, hero, proof, evidence, workflows, capabilities, trust, build, faq, user_feedback, final_cta, footer]
+  supporting_pages: [blog, privacy, terms]
+
+visual_direction:
+  motif: 漏斗（扫描 → 预览 → 确认 → 执行 → 结果），与产品核心动作同构
+  typography: SF Pro Text / PingFang SC；等宽用 SF Mono（路径、字节、日志）
+  palette: 石墨底 #152127 + 单一强调色 Flow teal #53D6D7，语义色仅用于成功/警告/失败
+  motion_purpose: 仅用于状态反馈；prefers-reduced-motion 下全部关闭
+  # 媒体契约 —— 见 skill 的 references/product-media.md
+  media_evidence_rung: screenshot         # 真实截图（0.1.0 本地构建），已替换掉原先的代码原生示意
+  product_media:
+    - surface: 首页 hero
+      file: assets/media/clean-scan
+      rung: screenshot
+      loading: eager                      # hero 视觉必须 eager + fetchpriority=high
+      caption: 清理页起点；产品自己写着「全程可预览」。注明取自 0.1.0 本地构建、未发布安装包
+    - surface: 首页产品证据区（dominant）
+      file: assets/media/apps-uninstall
+      rung: screenshot
+      loading: lazy
+      caption: 131 个应用按体积排序；展开箭头列出全部残留，勾选框决定执行范围
+    - surface: 首页「看清哪些软件该更新」工作流
+      file: assets/media/apps-updates
+      rung: screenshot
+      loading: lazy
+      caption: 来源逐行标注；探测失败的来源收进「来源诊断 (9)」，不计入「全部已是最新」
+  screenshot_spec:
+    window_size: 2160x1440                # @2x，对应 tauri.conf.json 的 1080x720 默认窗口
+    theme: dark                           # 应用与站点统一石墨底 #152127
+    chrome: keep                          # 保留窗口栏与红黄绿灯，三张一致
+    demo_account: null                    # 当前截图只含应用名与版本号，无用户名/邮箱/路径；仍未准备专用演示账号
+    redaction: none                       # 无需遮挡
+    freshness: 截图对应 0.1.0；UI 变化后必须重拍，过期截图按事实错误处理
+  media_aspect_ratios: ["3:2"]            # 应用窗口；图标另计 1:1
+  media_formats: [webp, png]              # webp 1x/2x + png 1x 兜底；容器无 AVIF 编码器，待补
+  dark_mode_media: false                  # 站点单一深色主题
+  social_card:
+    size: 1080x720                        # 临时复用卸载页截图；专用 1200x630 卡片仍待制作
+    generated: false
+    font_subset: null
+
+content_system:
+  blog:
+    enabled: true
+    formats: [markdown, html]
+    comments: false
+    rss: true
+    rss_mode: summary
+    html_policy: controlled
+    content_dir: content/blog
+    build_output_dir: .blog-build
+    frontmatter_schema: docs/blog-frontmatter.schema.json
+    article_route: "/{locale}/blog/{permalink}/"
+    index_route: "/{locale}/blog/"
+    rss_route: "/{locale}/blog/rss.xml"
+    categories: [space, apps, maintenance, safety]   # 稳定 slug，显示名按语言映射
+    default_author: { name: Tidy, url: https://github.com/tw93/mole }
+    reading_time: { cjk_chars_per_minute: 350, words_per_minute: 220 }
+    allowed_iframe_hosts: []                          # 完全禁止 iframe
+    code_highlight: none                              # 仅输出 language-* class
+    toc: auto
+    cta_blocks: [source, issues]
+    related_posts: auto
+    og_image: static                                  # 复用 tidy-app-icon.png
+    missing_translation: hide
+    permalink_lock_file: content/blog/_permalinks.lock.json
+    redirects_file: content/blog/_redirects.json
+  user_feedback:
+    enabled: true
+    location: homepage
+    provider: github-issues
+    moderation: 由仓库维护者处理
+    disabled_state: not_applicable                    # 外部渠道，无禁用态
+  testimonials:
+    source_required: true
+    author_permission_required: true
+  seo:
+    canonical: true
+    hreflang: true
+    x_default_locale: zh
+    open_graph: true
+    structured_data: true       # SoftwareApplication（首页）、Blog（列表）、BlogPosting（文章）
+    sitemap: true
+    robots: true
+
+analytics:
+  enabled: false
+  provider: null
+  public_id_environment_variable: null
+  consent_strategy: disabled
+  conversion_events: []
+  prohibited_payloads: [user_input, article_body, product_content, secrets]
+
+quality_gates:
+  checks: []
+  content_gate: node tools/validate-content.mjs
+  production_build: node tools/build-blog.mjs && node tools/render-site.mjs
+  required_browser_flows:
+    - homepage_to_primary_cta
+    - homepage_to_blog_article
+    - article_toc_and_cta
+    - article_locale_switch
+    - blog_has_no_comments
+    - mobile_layout
+  production_verification: false   # 尚未部署

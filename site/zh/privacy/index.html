@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="zh-Hans">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>隐私说明 — Tidy</title>
+<meta name="description" content="Tidy 网站与桌面应用的数据处理说明：本站不使用 Cookie 与分析脚本；应用的状态与历史保存在本机，仅在检查软件更新时联网。">
+<link rel="canonical" href="https://tidy.example.com/zh/privacy/">
+<link rel="alternate" hreflang="zh-Hans" href="https://tidy.example.com/zh/privacy/">
+<link rel="alternate" hreflang="en" href="https://tidy.example.com/en/privacy/">
+<link rel="alternate" hreflang="x-default" href="https://tidy.example.com/zh/privacy/">
+<link rel="icon" href="/assets/tidy-logo.png">
+<link rel="stylesheet" href="/assets/site.css">
+<meta name="robots" content="index,follow">
+</head>
+<body>
+<a class="skip" href="#main">跳到正文</a>
+<header class="site-header">
+  <div class="wrap">
+    <a class="brand" href="/zh/"><img src="/assets/tidy-logo.png" alt="Tidy logo" width="26" height="26"><span>Tidy</span></a>
+    <nav class="site-nav" aria-label="主导航">
+      <a href="/zh/#capabilities">功能</a>
+      <a href="/zh/#trust">安全</a>
+      <a href="/zh/blog/">Blog</a>
+      <span class="lang-switch"><a href="/zh/privacy/" aria-current="true">中</a>/<a href="/en/privacy/">EN</a></span>
+      <a class="btn btn-primary" href="https://github.com/tw93/mole" target="_blank" rel="noopener noreferrer">查看源码</a>
+    </nav>
+  </div>
+</header>
+
+<main id="main" class="wrap legal">
+  <h1>隐私说明</h1>
+  <p>最后更新：2026-08-17。本页描述的是仓库中当前已实现的行为，不是未来计划。</p>
+
+  <h2>本网站</h2>
+  <p>本站是一组静态页面，不设置任何 Cookie，不加载分析、埋点或第三方追踪脚本，也没有登录、表单或评论功能。页面上唯一的对外链接指向 GitHub。</p>
+  <p>静态托管服务商可能出于运维目的记录访问日志（IP、User-Agent、请求路径）。这部分数据由托管方处理，不在本项目掌握范围内；一旦确定托管方，本节会补上具体服务商名称。</p>
+
+  <h2>桌面应用</h2>
+  <p>Tidy 在你的 Mac 上本地运行。仓库中不存在分析、埋点或崩溃上报代码，应用窗口的内容安全策略被限定为 <code>default-src 'self'</code>。</p>
+
+  <h3>保存在本机的数据</h3>
+  <ul>
+    <li><code>~/.config/mole</code>：共享状态，包括语言偏好与白名单。</li>
+    <li><code>~/Library/Logs/mole</code>：操作历史 <code>operations.log</code> 与删除历史 <code>deletions.log</code>。两者格式与 Mole 命令行逐字节兼容。</li>
+  </ul>
+  <p>这些文件从不上传。删除它们即清除历史；应用会在下次操作时重新创建。</p>
+
+  <h3>什么时候会联网</h3>
+  <p>只有当你主动运行「检查软件更新」时，应用才会发出网络请求，目标限于：</p>
+  <ul>
+    <li>Apple 的 bundle ID 查询接口，用于确认 Mac App Store 应用的商品页；</li>
+    <li>已安装应用自身声明的 Sparkle feed（HTTPS）；</li>
+    <li>Electron 应用 <code>app-update.yml</code> 中声明的提供方与 GitHub release API。</li>
+  </ul>
+  <p>Homebrew 部分读取的是本机 <code>brew</code> 命令的输出，不产生额外的网络请求。请求内容仅包含判断版本所需的应用标识与版本号，不包含文件路径、文件内容、剪贴板或个人信息。一次扫描结果 15 分钟后过期。</p>
+
+  <h3>不会发生的事</h3>
+  <ul>
+    <li>不会读取或上传你的文档内容。</li>
+    <li>不会把扫描出的路径、文件名或体积发送到任何服务器。</li>
+    <li>不会在后台静默执行删除：任何删除都需要你在预览界面上勾选并确认。</li>
+  </ul>
+
+  <h2>权限</h2>
+  <p>应用只在你选择的范围内访问文件系统。系统范围的操作需要尚未发布的特权助手，因此目前会直接以 <code>requires_admin</code> 拒绝，不会请求 shell 提权。</p>
+
+  <h2>变更与联系</h2>
+  <p>本说明随应用行为变更同步更新。有疑问或发现描述与代码不符，请在 <a href="https://github.com/tw93/mole/issues" target="_blank" rel="noopener noreferrer">GitHub Issues</a> 提出。</p>
+</main>
+
+<footer class="site-footer">
+  <div class="wrap">
+    <p class="footer-note" style="margin-top:0;border:0;padding-top:0">
+      <a href="/zh/">Tidy 首页</a> · <a href="/zh/terms/">使用条款</a> · <a href="/zh/blog/">Blog</a> · <a href="/en/privacy/">English</a>
+    </p>
+  </div>
+</footer>
+</body>
+</html>

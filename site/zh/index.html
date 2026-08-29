@@ -1,0 +1,425 @@
+<!doctype html>
+<html lang="zh-Hans">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tidy — 看得清楚，清得放心的 macOS 清理工具</title>
+<meta name="description" content="Tidy 是 Mole 的开源 macOS 桌面端。清理、卸载、优化、磁盘分析全部先给出完整候选清单，执行范围严格等于你勾选的那一份。">
+<link rel="canonical" href="https://tidy.example.com/zh/">
+<link rel="alternate" hreflang="zh-Hans" href="https://tidy.example.com/zh/">
+<link rel="alternate" hreflang="en" href="https://tidy.example.com/en/">
+<link rel="alternate" hreflang="x-default" href="https://tidy.example.com/zh/">
+<link rel="icon" href="/assets/tidy-logo.png">
+<link rel="apple-touch-icon" href="/assets/tidy-app-icon.png">
+<link rel="alternate" type="application/rss+xml" title="Tidy Blog" href="/zh/blog/rss.xml">
+<link rel="stylesheet" href="/assets/site.css">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Tidy">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:locale:alternate" content="en_US">
+<meta property="og:title" content="Tidy — 看得清楚，清得放心的 macOS 清理工具">
+<meta property="og:description" content="清理、卸载、优化、磁盘分析全部先给出完整候选清单，执行范围严格等于你勾选的那一份。">
+<meta property="og:url" content="https://tidy.example.com/zh/">
+<meta property="og:image" content="https://tidy.example.com/assets/media/apps-uninstall@1x.png">
+<meta property="og:image:width" content="1080">
+<meta property="og:image:height" content="720">
+<meta property="og:image:alt" content="Tidy 卸载页：131 个应用按体积排序，每行可展开复核">
+<meta name="twitter:card" content="summary">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  "name": "Tidy",
+  "applicationCategory": "UtilitiesApplication",
+  "operatingSystem": "macOS",
+  "softwareVersion": "0.1.0",
+  "inLanguage": ["zh-Hans", "en"],
+  "isAccessibleForFree": true,
+  "url": "https://tidy.example.com/zh/",
+  "codeRepository": "https://github.com/tw93/mole",
+  "description": "Mole 的开源 macOS 桌面端：清理、卸载、优化、磁盘分析先预览后执行，执行范围严格等于用户勾选的候选集合。"
+}
+</script>
+</head>
+<body>
+<a class="skip" href="#main">跳到正文</a>
+
+<header class="site-header">
+  <div class="wrap">
+    <a class="brand" href="/zh/"><img src="/assets/tidy-logo.png" alt="Tidy logo" width="26" height="26"><span>Tidy</span></a>
+    <nav class="site-nav" aria-label="主导航">
+      <a href="#capabilities">功能</a>
+      <a href="#trust">安全</a>
+      <a href="#build" data-optional>构建</a>
+      <a href="#faq" data-optional>常见问题</a>
+      <a href="/zh/blog/">Blog</a>
+      <span class="lang-switch"><a href="/zh/" aria-current="true">中</a>/<a href="/en/">EN</a></span>
+      <a class="btn btn-primary" href="https://github.com/tw93/mole" target="_blank" rel="noopener noreferrer">查看源码</a>
+    </nav>
+  </div>
+</header>
+
+<main id="main">
+
+  <section class="hero">
+    <div class="wrap">
+      <p class="eyebrow">开源 · macOS · Rust + Tauri 2</p>
+      <h1>看得清楚，清得放心</h1>
+      <p class="lead">Tidy 是 Mole 的开源 macOS 桌面端。清理、卸载、优化、磁盘分析都先把完整候选清单摆在你面前；你勾了什么，它就只删什么——工程上做不到多删一个文件。</p>
+      <div class="hero-actions">
+        <a class="btn btn-primary btn-lg" href="https://github.com/tw93/mole" target="_blank" rel="noopener noreferrer">在 GitHub 上查看源码</a>
+        <a class="btn btn-secondary btn-lg" href="#build">怎么自行构建</a>
+      </div>
+      <p class="requirements">
+        <span>macOS</span><span>Rust stable + Node ≥ 20</span><span>中文 / English</span><span>版本 0.1.0</span>
+      </p>
+      <p class="notice">
+        <strong>开发中。</strong>仓库里 <code>bundle.active</code> 仍为 <code>false</code>，项目还没有发布过预编译安装包，也没有下载页。现在能做的是把仓库 clone 下来自行构建运行。这一段会随发布状态更新。
+      </p>
+
+      <figure class="shot shot-hero">
+        <picture>
+          <source type="image/webp"
+                  srcset="/assets/media/clean-scan@1x.webp 1080w, /assets/media/clean-scan@2x.webp 2160w"
+                  sizes="(max-width: 900px) 100vw, 1080px">
+          <img src="/assets/media/clean-scan@1x.png"
+               alt="Tidy 清理页的起始界面，中央写着「准备扫描可清理空间」，副标题为「缓存 · 日志 · 开发残留，全程可预览」，下方是「开始扫描」按钮；顶部导航依次为清理、软件、优化、分析、状态"
+               width="2160" height="1440" fetchpriority="high" decoding="async">
+        </picture>
+        <figcaption>清理页的起点。产品自己就把承诺写在这里：「全程可预览」。截图取自 0.1.0 本地构建，项目尚未发布安装包。</figcaption>
+      </figure>
+    </div>
+  </section>
+
+  <section id="proof">
+    <div class="wrap">
+      <div class="proof">
+        <div>
+          <h3>全工程只有一处能删除文件</h3>
+          <p><code>clippy.toml</code> 通过 <code>disallowed-methods</code> 禁用了 <code>mole-core::sink</code> 以外所有 <code>std::fs::remove_*</code>。整个 workspace 里只有 sink 里存在一处 <code>#[allow]</code>，新增删除行为必须走 <code>DeletionPlan</code>。</p>
+          <span class="src">来源：desktop/clippy.toml、crates/mole-core/src/sink.rs</span>
+        </div>
+        <div>
+          <h3>预览和执行是同一批候选</h3>
+          <p><code>plan_*</code> 命令扫描后把预览存进 PlanStore，<code>execute_plan</code> 只接受 <code>(plan_id, 你勾选的子集)</code>。确认之后不会重新扫描，界面没有办法执行未曾预览过的内容。</p>
+          <span class="src">来源：src-tauri 两阶段 IPC 契约</span>
+        </div>
+        <div>
+          <h3>删除走废纸篓，历史与 CLI 兼容</h3>
+          <p>删除通过 NSFileManager 移入废纸篓。<code>operations.log</code> 与 <code>deletions.log</code> 的写入格式由 golden test 钉住，与 Mole CLI 逐字节一致，<code>mo history</code> 能同时读到两边的记录。</p>
+          <span class="src">来源：crates/mole-macos、crates/mole-core 日志写入器</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="evidence">
+    <div class="wrap">
+      <p class="eyebrow">产品界面</p>
+      <h2>删之前，先把清单摆出来</h2>
+      <p class="lead section-intro">卸载页列出这台机器上的每一个应用与它占的空间；展开任意一行，就能看到这个应用留下的全部文件。你勾选的那一份，就是最终会被移入废纸篓的全部——确认之后不会重新扫描。</p>
+
+      <figure class="shot" style="margin-top:32px">
+        <picture>
+          <source type="image/webp"
+                  srcset="/assets/media/apps-uninstall@1x.webp 1080w, /assets/media/apps-uninstall@2x.webp 2160w"
+                  sizes="(max-width: 900px) 100vw, 1080px">
+          <img src="/assets/media/apps-uninstall@1x.png"
+               alt="Tidy 软件页的卸载列表，共 131 个应用按体积从大到小排序：Xcode 4.25GB、IntelliJ IDEA 4.22GB、GoLand 3.61GB、MounRiver Studio 2 3.24GB、Android Studio 2.65GB 等，每行右侧各有一个展开箭头和一个勾选框"
+               width="2160" height="1440" loading="lazy" decoding="async">
+        </picture>
+        <figcaption>卸载页：131 个已安装应用按体积排序。每行的展开箭头会列出这个应用的 App Support、缓存、日志、偏好设置、容器等全部残留；勾选框决定实际执行范围。截图取自 0.1.0 本地构建。</figcaption>
+      </figure>
+    </div>
+  </section>
+
+  <section id="workflows">
+    <div class="wrap">
+      <p class="eyebrow">典型流程</p>
+      <h2>四件事，每一件都能停在预览这一步</h2>
+      <div class="flows" style="margin-top:32px">
+
+        <article class="flow">
+          <div>
+            <h3>清出被缓存吃掉的空间</h3>
+            <p>以前：知道 <code>~/Library/Caches</code> 很大，但不敢整个删。</p>
+          </div>
+          <ol>
+            <li><b>你</b><span>点「开始扫描」</span></li>
+            <li><b>Tidy</b><span>按 App 缓存、日志、开发工具、AI 工具、浏览器、设计工具、通讯工具、安装包分组列出每一项与体积，正在运行的应用单独标出并说明关掉后还能再清多少</span></li>
+            <li><b>结果</b><span>勾选后移入废纸篓，界面给出本次释放的容量；记录同时写进 operations.log</span></li>
+          </ol>
+        </article>
+
+        <article class="flow">
+          <div>
+            <h3>把一个应用真正卸干净</h3>
+            <p>以前：拖进废纸篓，Application Support、容器、LaunchAgent 全留着。</p>
+          </div>
+          <ol>
+            <li><b>你</b><span>在「软件」里选中要卸载的应用</span></li>
+            <li><b>Tidy</b><span>按 App、App Support、缓存、日志、偏好设置、Launch Agents、HTTP 存储、WebKit、Saved State、容器分类列出每个残留文件；系统组件与「必须使用官方卸载器」的应用会被挡下并说明原因</span></li>
+            <li><b>结果</b><span>逐项复核后一次移除，仍然是废纸篓，可恢复</span></li>
+          </ol>
+        </article>
+
+        <article class="flow">
+          <div>
+            <h3>看清哪些软件该更新</h3>
+            <p>以前：逐个打开应用点「检查更新」。</p>
+          </div>
+          <ol>
+            <li><b>你</b><span>打开「软件 → 更新」</span></li>
+            <li><b>Tidy</b><span>按 Homebrew / App Store / Sparkle / Electron / 官网 分组。Homebrew 在桌面端只读，只给出可复制的终端命令；其它来源直接打开应用自己的更新器或准确的 App Store 商品页</span></li>
+            <li><b>结果</b><span>探测失败的来源单独列在「来源诊断」里——有失败探测时不会被写成「全部已是最新」</span></li>
+          </ol>
+          <figure class="shot flow-shot">
+            <picture>
+              <source type="image/webp"
+                      srcset="/assets/media/apps-updates@1x.webp 1080w, /assets/media/apps-updates@2x.webp 2160w"
+                      sizes="(max-width: 900px) 100vw, 1080px">
+              <img src="/assets/media/apps-updates@1x.png"
+                   alt="Tidy 软件页的更新列表：顶部是可展开的「来源诊断 (9)」，下方「可在 Tidy 内更新 28 个」依次列出 Apifox（Electron）、BetterDisplay（Sparkle）、Bitwarden（App Store）等，每行显示当前版本到新版本以及「忽略更新」与「更新」两个操作"
+                   width="2160" height="1440" loading="lazy" decoding="async">
+            </picture>
+            <figcaption>更新页：来源在每一行标出，探测失败的来源单独收进顶部的「来源诊断 (9)」，不会被算进「全部已是最新」。截图取自 0.1.0 本地构建。</figcaption>
+          </figure>
+        </article>
+
+        <article class="flow">
+          <div>
+            <h3>跑一轮有边界的系统维护</h3>
+            <p>以前：从网上抄一串不知道会改什么的命令。</p>
+          </div>
+          <ol>
+            <li><b>你</b><span>点一次「优化」</span></li>
+            <li><b>Tidy</b><span>执行启动速度、系统数据库、网络与搜索、系统维护四类任务；不安装软件包、不修改隐私权限、不删除个人文档</span></li>
+            <li><b>结果</b><span>每个任务给出完成 / 跳过 / 失败，跳过时写明原因：unchanged、apps_running、probe_failed、requires_admin、skipped</span></li>
+          </ol>
+        </article>
+
+      </div>
+    </div>
+  </section>
+
+  <section id="capabilities">
+    <div class="wrap">
+      <p class="eyebrow">五个模块</p>
+      <h2>导航上就这五项，位置不会变</h2>
+      <div class="caps" style="margin-top:32px">
+        <div class="cap">
+          <h3>清理</h3>
+          <p>按来源分组的可回收空间。</p>
+          <ul>
+            <li>App 缓存、日志、开发工具</li>
+            <li>AI 工具、浏览器、设计工具、通讯工具</li>
+            <li>残留的 dmg / pkg / xip 安装包</li>
+          </ul>
+          <span class="limit">系统级缓存与日志需要特权助手，当前以 requires_admin 拒绝</span>
+        </div>
+        <div class="cap">
+          <h3>软件</h3>
+          <p>卸载、更新、登录项三个子页。</p>
+          <ul>
+            <li>按类别展开每个残留文件</li>
+            <li>更新按来源分组，附来源诊断</li>
+            <li>登录项与后台服务清单</li>
+          </ul>
+          <span class="limit">Homebrew 在桌面端只读；系统级登录项只读</span>
+        </div>
+        <div class="cap">
+          <h3>优化</h3>
+          <p>一次有边界的维护任务集合。</p>
+          <ul>
+            <li>启动速度：QuickLook、字体、Launch Services</li>
+            <li>系统数据库：可压缩的数据库与通知历史</li>
+            <li>网络与搜索：DNS、路由缓存、Spotlight</li>
+          </ul>
+          <span class="limit">不安装软件包、不重置隐私权限、不删除个人文档</span>
+        </div>
+        <div class="cap">
+          <h3>分析</h3>
+          <p>整盘或当前目录的空间树图。</p>
+          <ul>
+            <li>点击文件夹逐层下钻</li>
+            <li>扫描可随时取消</li>
+            <li>可直接把选中的目录移入废纸篓</li>
+          </ul>
+          <span class="limit">取消的扫描会明确标注「结果不完整」，不会当成完整结论</span>
+        </div>
+        <div class="cap">
+          <h3>状态</h3>
+          <p>这台 Mac 现在在忙什么。</p>
+          <ul>
+            <li>CPU、内存、磁盘、网络、电池、GPU</li>
+            <li>风扇转速（无风扇机型显示为被动散热）</li>
+            <li>进程明细：线程、打开文件、磁盘 IO、监听端口</li>
+          </ul>
+          <span class="limit">监听公网接口的进程会被明确提示</span>
+        </div>
+        <div class="cap">
+          <h3>设置</h3>
+          <p>语言、白名单、历史记录。</p>
+          <ul>
+            <li>中文 / English，默认跟随系统</li>
+            <li>白名单：永远不被列为候选的路径</li>
+            <li>操作与删除历史</li>
+          </ul>
+          <span class="limit">共享状态位于 ~/.config/mole，历史位于 ~/Library/Logs/mole</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="trust">
+    <div class="wrap">
+      <p class="eyebrow">安全边界</p>
+      <h2>所有破坏性操作都走同一条漏斗</h2>
+      <p class="lead section-intro">这不是文案约定，而是代码结构：每个会删东西的功能都构造 <code>DeletionPlan</code>，最终只能经由唯一的 sink 执行。白名单检查、会话标记、日志、进度上报因此不可能在不同功能之间跑偏。</p>
+
+      <ul class="funnel">
+        <li><i>1</i><b>扫描</b><span>枚举候选，不改动任何文件</span></li>
+        <li><i>2</i><b>预览</b><span>逐项列出路径、类别、体积，以及被挡下的原因</span></li>
+        <li><i>3</i><b>确认</b><span>候选数量与字节数在预览和确认之间保持不变</span></li>
+        <li><i>4</i><b>执行</b><span>只接受你勾选的子集，中途可协作式取消</span></li>
+        <li><i>5</i><b>结果</b><span>完成、被拒绝、失败分开呈现；部分成功不会渲染成全部成功</span></li>
+      </ul>
+
+      <div class="facts">
+        <div>
+          <h3>数据留在本机</h3>
+          <p>共享状态在 <code>~/.config/mole</code>，操作与删除历史在 <code>~/Library/Logs/mole</code>。仓库里没有任何分析、埋点或崩溃上报代码。窗口的 CSP 是 <code>default-src 'self'</code>。</p>
+        </div>
+        <div>
+          <h3>只有检查更新时联网</h3>
+          <p>更新扫描会访问 Apple 的 bundle ID 查询接口、应用自己的 Sparkle feed、GitHub release API，并读取本机 Homebrew 的输出。一次扫描 15 分钟后过期，更新按钮只携带后端签发的不透明 ID。</p>
+        </div>
+        <div>
+          <h3>保护名单在编译期生成</h3>
+          <p><code>app_protection_data.sh</code> 由 <code>build.rs</code> 解析成 Rust 常量，出现任何无法识别的行会直接让构建失败（fail-closed）。名单的 <code>DATA_SHA256</code> 显示在「关于」一栏，可以核对。</p>
+        </div>
+        <div>
+          <h3>拿不准就拒绝</h3>
+          <p>特权助手的 in-helper 二次校验与「祖先目录可变则拒绝」逻辑已经在仓库里，但 SMAppService/XPC 传输尚未发布，因此系统范围的操作会直接以 <code>requires_admin</code> 拒绝，不会退回到 shell 提权。</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="build">
+    <div class="wrap">
+      <p class="eyebrow">获取方式</p>
+      <h2>开源，目前需要自行构建</h2>
+      <p class="lead section-intro">源码在 <a href="https://github.com/tw93/mole" target="_blank" rel="noopener noreferrer">github.com/tw93/mole</a> 的 <code>desktop/</code> 目录。需要 Rust stable 与 Node ≥ 20。</p>
+      <pre><code>git clone https://github.com/tw93/mole.git
+cd mole/desktop
+
+# 后端测试
+cargo test --workspace
+cargo clippy --workspace -- -D warnings
+
+# 运行桌面应用
+cd ui &amp;&amp; npm install &amp;&amp; npx tauri dev</code></pre>
+      <p style="margin-top:24px;font-size:14px">
+        已知情况：<code>mole-core</code> 的 <code>dangerous_paths_corpus_all_rejected</code> 测试依赖父仓库的对抗性用例文件；在只包含 <code>desktop/</code> 的检出里这一个测试会失败，属于预期。
+      </p>
+    </div>
+  </section>
+
+  <section id="faq">
+    <div class="wrap">
+      <p class="eyebrow">常见问题</p>
+      <h2>购买与上手之前会问的</h2>
+      <div class="faq" style="margin-top:28px">
+        <details>
+          <summary>现在能直接下载安装包吗？</summary>
+          <p>不能。仓库当前版本是 0.1.0，<code>tauri.conf.json</code> 里 <code>bundle.active</code> 仍为 <code>false</code>，没有发布过 dmg，也没有签名与公证流程。要用只能自行构建。发布之后这一页会更新。</p>
+        </details>
+        <details>
+          <summary>删错了能找回来吗？</summary>
+          <p>用户范围的删除全部通过 NSFileManager 移入废纸篓，可以从废纸篓恢复。系统范围的操作目前不会执行，而是以 <code>requires_admin</code> 拒绝，所以不存在「悄悄删掉系统文件」的路径。每次操作都会写入 <code>~/Library/Logs/mole</code>。</p>
+        </details>
+        <details>
+          <summary>它会上传我的文件或使用数据吗？</summary>
+          <p>仓库里没有分析、埋点或崩溃上报代码，窗口 CSP 限定为 <code>default-src 'self'</code>。唯一的对外请求发生在你主动检查软件更新时：Apple 的 bundle ID 查询接口、应用自己的 Sparkle feed、GitHub release API。</p>
+        </details>
+        <details>
+          <summary>和 Mole 命令行是什么关系？</summary>
+          <p>Tidy 是 Mole 的桌面端，安全层是 CLI 那一套逻辑的 Rust 移植。对外产品名用 Tidy，内部 crate 名、兼容事件和共享日志仍然叫 Mole。<code>operations.log</code> 与 <code>deletions.log</code> 逐字节兼容，<code>mo history</code> 能同时读到两边的记录。</p>
+        </details>
+        <details>
+          <summary>为什么有些项目点不动？</summary>
+          <p>界面会写明原因：<code>unchanged</code>（目标不存在或已经是健康状态）、<code>apps_running</code>（先关掉对应应用）、<code>probe_failed</code>（无法证明这一步是安全的）、<code>requires_admin</code>（需要尚未发布的特权助手）、<code>skipped</code>（在白名单里或被其它安全条件挡下）。被禁用的控件会保留标签并说明原因，而不是只把它变灰。</p>
+        </details>
+        <details>
+          <summary>支持 Windows 或 Linux 吗？</summary>
+          <p>目前不支持。适配层是 <code>mole-macos</code>，依赖 NSFileManager 废纸篓与 macOS 的特权助手模型，暂时没有其它平台的实现。</p>
+        </details>
+      </div>
+    </div>
+  </section>
+
+  <section id="feedback">
+    <div class="wrap">
+      <p class="eyebrow">反馈</p>
+      <h2>遇到拒绝原因看不懂的地方，直接开 issue</h2>
+      <div class="feedback">
+        <p>项目还没有发布安装包，也就还没有公开的用户评价，所以这里不会摆任何推荐语。现在唯一的反馈渠道是 GitHub Issues：贴上你看到的拒绝原因（<code>probe_failed</code>、<code>requires_admin</code> 等）和 <code>~/Library/Logs/mole</code> 里对应的那几行，比描述现象更容易定位。</p>
+        <p style="margin-bottom:0"><a class="btn btn-secondary" href="https://github.com/tw93/mole/issues" target="_blank" rel="noopener noreferrer">在 GitHub 提交问题</a></p>
+      </div>
+    </div>
+  </section>
+
+  <section class="final">
+    <div class="wrap">
+      <h2>先看清楚，再决定删什么</h2>
+      <p class="lead">源码、安全边界、日志格式全部公开可查。</p>
+      <div class="hero-actions">
+        <a class="btn btn-primary btn-lg" href="https://github.com/tw93/mole" target="_blank" rel="noopener noreferrer">在 GitHub 上查看源码</a>
+        <a class="btn btn-secondary btn-lg" href="/zh/blog/">读读 Blog</a>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<footer class="site-footer">
+  <div class="wrap">
+    <div class="footer-grid">
+      <div>
+        <a class="brand" href="/zh/"><img src="/assets/tidy-logo.png" alt="" width="26" height="26"><span>Tidy</span></a>
+        <p style="font-size:13px;margin-top:12px">Mole 的开源 macOS 桌面端。<br>版本 0.1.0 · 尚未发布安装包。</p>
+      </div>
+      <div>
+        <h4>产品</h4>
+        <ul>
+          <li><a href="#capabilities">功能</a></li>
+          <li><a href="#trust">安全边界</a></li>
+          <li><a href="#build">自行构建</a></li>
+          <li><a href="#faq">常见问题</a></li>
+        </ul>
+      </div>
+      <div>
+        <h4>资源</h4>
+        <ul>
+          <li><a href="/zh/blog/">Blog</a></li>
+          <li><a href="/zh/blog/rss.xml">RSS</a></li>
+          <li><a href="https://github.com/tw93/mole" target="_blank" rel="noopener noreferrer">GitHub</a></li>
+          <li><a href="https://github.com/tw93/mole/issues" target="_blank" rel="noopener noreferrer">提交问题</a></li>
+        </ul>
+      </div>
+      <div>
+        <h4>法律</h4>
+        <ul>
+          <li><a href="/zh/privacy/">隐私说明</a></li>
+          <li><a href="/zh/terms/">使用条款</a></li>
+          <li><a href="/en/">English</a></li>
+        </ul>
+      </div>
+    </div>
+    <p class="footer-note">本站不使用 Cookie，也不加载任何分析脚本。页面上的每一条产品说明都对应仓库中已发布的行为。</p>
+  </div>
+</footer>
+
+</body>
+</html>

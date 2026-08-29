@@ -1,0 +1,172 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://build-product-website/schemas/blog-frontmatter.schema.json",
+  "title": "Blog article frontmatter",
+  "description": "Machine-checkable contract for Blog article frontmatter. Rendering, RSS, sitemap, structured data, and locale routing all derive from it; article metadata is never hardcoded in components.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "title",
+    "description",
+    "lang",
+    "permalink",
+    "translationKey",
+    "category",
+    "publishedAt",
+    "draft"
+  ],
+  "properties": {
+    "title": {
+      "type": "string",
+      "minLength": 4,
+      "maxLength": 70,
+      "description": "Answer-oriented title. Keep it under about 60 characters (12-28 CJK characters); avoid company voice."
+    },
+    "description": {
+      "type": "string",
+      "minLength": 20,
+      "maxLength": 160,
+      "description": "One or two sentences of reader value, used verbatim as the meta description and RSS excerpt."
+    },
+    "lang": {
+      "type": "string",
+      "pattern": "^[a-z]{2}(-[A-Za-z0-9]{2,8})*$",
+      "description": "BCP 47 language tag; must be one of the locales declared in the site specification."
+    },
+    "permalink": {
+      "type": "string",
+      "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+      "maxLength": 80,
+      "description": "Stable lowercase path segment, shared by every locale version of the article. For a CJK title, write an English slug by hand; do not transliterate."
+    },
+    "translationKey": {
+      "type": "string",
+      "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+      "maxLength": 80,
+      "description": "Cross-locale grouping key. All locale versions of one article share it; hreflang and locale switching derive from it."
+    },
+    "category": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 40,
+      "description": "Stable topic; the value must come from the categories allowlist in blog.config.json."
+    },
+    "tags": {
+      "type": "array",
+      "maxItems": 6,
+      "items": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 24
+      },
+      "default": []
+    },
+    "publishedAt": {
+      "type": "string",
+      "format": "date",
+      "description": "YYYY-MM-DD. First publication date; do not change it after publishing."
+    },
+    "updatedAt": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "date",
+      "default": null,
+      "description": "Substantive revision date; must not be earlier than publishedAt. Do not bump it for typo fixes."
+    },
+    "readingMinutes": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "minimum": 1,
+      "default": null,
+      "description": "Leave empty. The build computes it separately for CJK characters and Latin words and fills it in."
+    },
+    "author": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "default": null,
+      "description": "Leave empty to fall back to the default author in blog.config.json."
+    },
+    "cover": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "default": null,
+      "description": "Relative path or absolute URL, used for both Open Graph and BlogPosting.image."
+    },
+    "coverAlt": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "default": null,
+      "description": "Required whenever cover is set; validation blocks the combination otherwise."
+    },
+    "featured": {
+      "type": "boolean",
+      "default": false
+    },
+    "draft": {
+      "type": "boolean",
+      "description": "When true, excluded from listings, RSS, sitemap, structured data, and the production build."
+    },
+    "noindex": {
+      "type": "boolean",
+      "default": false,
+      "description": "Still renders a page, but stays out of the sitemap and emits robots noindex."
+    },
+    "canonical": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "uri",
+      "default": null,
+      "description": "Points at the original source when syndicating; leave empty to use the site URL."
+    },
+    "toc": {
+      "type": "boolean",
+      "default": true,
+      "description": "Whether to render a table of contents. It is always generated from h2/h3, never hand-written."
+    },
+    "cta": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "default": null,
+      "description": "Key of the end-of-article conversion block, from ctaBlocks in blog.config.json; empty uses the default."
+    },
+    "series": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "default": null,
+      "description": "Series identifier used to link previous and next articles."
+    },
+    "seriesOrder": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "minimum": 1,
+      "default": null
+    },
+    "related": {
+      "type": "array",
+      "maxItems": 4,
+      "items": {
+        "type": "string"
+      },
+      "default": [],
+      "description": "Hand-picked related articles by translationKey; empty falls back to scoring on category and tags."
+    }
+  }
+}

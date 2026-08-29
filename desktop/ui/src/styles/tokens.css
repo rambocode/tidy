@@ -1,0 +1,78 @@
+/* Tidy design tokens. The graphite shell keeps destructive work calm and
+   legible; route themes make only restrained atmospheric shifts while the
+   Flow teal remains the single interactive accent. Keep these values aligned
+   with docs/BRAND_GUIDELINES.md. */
+:root {
+  --font-mono: "SF Mono", ui-monospace, Menlo, monospace;
+  --font-ui: -apple-system, "SF Pro Text", "PingFang SC", sans-serif;
+
+  /* Brand primitives. */
+  --brand-paper: #ffffff;
+  --brand-mist: #eaf8f7;
+  --brand-teal: #0cc2c7;
+  --brand-teal-bright: #53d6d7;
+  --brand-graphite: #1e262f;
+  --brand-graphite-raised: #27323d;
+
+  /* Semantic color. */
+  --fg: #f2f7f7;
+  --fg-dim: #aab8bc;
+  --fg-faint: #748389;
+  --ok: #55c790;
+  --warn: #d6a73b;
+  --danger: #e06056;
+  /* Selection control fill (checked checkbox), matching the reference UI. */
+  --check: #d9583e;
+
+  /* Geometry and rhythm. */
+  --radius-sm: 8px;
+  --radius: 12px;
+  --radius-lg: 18px;
+  --pad: 16px;
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+  --motion-fast: 140ms;
+  --motion-base: 220ms;
+  --ease-standard: cubic-bezier(0.2, 0.8, 0.2, 1);
+
+  /* neutral fallback theme */
+  --bg-top: #1a2650;
+  --bg-bottom: #121219;
+  --panel: rgba(255, 255, 255, 0.045);
+  --panel-solid: var(--brand-graphite-raised);
+  --border: rgba(255, 255, 255, 0.09);
+  --hover: rgba(255, 255, 255, 0.07);
+  --accent: var(--brand-teal-bright);
+}
+
+/* Per-tab atmospheres sampled from Mole.app (top tint → bottom base). The
+   accent stays teal everywhere; only the sky changes so each tab is
+   recognisable at a glance. */
+body[data-theme="clean"] {
+  --bg-top: #1a2650;
+  --bg-bottom: #121219;
+}
+
+body[data-theme="apps"] {
+  --bg-top: #33201f;
+  --bg-bottom: #1b191d;
+}
+
+body[data-theme="optimize"] {
+  --bg-top: #35301b;
+  --bg-bottom: #1c1b1f;
+}
+
+body[data-theme="analyze"] {
+  --bg-top: #402b1a;
+  --bg-bottom: #1d1b1f;
+}
+
+body[data-theme="status"] {
+  --bg-top: #3d361c;
+  --bg-bottom: #232226;
+}

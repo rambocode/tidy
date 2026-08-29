@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom" xmlns:dc="http://purl.org/dc/elements/1.1/">
+  <channel>
+    <title>/zh/blog/</title>
+    <link>https://tidy.example.com/zh/blog/</link>
+    <description>Blog (zh)</description>
+    <language>zh</language>
+    <atom:link href="https://tidy.example.com/zh/blog/rss.xml" rel="self" type="application/rss+xml"/>
+    <item>
+      <title>把 App 拖进废纸篓之后，硬盘上还剩下什么</title>
+      <link>https://tidy.example.com/zh/blog/what-remains-after-uninstall/</link>
+      <guid isPermaLink="true">https://tidy.example.com/zh/blog/what-remains-after-uninstall/</guid>
+      <pubDate>Fri, 14 Aug 2026 00:00:00 GMT</pubDate>
+      <category>apps</category>
+      <dc:creator>Tidy</dc:creator>
+      <description><![CDATA[macOS 的拖拽卸载只删掉 .app 本体。这篇列出十类常见残留、各自的位置，以及为什么有些应用必须用官方卸载器。]]></description>
+    </item>
+    <item>
+      <title>~/Library/Caches 能不能整个删掉</title>
+      <link>https://tidy.example.com/zh/blog/can-you-delete-library-caches/</link>
+      <guid isPermaLink="true">https://tidy.example.com/zh/blog/can-you-delete-library-caches/</guid>
+      <pubDate>Mon, 10 Aug 2026 00:00:00 GMT</pubDate>
+      <category>space</category>
+      <dc:creator>Tidy</dc:creator>
+      <description><![CDATA[可以，但不该。这篇说明这个目录里到底有什么、哪几类删了会有真实代价、正在运行的 App 为什么是例外，以及怎么安全地清。]]></description>
+    </item>
+  </channel>
+</rss>

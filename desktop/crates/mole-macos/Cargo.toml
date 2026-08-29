@@ -1,0 +1,13 @@
+# mole-macos: macOS adapters (Trash, privileged helper transport), all behind
+# the traits mole-core defines so every consumer stays test-mockable.
+[package]
+name = "mole-macos"
+version = "0.1.0"
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+mole-core = { path = "../mole-core" }
+trash = "5"
+libc = { workspace = true }

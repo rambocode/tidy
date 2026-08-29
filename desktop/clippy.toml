@@ -1,0 +1,8 @@
+# Rust-side equivalent of the shell `# SAFE:` gate: deletion primitives are
+# banned everywhere except the single funnel in mole-core::sink, which carries
+# the only #[allow(clippy::disallowed_methods)] annotations in the workspace.
+disallowed-methods = [
+    { path = "std::fs::remove_file", reason = "route deletions through mole_core::sink::delete" },
+    { path = "std::fs::remove_dir", reason = "route deletions through mole_core::sink::delete" },
+    { path = "std::fs::remove_dir_all", reason = "route deletions through mole_core::sink::delete" },
+]

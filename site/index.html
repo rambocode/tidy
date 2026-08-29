@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="zh-Hans">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tidy</title>
+<link rel="canonical" href="https://tidy.example.com/zh/">
+<link rel="alternate" hreflang="zh-Hans" href="https://tidy.example.com/zh/">
+<link rel="alternate" hreflang="en" href="https://tidy.example.com/en/">
+<link rel="alternate" hreflang="x-default" href="https://tidy.example.com/zh/">
+<link rel="icon" href="/assets/tidy-logo.png">
+<link rel="stylesheet" href="/assets/site.css">
+<meta http-equiv="refresh" content="0; url=/zh/">
+</head>
+<body>
+<main class="wrap legal">
+  <h1>Tidy</h1>
+  <p>选择语言 / Choose a language</p>
+  <p><a class="btn btn-primary" href="/zh/">中文</a> <a class="btn btn-secondary" href="/en/">English</a></p>
+</main>
+<script>
+  // Send visitors to the locale their browser prefers. The meta refresh above is the
+  // no-JavaScript fallback, and both links stay usable if neither runs.
+  (function () {
+    var target = (navigator.language || "zh").toLowerCase().indexOf("zh") === 0 ? "/zh/" : "/en/";
+    location.replace(target);
+  })();
+</script>
+</body>
+</html>
