@@ -1,0 +1,53 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="660" height="400" viewBox="0 0 660 400">
+  <!-- DMG install-window background. The canvas is the Finder window's CONTENT
+       area: the configured window is 660x420 and macOS spends ~28px on the
+       title bar, so the bottom ~8px here is plain wash that gets cropped.
+       Keep every element above y=340.
+
+       Icon geometry this art is built around (must match tauri.conf.json):
+       128px icons centred at (165,196) and (495,196), i.e. occupying
+       x 101-229 and x 431-559. Nothing may be drawn inside those squares. -->
+  <defs>
+    <linearGradient id="wash" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%"   stop-color="#ffffff"/>
+      <stop offset="55%"  stop-color="#f5fbfc"/>
+      <stop offset="100%" stop-color="#e6f3f5"/>
+    </linearGradient>
+
+    <!-- Teal halo behind the drop target, so the eye travels left-to-right
+         and settles on the Applications folder. -->
+    <radialGradient id="halo" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0%"   stop-color="#22c3c9" stop-opacity="0.20"/>
+      <stop offset="72%"  stop-color="#22c3c9" stop-opacity="0"/>
+    </radialGradient>
+
+    <!-- userSpaceOnUse is required: the shaft is a perfectly horizontal line,
+         so its object bounding box has zero height and an objectBoundingBox
+         gradient collapses to nothing (the shaft renders invisible). -->
+    <linearGradient id="shaft" gradientUnits="userSpaceOnUse" x1="248" y1="196" x2="404" y2="196">
+      <stop offset="0%"   stop-color="#22c3c9" stop-opacity="0.18"/>
+      <stop offset="60%"  stop-color="#22c3c9" stop-opacity="0.90"/>
+      <stop offset="100%" stop-color="#12a6b5" stop-opacity="1"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="660" height="400" fill="url(#wash)"/>
+  <circle cx="495" cy="196" r="205" fill="url(#halo)"/>
+
+  <!-- Dashed landing ring around the Applications icon: reads as "drop here"
+       at r=86, safely outside the 128px icon square (half-diagonal ~90 is
+       corner-only, and the folder art is inset well inside its square). -->
+  <circle cx="495" cy="196" r="86" fill="none"
+          stroke="#22c3c9" stroke-opacity="0.30" stroke-width="1.6" stroke-dasharray="5 7"/>
+
+  <text x="330" y="64" text-anchor="middle" font-family="PingFang SC, Helvetica Neue, Arial"
+        font-size="30" font-weight="600" fill="#232b36" letter-spacing="0.4">安装 Tidy</text>
+  <text x="330" y="96" text-anchor="middle" font-family="PingFang SC, Helvetica Neue, Arial"
+        font-size="14" fill="#7a8896">把左边的 Tidy 拖到右边的 Applications 文件夹</text>
+
+  <path d="M248 196 H384" stroke="url(#shaft)" stroke-width="4" stroke-linecap="round"/>
+  <path d="M378 184 L404 196 L378 208 Z" fill="#12a6b5"/>
+
+  <text x="330" y="330" text-anchor="middle" font-family="PingFang SC, Helvetica Neue, Arial"
+        font-size="12" fill="#9aa7b3">首次打开若被系统拦下：在 Applications 里右键点按 Tidy，选择「打开」</text>
+</svg>

@@ -521,6 +521,14 @@ impl AppState {
             }
             let Some(update) = stored.items.get(id) else {
                 return Err("unknown_update_id");
+    /// Drop every cached icon so the next render re-extracts them from disk.
+    /// Paired with `apps.invalidate()` behind the Apps view's refresh button:
+    /// an icon that failed to extract is cached as a permanent miss, so without
+    /// this the miss would survive for the whole session.
+    pub fn icons_clear(&self) {
+        self.icons.lock().unwrap().clear();
+    }
+
             };
             selected.push(update.clone());
         }

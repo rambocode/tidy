@@ -47,7 +47,22 @@ Requires Rust (stable) and Node ≥ 20.
 make desktop-dev      # from the repo root: npm install + tauri dev
 make desktop-check    # fmt + clippy + cargo test + tsc --noEmit
 make desktop-build    # unsigned app build (no bundle)
+make desktop-bundle   # Tidy.app + DMG, icons from src-tauri/icons/icon.icns
 ```
+
+### Packaging assets
+
+Both are generated files — edit the source, re-run the script, commit the output.
+
+| Asset | Source | Regenerate with |
+| --- | --- | --- |
+| App icon (`src-tauri/icons/icon.icns` + PNGs) | `src-tauri/icons/icon.png` (1024²) | `src-tauri/icons/generate-app-icon.sh` |
+| DMG window background (`src-tauri/dmg/background.tiff`) | `src-tauri/dmg/background.svg` | `src-tauri/dmg/generate-background.sh` |
+
+The background is a multi-resolution TIFF (1x + 2x); a plain PNG would be
+scaled up on Retina and read as blurry. Its layout is pinned to
+`bundle.macOS.dmg` in `tauri.conf.json` — change the icon positions or window
+size there and the artwork has to move with them.
 
 Or directly:
 

@@ -15,6 +15,7 @@ import {
   newTaskId,
   planUninstall,
   previewUninstall,
+  refreshAppCache,
   revealInFinder,
   runAppUpdates,
   setAppUpdateIgnored,
@@ -46,6 +47,10 @@ interface Detail {
 const detailCache = new Map<string, Detail>();
 
 /** Selection state: app path → checked item PATHS (stable across re-plans). */
+/** 13px circular-arrow glyph for the Apps toolbar refresh link. */
+const REFRESH_SVG =
+  '<svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px"><path d="M14 8a6 6 0 1 1-1.76-4.24"/><path d="M14 2v4h-4"/></svg>';
+
 /** 16px chevron for the row expand button (rotated via .chev.open). */
 const CHEVRON_SVG =
   '<svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6l4 4 4-4"/></svg>';
@@ -117,7 +122,8 @@ async function renderUninstall(container: HTMLElement, body: HTMLElement): Promi
     extra.innerHTML = `
       <span class="muted">${apps.length} ${t("apps.installed")}</span>
       <a href="#" data-sort="name" style="text-decoration:none" class="${sortKey === "name" ? "" : "muted"}">${t("apps.sort.name")} ⇅</a>
-      <a href="#" data-sort="size" style="text-decoration:none" class="${sortKey === "size" ? "" : "muted"}">${t("apps.sort.size")} ⇅</a>`;
+      <a href="#" data-sort="size" style="text-decoration:none" class="${sortKey === "size" ? "" : "muted"}">${t("apps.sort.size")} ⇅</a>
+      <a href="#" data-refresh="1" style="text-decoration:none" class="muted" title="${t("apps.refresh.hint")}">${REFRESH_SVG} ${t("apps.refresh")}</a>`;
     extra.querySelectorAll<HTMLAnchorElement>("a[data-sort]").forEach((a) => {
       a.addEventListener("click", (ev) => {
         ev.preventDefault();
@@ -125,6 +131,27 @@ async function renderUninstall(container: HTMLElement, body: HTMLElement): Promi
         drawList();
       });
     });
+
+    // Manual refresh: clear both the backend caches and the client-side icon /
+    // detail maps, then re-enter renderUninstall so the list is rebuilt from a
+    // fresh scan. Clearing the client maps matters as much as the backend call
+    // — a cached null icon here would otherwise never be re-requested.
+    extra.querySelector<HTMLAnchorElement>("a[data-refresh]")?.addEventListener(
+      "click",
+      async (ev) => {
+        ev.preventDefault();
+        const link = ev.currentTarget as HTMLAnchorElement;
+        link.textContent = t("apps.refreshing");
+        link.style.pointerEvents = "none";
+        try {
+          await refreshAppCache();
+        } finally {
+          iconCache.clear();
+          detailCache.clear();
+          await renderUninstall(container, body);
+        }
+      },
+    );
 
     const sorted = [...apps].sort((a, b) =>
       sortKey === "size" ? b.size_kb - a.size_kb : a.name.localeCompare(b.name),

@@ -22,11 +22,41 @@
       }
     ],
     "security": {
-      "csp": "default-src 'self'; style-src 'self' 'unsafe-inline'"
+      "csp": "default-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:"
     }
   },
   "bundle": {
-    "active": false,
-    "targets": []
+    "active": true,
+    "targets": [
+      "app",
+      "dmg"
+    ],
+    "category": "Utility",
+    "copyright": "© 2025 Tidy",
+    "shortDescription": "macOS 清理与优化工具",
+    "icon": [
+      "icons/32x32.png",
+      "icons/128x128.png",
+      "icons/128x128@2x.png",
+      "icons/icon.icns"
+    ],
+    "macOS": {
+      "minimumSystemVersion": "11.0",
+      "dmg": {
+        "background": "dmg/background.tiff",
+        "windowSize": {
+          "width": 660,
+          "height": 420
+        },
+        "appPosition": {
+          "x": 165,
+          "y": 196
+        },
+        "applicationFolderPosition": {
+          "x": 495,
+          "y": 196
+        }
+      }
+    }
   }
 }

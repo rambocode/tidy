@@ -1,6 +1,6 @@
 # Tidy standalone Makefile — adapted from the original Mole repo's desktop-*
 # targets so the README's `make desktop-*` commands also work in this checkout.
-.PHONY: dev build check desktop-dev desktop-build desktop-check
+.PHONY: dev build bundle check desktop-dev desktop-build desktop-bundle desktop-check
 
 # The tauri CLI must run from desktop/ (it locates src-tauri/tauri.conf.json
 # by scanning subfolders of the invocation directory).
@@ -10,6 +10,12 @@ dev:
 build:
 	cd desktop && npm ci --prefix ui && ui/node_modules/.bin/tauri build --no-bundle
 
+# Full bundle: Tidy.app + DMG, both carrying icons/icon.icns. The extra
+# set-dmg-icon step themes the .dmg FILE; tauri only themes the mounted volume.
+bundle:
+	cd desktop && npm ci --prefix ui && ui/node_modules/.bin/tauri build
+	desktop/scripts/set-dmg-icon.sh desktop/target/release/bundle/dmg/*.dmg
+
 check:
 	cd desktop && cargo fmt --check && cargo clippy --workspace -- -D warnings && cargo test --workspace
 	cd desktop/ui && npm run check
@@ -18,3 +24,4 @@ check:
 desktop-dev: dev
 desktop-build: build
 desktop-check: check
+desktop-bundle: bundle

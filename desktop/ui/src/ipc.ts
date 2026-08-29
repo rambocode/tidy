@@ -122,6 +122,9 @@ export const runAppUpdates = (updateIds: string[], taskId: string) =>
 
 export const setAppUpdateIgnored = (updateId: string, ignored: boolean) =>
   invoke<void>("set_app_update_ignored", { updateId, ignored });
+/** Drop the backend app-inventory and icon caches before a manual re-scan. */
+export const refreshAppCache = () => invoke<void>("refresh_app_cache");
+
 
 export const listLoginItems = () => invoke<LoginItem[]>("list_login_items");
 

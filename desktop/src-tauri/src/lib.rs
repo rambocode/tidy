@@ -185,6 +185,7 @@ pub fn run() {
             commands::plan_purge,
             commands::plan_installer,
             commands::execute_plan,
+            commands::refresh_app_cache,
             commands::cancel_task,
             commands::reveal_in_finder,
             commands::list_optimize_tasks,

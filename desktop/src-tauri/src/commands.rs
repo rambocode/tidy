@@ -688,6 +688,18 @@ pub fn set_app_update_ignored(
     Ok(())
 }
 
+/// Drop the cached app inventory and every extracted icon.
+///
+/// Backs the Apps view's manual refresh: both caches are deliberately sticky
+/// (the inventory is even mirrored to disk for an instant cold start), so an
+/// app installed or re-signed while Tidy was running — or an icon that failed
+/// to extract once — stays stale until something clears them.
+#[tauri::command]
+pub fn refresh_app_cache(state: State<'_, AppState>) {
+    state.apps.invalidate();
+    state.icons_clear();
+}
+
 /// Login items (launch agents/daemons) with launchd enabled state.
 #[tauri::command]
 pub async fn list_login_items() -> Result<Vec<mole_ops::appmeta::LoginItem>, IpcError> {
