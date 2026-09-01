@@ -80,14 +80,15 @@ impl SizeCache {
 /// Scan one directory level. Cache hit: children are looked up (files
 /// stat'ed, dirs from the cache). Miss: one parallel walk of the whole
 /// subtree (`measure_tree`) fills the cache for this root AND every
-/// directory below it. The progress callback receives (dirs_visited, 0)
-/// during a walk — the total is unknown until the walk ends.
+/// directory below it. The progress callback receives (dirs_visited, the
+/// directory being read) — the total is unknown until the walk ends, so the
+/// live path is what tells the reader the scan is moving.
 pub fn scan_dir(
     root: &str,
     cancel: &CancelFlag,
     cache: &SizeCache,
     fresh: bool,
-    progress: impl Fn(usize, usize) + Sync,
+    progress: impl Fn(usize, &Path) + Sync,
 ) -> std::io::Result<DirListing> {
     let root_path = Path::new(root);
     if fresh {
@@ -102,8 +103,8 @@ pub fn scan_dir(
     // Miss on the root itself → measure the whole subtree once. The walk
     // is cancellable; a cancelled walk caches nothing.
     if cache.get(root_path).is_none() {
-        progress(0, 0);
-        match scanutil::measure_tree(root_path, cancel) {
+        progress(0, root_path);
+        match scanutil::measure_tree(root_path, cancel, &progress) {
             Ok(tree) => cache.insert(tree),
             Err(scanutil::Cancelled) => {
                 return Ok(DirListing {
@@ -117,10 +118,14 @@ pub fn scan_dir(
     }
 
     let mut entries = Vec::with_capacity(names.len());
-    for path in names {
+    let total = names.len();
+    for (idx, path) in names.into_iter().enumerate() {
         if cancel.load(Ordering::Relaxed) {
             break;
         }
+        // Sizing this level is fast on a cache hit and slow on a miss; report
+        // either way so the last stretch before the table appears is visible.
+        progress(total.saturating_sub(idx), &path);
         let Ok(meta) = std::fs::symlink_metadata(&path) else {
             continue;
         };
@@ -219,6 +224,35 @@ mod tests {
         // fresh=true drops the cache.
         scan_dir(sub.path.as_str(), &cancel, &cache, true, |_, _| {}).unwrap();
         assert!(cache.get(tmp.path()).is_none());
+    }
+
+    /// A scan must prove it is alive: the callback has to fire with a real
+    /// directory path, not the empty label the UI used to print.
+    #[test]
+    fn scan_reports_live_progress_with_paths() {
+        let tmp = tempfile::tempdir().unwrap();
+        std::fs::create_dir_all(tmp.path().join("a/b")).unwrap();
+        std::fs::write(tmp.path().join("a/b/f"), vec![0u8; 4096]).unwrap();
+
+        let seen: Mutex<Vec<String>> = Mutex::new(Vec::new());
+        let cancel: CancelFlag = Arc::new(AtomicBool::new(false));
+        let cache = SizeCache::default();
+        scan_dir(
+            tmp.path().to_str().unwrap(),
+            &cancel,
+            &cache,
+            false,
+            |_, path| seen.lock().unwrap().push(path.display().to_string()),
+        )
+        .unwrap();
+
+        let seen = seen.into_inner().unwrap();
+        assert!(!seen.is_empty(), "progress must fire at least once");
+        assert!(
+            seen.iter().all(|p| !p.is_empty()),
+            "every report names a directory"
+        );
+        assert!(seen.iter().any(|p| p.ends_with("/a")), "{seen:?}");
     }
 
     #[test]

@@ -21,13 +21,27 @@ extern "C" {
     fn pthread_set_qos_class_self_np(qos_class: u32, relative_priority: i32) -> i32;
 }
 
-/// Maximum number of recursive filesystem walks allowed in the whole
-/// process. A per-request cap is insufficient because independent Analyze,
-/// Clean, and Apps requests can otherwise multiply each other's CPU load.
-/// Four is safe because every walker runs at Utility QoS (efficiency cores,
-/// see `set_scan_thread_qos`); the >700% CPU incident was 8 default-QoS
-/// threads.
-const GLOBAL_SCAN_WORKERS: usize = 4;
+/// Share of the machine's logical cores a scan may occupy: 8/10. A per-request
+/// cap alone is insufficient because independent Analyze, Clean, and Apps
+/// requests can otherwise multiply each other's CPU load, so this budget is
+/// process-wide. Spending 80% is safe because every walker runs at Utility QoS
+/// (efficiency cores, see `set_scan_thread_qos`); the >700% CPU incident was
+/// default-QoS threads, not thread count.
+const SCAN_CPU_NUMERATOR: usize = 8;
+const SCAN_CPU_DENOMINATOR: usize = 10;
+
+/// Process-wide walk budget for this machine: 8/10 of the logical cores, at
+/// least two so a dual-core box still overlaps IO with work. Computed once —
+/// core count does not change while the process runs.
+pub fn global_scan_workers() -> usize {
+    static WORKERS: std::sync::OnceLock<usize> = std::sync::OnceLock::new();
+    *WORKERS.get_or_init(|| {
+        let cores = std::thread::available_parallelism()
+            .map(|n| n.get())
+            .unwrap_or(4);
+        (cores * SCAN_CPU_NUMERATOR / SCAN_CPU_DENOMINATOR).max(2)
+    })
+}
 
 /// Process-wide counting semaphore for recursive metadata walks. It uses only
 /// the standard library so the low-level scan boundary stays dependency-free.
@@ -82,7 +96,9 @@ impl Drop for ScanPermit<'_> {
     }
 }
 
-static SCAN_LIMITER: ScanLimiter = ScanLimiter::new(GLOBAL_SCAN_WORKERS);
+/// Lazily sized so the budget follows the machine it runs on.
+static SCAN_LIMITER: std::sync::LazyLock<ScanLimiter> =
+    std::sync::LazyLock::new(|| ScanLimiter::new(global_scan_workers()));
 
 /// Move the calling scan worker to the Utility QoS band so heavy tree walks
 /// land on efficiency cores and never compete with the UI thread. A full-speed
@@ -99,7 +115,7 @@ pub fn set_scan_thread_qos() {
 /// or below the process-wide budget, while `SCAN_LIMITER` also coordinates
 /// independent requests and product features.
 pub fn scan_workers(jobs: usize) -> usize {
-    jobs.clamp(1, GLOBAL_SCAN_WORKERS)
+    jobs.clamp(1, global_scan_workers())
 }
 
 /// Error returned when a scan was cancelled mid-flight; partial output must
@@ -339,11 +355,23 @@ pub struct TreeSizes {
     pub dirs: std::collections::HashMap<std::path::PathBuf, (u64, u64)>,
 }
 
+/// Minimum gap between two progress reports. The walk visits directories far
+/// faster than a UI can paint, so reporting every one would flood the IPC
+/// channel; a tenth of a second still reads as continuous motion.
+const PROGRESS_INTERVAL: Duration = Duration::from_millis(100);
+
 /// Parallel work-stealing directory walk: every directory is one job, so a
 /// single huge child (~/Library) no longer pins one thread while the others
 /// idle. Semantics match `dir_size_kb` exactly (symlinks counted as
 /// themselves, unreadable dirs skipped, the root counts as one item).
-pub fn measure_tree(root: &Path, cancel: &AtomicBool) -> Result<TreeSizes, Cancelled> {
+/// `progress` receives (directories visited so far, the directory just
+/// listed), throttled to `PROGRESS_INTERVAL`, so a long walk can prove it is
+/// still alive.
+pub fn measure_tree(
+    root: &Path,
+    cancel: &AtomicBool,
+    progress: impl Fn(usize, &Path) + Sync,
+) -> Result<TreeSizes, Cancelled> {
     let root_meta = fs::symlink_metadata(root).map_err(|_| Cancelled)?;
     if !root_meta.is_dir() {
         let mut dirs = std::collections::HashMap::new();
@@ -360,6 +388,12 @@ pub fn measure_tree(root: &Path, cancel: &AtomicBool) -> Result<TreeSizes, Cance
     let queue: Mutex<Vec<(std::path::PathBuf, usize, usize)>> =
         Mutex::new(vec![(root.to_path_buf(), 0, 0)]);
     let in_flight = std::sync::atomic::AtomicUsize::new(1);
+    // Progress bookkeeping: a visit counter plus the millisecond stamp of the
+    // last report. The stamp is claimed with compare_exchange so exactly one
+    // worker reports per interval, without holding a lock across the callback.
+    let visited = std::sync::atomic::AtomicUsize::new(0);
+    let started = std::time::Instant::now();
+    let last_report = AtomicU64::new(0);
 
     let workers = scan_workers(usize::MAX);
     std::thread::scope(|scope| {
@@ -409,6 +443,17 @@ pub fn measure_tree(root: &Path, cancel: &AtomicBool) -> Result<TreeSizes, Cance
                     in_flight.fetch_add(new_jobs.len(), Ordering::AcqRel);
                     queue.lock().unwrap().extend(new_jobs);
                     in_flight.fetch_sub(1, Ordering::AcqRel);
+
+                    let done = visited.fetch_add(1, Ordering::Relaxed) + 1;
+                    let now = started.elapsed().as_millis() as u64;
+                    let last = last_report.load(Ordering::Relaxed);
+                    if now.saturating_sub(last) >= PROGRESS_INTERVAL.as_millis() as u64
+                        && last_report
+                            .compare_exchange(last, now, Ordering::Relaxed, Ordering::Relaxed)
+                            .is_ok()
+                    {
+                        progress(done, &path);
+                    }
                 }
             });
         }
@@ -518,13 +563,24 @@ mod tests {
         (dir, root)
     }
 
-    /// Worker pool must stay small: parallel walks cost CPU per thread, and
-    /// the pre-fix 8-worker pool read as >700% CPU in the process table.
+    /// The pool tracks the machine: never more than 8/10 of the cores, never
+    /// more jobs than exist, and never zero. Walks stay at Utility QoS, which
+    /// is what keeps the budget off the performance cores.
     #[test]
-    fn scan_worker_pool_is_bounded() {
+    fn scan_worker_pool_follows_cpu_count() {
+        let cores = std::thread::available_parallelism()
+            .map(|n| n.get())
+            .unwrap_or(4);
+        let budget = global_scan_workers();
+        assert!(budget >= 2, "at least two workers everywhere");
+        assert!(
+            budget <= cores.max(2),
+            "budget {budget} must not exceed {cores} cores"
+        );
+        assert_eq!(budget, (cores * 8 / 10).max(2));
         assert_eq!(scan_workers(0), 1);
         assert_eq!(scan_workers(1), 1);
-        assert_eq!(scan_workers(100), 4);
+        assert_eq!(scan_workers(usize::MAX), budget);
     }
 
     /// Multiple product scans share one process-wide budget. Per-call worker
@@ -561,7 +617,7 @@ mod tests {
         let (_guard, root) = fixture();
         let occupied_cancel = AtomicBool::new(false);
         // Exhaust the whole process budget so the walk below must wait.
-        let _held: Vec<_> = (0..GLOBAL_SCAN_WORKERS)
+        let _held: Vec<_> = (0..global_scan_workers())
             .map(|_| SCAN_LIMITER.acquire(&occupied_cancel).unwrap())
             .collect();
         let waiting_cancel = Arc::new(AtomicBool::new(false));
@@ -643,7 +699,7 @@ mod tests {
         fs::write(deep.join("leaf"), vec![7u8; 5000]).unwrap();
 
         let cancel = AtomicBool::new(false);
-        let tree = measure_tree(&root, &cancel).unwrap();
+        let tree = measure_tree(&root, &cancel, |_, _| {}).unwrap();
         for dir in [
             root.clone(),
             root.join("a"),
@@ -656,7 +712,7 @@ mod tests {
             assert_eq!(tree.dirs.get(&dir), Some(&(kb, items)), "{}", dir.display());
         }
         assert!(!tree.dirs.contains_key(&deep), "folded dirs get no entry");
-        assert!(measure_tree(&root, &AtomicBool::new(true)).is_err());
+        assert!(measure_tree(&root, &AtomicBool::new(true), |_, _| {}).is_err());
     }
 
     #[test]

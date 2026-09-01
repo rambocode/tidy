@@ -174,6 +174,7 @@ const DICT: Record<Lang, Record<string, string>> = {
     "ana.rest": "项",
     "ana.cancelled": "扫描已取消,结果不完整",
     "ana.walking": "已遍历 {n} 个目录",
+    "ana.elapsed": "已用时 {t}",
     "ana.refresh": "重新扫描",
     "ana.cached": "缓存于 {time}",
 
@@ -564,6 +565,7 @@ const DICT: Record<Lang, Record<string, string>> = {
     "ana.rest": "items",
     "ana.cancelled": "Scan cancelled — results incomplete",
     "ana.walking": "{n} directories walked",
+    "ana.elapsed": "{t} elapsed",
     "ana.refresh": "Rescan",
     "ana.cached": "cached {time}",
 

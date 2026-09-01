@@ -101,10 +101,12 @@ pub async fn analyze_scan(
     let progress_cancel = cancel.clone();
     let cache = state.analyze_cache.clone();
     let result = tauri::async_runtime::spawn_blocking(move || {
-        mole_ops::analyze::scan_dir(&root, &cancel, &cache, fresh, |done, _total| {
+        mole_ops::analyze::scan_dir(&root, &cancel, &cache, fresh, |done, path| {
+            // The label carries the directory currently being read: on a big
+            // tree the count alone moves too slowly to look alive.
             if on_progress
                 .send(ScanEvent {
-                    label: String::new(),
+                    label: path.to_string_lossy().into_owned(),
                     count: done,
                 })
                 .is_err()

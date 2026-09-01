@@ -104,9 +104,22 @@ function fmtTime(ms: number): string {
 }
 
 /** The one in-flight scan, if any. It survives tab switches: the backend
- * keeps walking, progress accumulates in `label`, and the result lands in
- * the cache when done. Navigating to a different dir cancels it. */
-let pending: { root: string; taskId: string; label: string } | null = null;
+ * keeps walking, progress accumulates in `count`/`label`, and the result lands
+ * in the cache when done. Navigating to a different dir cancels it. */
+interface ScanState {
+  root: string;
+  taskId: string;
+  /** Directory the walker is reading right now (absolute path). */
+  label: string;
+  /** Directories visited so far; the total is unknown until the walk ends. */
+  count: number;
+  /** Epoch ms the scan started, for the elapsed clock. */
+  startedAt: number;
+}
+let pending: ScanState | null = null;
+
+/** Elapsed-time ticker for the scanning page; only one ever runs. */
+let tick: number | undefined;
 
 /** The container while this view is mounted; null lets a background scan
  * finish without touching another tab's DOM. */
@@ -132,8 +145,17 @@ export const analyze: View = {
   },
   unmount() {
     mounted = null;
+    stopTick();
   },
 };
+
+/** Stop the elapsed clock (the scan itself keeps running in the backend). */
+function stopTick(): void {
+  if (tick !== undefined) {
+    clearInterval(tick);
+    tick = undefined;
+  }
+}
 
 /**
  * Idle front page: the standing headline, the scope switcher and the disk
@@ -263,19 +285,27 @@ function startScan(root: string, fresh = false): void {
   currentRoot = root;
   // The user navigated away from the old target — stop paying for it.
   if (pending) void cancelTask(pending.taskId);
-  const state = { root, taskId: newTaskId(), label: "" };
+  const state: ScanState = {
+    root,
+    taskId: newTaskId(),
+    label: "",
+    count: 0,
+    startedAt: Date.now(),
+  };
   pending = state;
   if (mounted) renderScanning(mounted, state);
   analyzeScan(root, state.taskId, fresh, (e) => {
-    // Walk progress: directories visited so far (total unknown until done).
-    state.label = e.count > 0 ? t("ana.walking", { n: e.count }) : "";
+    // Walk progress: directories visited so far (total unknown until done)
+    // plus the directory being read right now.
+    state.count = e.count;
+    state.label = e.label;
     if (pending !== state) return;
-    const el = mounted?.querySelector<HTMLElement>("#scan-progress");
-    if (el) el.textContent = e.label;
+    paintProgress(state);
   })
     .then((listing) => {
       if (pending !== state) return; // superseded by a newer navigation
       pending = null;
+      stopTick();
       // Cancelled scans are incomplete — render once, never cache.
       if (!listing.truncated) cacheListing(root, listing);
       if (mounted) renderListing(mounted, listing);
@@ -283,26 +313,69 @@ function startScan(root: string, fresh = false): void {
     .catch((e: unknown) => {
       if (pending !== state) return;
       pending = null;
+      stopTick();
       if (mounted)
         mounted.innerHTML = `<div class="placeholder">${esc(String((e as Error)?.message ?? e))}</div>`;
     });
 }
 
-/** Scanning page with live progress; shown fresh or when returning mid-scan. */
-function renderScanning(
-  container: HTMLElement,
-  state: { root: string; taskId: string; label: string },
-): void {
+/** "0:07" / "3:41" elapsed clock for a scan that has been running a while. */
+function fmtElapsed(ms: number): string {
+  const total = Math.max(0, Math.floor(ms / 1000));
+  const m = Math.floor(total / 60);
+  return `${m}:${String(total % 60).padStart(2, "0")}`;
+}
+
+/** Last three components of a path, tilde-shortened — a full absolute path
+ * would wrap and push the page around on every event. */
+function shortPath(path: string): string {
+  const short = tildify(path);
+  const parts = short.split("/").filter(Boolean);
+  if (parts.length <= 3) return short;
+  return `…/${parts.slice(-3).join("/")}`;
+}
+
+/** Write the live counters into the scanning page, if it is on screen. */
+function paintProgress(state: ScanState): void {
+  if (!mounted) return;
+  const count = mounted.querySelector<HTMLElement>("#scan-count");
+  if (count) count.textContent = state.count > 0 ? t("ana.walking", { n: state.count }) : "";
+  const path = mounted.querySelector<HTMLElement>("#scan-path");
+  if (path) path.textContent = state.label ? shortPath(state.label) : "";
+  const elapsed = mounted.querySelector<HTMLElement>("#scan-elapsed");
+  if (elapsed)
+    elapsed.textContent = t("ana.elapsed", { t: fmtElapsed(Date.now() - state.startedAt) });
+}
+
+/** Scanning page with live progress; shown fresh or when returning mid-scan.
+ * Three signals of life: the directory count, the directory being read, and an
+ * elapsed clock that keeps ticking between backend events. */
+function renderScanning(container: HTMLElement, state: ScanState): void {
   container.innerHTML = `
     <div class="hero">
       <span class="kicker">${t("ana.scanning")}</span>
       <div class="big">${esc(tildify(state.root))}</div>
-      <p class="sub mono" id="scan-progress">${esc(state.label)}</p>
+      <div class="scan-lines">
+        <p class="sub mono" id="scan-count"></p>
+        <p class="sub mono scan-path" id="scan-path"></p>
+        <p class="sub mono scan-elapsed" id="scan-elapsed"></p>
+      </div>
       <button class="link-quiet" id="cancel">${t("flow.cancel")}</button>
     </div>`;
   container
     .querySelector("#cancel")!
     .addEventListener("click", () => void cancelTask(state.taskId));
+  paintProgress(state);
+  // The clock ticks locally so the page never looks frozen, even while the
+  // walker is stuck inside one huge directory between progress events.
+  stopTick();
+  tick = window.setInterval(() => {
+    if (pending !== state || !mounted) {
+      stopTick();
+      return;
+    }
+    paintProgress(state);
+  }, 1000);
 }
 
 /** Ranked ledger (or treemap) + child rail + whole-disk strip. */
