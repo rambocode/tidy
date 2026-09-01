@@ -1,10 +1,19 @@
-// Optimize view: azure particle hero with a one-click run button — no task
-// list. Tasks run SEQUENTIALLY; progress is a single ticker line pinned to
-// the hero's bottom edge so the particle animation stays unobstructed.
-// Admin tasks are skipped up front when the privileged helper is unavailable.
+// Optimize view (newspaper skin): a "routine maintenance" column. The idle
+// page is a typographic hero; running the check opens the numbered six-item
+// grid from the reference — pick the tasks for this issue, run them
+// SEQUENTIALLY, and watch a single monospaced ticker. Admin tasks are skipped
+// up front when the privileged helper is unavailable. The right rail prints
+// the maintenance log, which comes from this machine's own past runs.
 
 import { appMeta, listOptimizeTasks, runOptimize } from "../ipc";
-import { mountParticles } from "../particles";
+import { esc } from "../format";
+import {
+  daysSince,
+  lastMaintenance,
+  maintenanceDoneCount,
+  maintenanceLog,
+  recordMaintenance,
+} from "../ledger";
 import { t } from "../i18n";
 import type { View } from "../router";
 import type { OptimizeTask, TaskResult } from "../types";
@@ -12,6 +21,10 @@ import type { OptimizeTask, TaskResult } from "../types";
 /** Session cache: the task catalog is static and the helper state rarely
  * changes, so re-entering the tab renders instantly instead of re-querying. */
 let cached: { tasks: OptimizeTask[]; helper: boolean } | null = null;
+
+/** A task run within this window counts as "already done today" and is left
+ * unchecked, matching the reference's "✓ 昨天已运行" state. */
+const RECENT_MS = 24 * 3_600_000;
 
 export const optimize: View = {
   async mount(container) {
@@ -23,43 +36,126 @@ export const optimize: View = {
   },
 };
 
-/** Idle stage: particle field + run button only; no task list by default. */
+/** Idle page: the section's standing headline and the check CTA. */
 function renderIdle(container: HTMLElement, tasks: OptimizeTask[], helper: boolean): void {
   // Same gating rule the old checklist applied per checkbox: admin tasks are
   // excluded entirely when the privileged helper is unavailable.
   const runnable = tasks.filter((task) => !(task.requires_admin && !helper));
   const gatedCount = tasks.length - runnable.length;
+  const last = lastMaintenance();
 
   container.innerHTML = `
     <div class="hero">
-      <div class="big" style="font-size:24px">${t("opt.title")}</div>
-      <div class="sub">${t("opt.sub")}</div>
-      ${gatedCount > 0 ? `<div class="muted" style="margin-top:8px">${t("opt.helper")}</div>` : ""}
-      <button class="cta primary" id="run">${t("opt.run")}</button>
+      <span class="kicker">${t("opt.kicker")}</span>
+      <div class="big">${t("opt.title")}</div>
+      <p class="sub">${t("opt.sub")}</p>
+      ${gatedCount > 0 ? `<p class="sub muted">${t("opt.helper")}</p>` : ""}
+      <button class="frame-cta" id="run">${t("opt.check")} →</button>
+      <div class="statline">
+        <span>${t("opt.stat.last")} · ${last ? relative(last.at) : "—"}</span>
+        <span>${t("opt.stat.done")} · ${maintenanceDoneCount()}</span>
+        <span>${t("opt.stat.count", { n: runnable.length })}</span>
+      </div>
     </div>`;
-  mountParticles(container.querySelector<HTMLElement>(".hero")!, "idle", "azure");
 
   container.querySelector("#run")!.addEventListener("click", () => {
     if (runnable.length === 0) return;
-    void renderRunning(container, runnable);
+    renderChecklist(container, runnable);
   });
 }
 
-/** Running stage: sequential execution with a single bottom-pinned ticker line. */
+/** The six-item grid: numbered tasks in two columns plus the log rail. */
+function renderChecklist(container: HTMLElement, tasks: OptimizeTask[]): void {
+  // Anything not run in the last day is part of this issue by default; a task
+  // that already ran today is offered as an opt-in instead.
+  const chosen = new Set(
+    tasks.filter((task) => !ranRecently(task.id)).map((task) => task.id),
+  );
+
+  const cards = tasks
+    .map((task, idx) => {
+      const on = chosen.has(task.id);
+      const previous = lastMaintenance(task.id);
+      const recent = ranRecently(task.id);
+      const state = recent && !on
+        ? `<span class="t-state">✓ ${t("opt.ranAt", { when: relative(previous!.at) })}</span>`
+        : `<button class="link-quiet ${on ? "accent" : ""}" data-task="${esc(task.id)}">${
+            on ? `✓ ${t("opt.chosen")}` : t("opt.add")
+          }</button>`;
+      return `<div class="task ${on ? "" : "off"}" data-card="${esc(task.id)}">
+        <span class="no">${String(idx + 1).padStart(2, "0")}</span>
+        <div class="body">
+          <div class="t-title">${esc(task.title)}</div>
+          <div class="t-desc">${esc(task.description)}</div>
+          <div class="t-action">${state}</div>
+        </div>
+      </div>`;
+    })
+    .join("");
+
+  container.innerHTML = `
+    <div class="cols" style="padding-top:32px">
+      <div class="col-main">
+        <div class="led-head" style="margin-bottom:16px">
+          <span class="title" style="font-size:26px">${t("opt.listTitle", { n: tasks.length })}</span>
+          <button class="link-cta sm" id="go"></button>
+        </div>
+        <div class="task-grid">${cards}</div>
+      </div>
+      <div class="col-side">
+        <span class="sec-label">${t("opt.log")}</span>
+        <div class="ledger tight" id="log">${logRows()}</div>
+        <div class="rule-soft" style="padding-top:14px;font-size:12px;line-height:1.8;color:var(--ink-faint);text-wrap:pretty">
+          ${t("opt.note")}
+        </div>
+        <button class="link-quiet" id="back">${t("flow.cancel")}</button>
+      </div>
+    </div>`;
+
+  const go = container.querySelector<HTMLButtonElement>("#go")!;
+  const syncGo = () => {
+    go.textContent = `${t("opt.runSelected", { n: chosen.size })} →`;
+    go.disabled = chosen.size === 0;
+  };
+  syncGo();
+
+  container.querySelectorAll<HTMLButtonElement>("[data-task]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const id = btn.dataset.task!;
+      const on = !chosen.has(id);
+      if (on) chosen.add(id);
+      else chosen.delete(id);
+      btn.classList.toggle("accent", on);
+      btn.textContent = on ? `✓ ${t("opt.chosen")}` : t("opt.add");
+      container
+        .querySelector<HTMLElement>(`[data-card="${CSS.escape(id)}"]`)!
+        .classList.toggle("off", !on);
+      syncGo();
+    });
+  });
+
+  container.querySelector("#back")!.addEventListener("click", () => {
+    window.dispatchEvent(new HashChangeEvent("hashchange"));
+  });
+  go.addEventListener("click", () => {
+    void renderRunning(container, tasks.filter((task) => chosen.has(task.id)));
+  });
+}
+
+/** Running page: sequential execution behind a single wire-copy ticker. */
 async function renderRunning(container: HTMLElement, tasks: OptimizeTask[]): Promise<void> {
   container.innerHTML = `
     <div class="hero">
-      <div class="big" id="title" style="font-size:24px">${t("opt.running")}</div>
-      <div class="sub" id="sub"></div>
+      <span class="kicker" id="title">${t("opt.running")}</span>
+      <div class="big" id="head">${t("opt.listTitle", { n: tasks.length })}</div>
+      <p class="sub" id="sub"></p>
       <div class="opt-ticker" id="ticker"></div>
     </div>`;
   const hero = container.querySelector<HTMLElement>(".hero")!;
   const title = container.querySelector<HTMLElement>("#title")!;
+  const head = container.querySelector<HTMLElement>("#head")!;
   const sub = container.querySelector<HTMLElement>("#sub")!;
   const ticker = container.querySelector<HTMLElement>("#ticker")!;
-  // Continuous intake (no vortex ring): particles fall into the center and
-  // respawn at the rim for as long as the tasks run.
-  mountParticles(hero, "absorb", "azure");
 
   const results: TaskResult[] = [];
   for (let i = 0; i < tasks.length; i++) {
@@ -67,7 +163,9 @@ async function renderRunning(container: HTMLElement, tasks: OptimizeTask[]): Pro
     tick(ticker, `● ${task.title} · ${i + 1}/${tasks.length}`);
     // One task per IPC call keeps the ticker honest about what is running.
     const [result] = await runOptimize([task.id]);
-    results.push(result ?? { id: task.id, outcome: "failed", output: "" });
+    const settled = result ?? { id: task.id, outcome: "failed", output: "" };
+    results.push(settled);
+    recordMaintenance(task.id, task.title, settled.outcome);
   }
 
   // Compact summary: real execution errors are "failed"; every refusal or
@@ -82,19 +180,46 @@ async function renderRunning(container: HTMLElement, tasks: OptimizeTask[]): Pro
 
   ticker.remove();
   title.textContent = t("opt.done");
-  sub.textContent = parts.join(" · ");
-  // Swap the endless intake for the closing absorb-into-bloom; the running
-  // canvas must go first or both would keep animating stacked on top of
-  // each other.
-  hero.querySelector("canvas.particles")?.remove();
-  mountParticles(hero, "reclaimed", "azure");
+  head.textContent = parts.join(" · ");
+  sub.textContent = t("opt.doneSub");
   const back = document.createElement("button");
-  back.className = "cta";
-  back.textContent = t("clean.again");
+  back.className = "frame-cta";
+  back.textContent = `${t("clean.again")} →`;
   back.addEventListener("click", () => {
     window.dispatchEvent(new HashChangeEvent("hashchange"));
   });
   hero.append(back);
+}
+
+/** Right-rail log rows, newest first (empty ledger prints a dash). */
+function logRows(): string {
+  const rows = maintenanceLog().slice(-6).reverse();
+  if (rows.length === 0) return `<div class="led"><span class="muted">—</span></div>`;
+  return rows
+    .map((entry) => {
+      const d = new Date(entry.at);
+      return `<div class="led">
+        <span class="muted">${d.getMonth() + 1}/${d.getDate()}</span>
+        <span>${esc(entry.title)}</span>
+        <span class="dots"></span>
+        <span class="amt dim">${entry.outcome === "ok" || entry.outcome === "unchanged" ? "✓" : esc(entry.outcome)}</span>
+      </div>`;
+    })
+    .join("");
+}
+
+/** True when the task ran inside the recency window. */
+function ranRecently(id: string): boolean {
+  const previous = lastMaintenance(id);
+  return previous !== null && Date.now() - previous.at < RECENT_MS;
+}
+
+/** "今天" / "昨天" / "N 天前" for the log and statline. */
+function relative(at: number): string {
+  const days = daysSince(at);
+  if (days <= 0) return t("time.today");
+  if (days === 1) return t("time.yesterday");
+  return t("clean.stat.daysAgo", { d: days });
 }
 
 /** Swaps the ticker text and replays its slide-up entrance animation. */

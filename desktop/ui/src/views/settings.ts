@@ -92,7 +92,7 @@ export const settings: View = {
             <h1 style="font-size:22px;margin:0">${t("set.title")}</h1>
             <button class="chev" id="set-close">✕</button>
           </div>
-          <div class="pill" style="align-self:flex-start;margin-bottom:16px">
+          <div class="mast-tabs" style="margin-bottom:18px">
             ${tabs
               .map(
                 ([id, label]) =>

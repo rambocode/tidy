@@ -1,0 +1,505 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet data-dc-atomics><meta name="design_doc_mode" content="canvas">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#e7e3da;font-family:system-ui,-apple-system,"PingFang SC",sans-serif;color:#26241f}
+a{color:#a4432c}a:hover{color:#7e3020}
+</style></helmet>
+
+<div style="padding:44px 48px;display:flex;flex-direction:column;gap:14px">
+<div style="display:flex;align-items:baseline;gap:12px">
+<span style="font:600 10px 'IBM Plex Mono',monospace;padding:3px 8px;background:#26241f;color:#fff;border-radius:4px">3</span>
+<span style="font:600 15px system-ui">Tidy 高保真 — 报纸多栏账本风（基于 2c）</span>
+<span style="font:12px system-ui;color:#8a8578">纸白 · 衬线巨数 · 栏线 · 锈红强调</span>
+</div>
+<div style="display:flex;flex-wrap:wrap;gap:44px;align-items:flex-start">
+
+<!-- ================= 清理 · 初始 ================= -->
+<div style="display:flex;flex-direction:column;gap:8px" data-screen-label="清理 · 初始">
+<span style="font:600 12px system-ui;color:#8a8578">清理 · 初始（未扫描）</span>
+<div style="width:1240px;background:#faf8f3;border:1px solid #c9c3b4;border-radius:10px;box-shadow:0 18px 40px rgba(38,36,31,.14);overflow:hidden">
+<div style="display:flex;align-items:center;padding:14px 20px 12px;gap:8px">
+<span style="width:12px;height:12px;border-radius:50%;background:#ff5f57"></span><span style="width:12px;height:12px;border-radius:50%;background:#febc2e"></span><span style="width:12px;height:12px;border-radius:50%;background:#28c840"></span>
+<span style="font:700 20px 'Noto Serif SC',serif;letter-spacing:6px;margin-left:22px">TIDY</span>
+<div style="display:flex;gap:26px;margin-left:44px;font-size:13.5px;color:#6d675a">
+<span style="color:#a4432c;border-bottom:2px solid #a4432c;padding-bottom:3px;font-weight:600">清理</span><span>软件</span><span>优化</span><span>分析</span><span>状态</span>
+</div>
+<span style="margin-left:auto;font:11.5px 'IBM Plex Mono',monospace;color:#8a8578">周二 · 9 月 1 日 · 20:56</span>
+</div>
+<div style="margin:0 20px;border-top:2.5px solid #26241f"></div>
+<div style="margin:2px 20px 0;border-top:1px solid #26241f"></div>
+<div style="display:flex;flex-direction:column;align-items:center;text-align:center;padding:96px 48px 90px;gap:18px">
+<span style="font:500 12px 'IBM Plex Mono',monospace;letter-spacing:3px;color:#a4432c">第 47 期 · 智能清理</span>
+<div style="font:600 64px/1.15 'Noto Serif SC',serif;max-width:640px;text-wrap:balance">今天的磁盘，<br>值得一次彻底的整理。</div>
+<p style="margin:0;max-width:440px;font-size:14px;line-height:1.8;color:#6d675a;text-wrap:pretty">扫描系统缓存、日志、下载残留与废纸篓。只找可再生文件，不触碰文稿与应用数据。</p>
+<div style="margin-top:22px;border:2px solid #a4432c;padding:14px 52px"><span style="font:600 22px 'Noto Serif SC',serif;color:#a4432c">开始扫描 →</span></div>
+<div style="display:flex;gap:28px;margin-top:26px;font:11.5px 'IBM Plex Mono',monospace;color:#8a8578">
+<span>上次清理 · 14 天前</span><span>回收 · 21 GB</span><span>累计已省 · 312 GB</span>
+</div>
+</div>
+</div></div>
+
+<!-- ================= 清理 ================= -->
+<div style="display:flex;flex-direction:column;gap:8px" data-screen-label="清理">
+<span style="font:600 12px system-ui;color:#8a8578">清理</span>
+<div style="width:1240px;background:#faf8f3;border:1px solid #c9c3b4;border-radius:10px;box-shadow:0 18px 40px rgba(38,36,31,.14);overflow:hidden">
+<div style="display:flex;align-items:center;padding:14px 20px 12px;gap:8px">
+<span style="width:12px;height:12px;border-radius:50%;background:#ff5f57"></span><span style="width:12px;height:12px;border-radius:50%;background:#febc2e"></span><span style="width:12px;height:12px;border-radius:50%;background:#28c840"></span>
+<span style="font:700 20px 'Noto Serif SC',serif;letter-spacing:6px;margin-left:22px">TIDY</span>
+<div style="display:flex;gap:26px;margin-left:44px;font-size:13.5px;color:#6d675a">
+<span style="color:#a4432c;border-bottom:2px solid #a4432c;padding-bottom:3px;font-weight:600">清理</span><span>软件</span><span>优化</span><span>分析</span><span>状态</span>
+</div>
+<span style="margin-left:auto;font:11.5px 'IBM Plex Mono',monospace;color:#8a8578">周二 · 9 月 1 日 · 20:56</span>
+</div>
+<div style="margin:0 20px;border-top:2.5px solid #26241f"></div>
+<div style="margin:2px 20px 0;border-top:1px solid #26241f"></div>
+<div style="display:flex;padding:36px 48px 44px;gap:40px">
+<div style="width:330px;display:flex;flex-direction:column;gap:14px">
+<span style="font:500 11.5px 'IBM Plex Mono',monospace;letter-spacing:2px;color:#a4432c">本期可回收</span>
+<div style="font:600 104px/0.95 'Noto Serif SC',serif">23.4<span style="font-size:28px;margin-left:8px">GB</span></div>
+<p style="margin:6px 0 0;font-size:13.5px;line-height:1.7;color:#6d675a;text-wrap:pretty">四类可安全移除的文件。清理不触碰文稿与应用数据，所有项目先入废纸篓。</p>
+<span style="font:600 20px 'Noto Serif SC',serif;color:#a4432c;border-bottom:2px solid #a4432c;align-self:flex-start;padding-bottom:2px;margin-top:16px">开始清理 →</span>
+<span style="font-size:12.5px;color:#8a8578;text-decoration:underline;text-underline-offset:3px">先预览全部明细</span>
+</div>
+<div style="flex:1;border-left:1px solid #26241f;padding-left:40px;display:flex;flex-direction:column;gap:13px">
+<div style="display:flex;justify-content:space-between;align-items:baseline;padding-bottom:10px;border-bottom:1px solid #26241f">
+<span style="font:600 17px 'Noto Serif SC',serif">清理账目</span>
+<span style="font:11.5px 'IBM Plex Mono',monospace;color:#8a8578">全选 / 全不选</span>
+</div>
+<div style="display:flex;align-items:baseline;gap:12px;font-size:13.5px"><span style="width:14px;height:14px;background:#a4432c;border-radius:3px;position:relative;top:2px"></span><span>系统缓存</span><span style="font-size:11.5px;color:#8a8578">Library/Caches · 2,318 项</span><span style="flex:1;border-bottom:1px dotted #b5ae9e"></span><span style="font:13px 'IBM Plex Mono',monospace">8.2 GB</span></div>
+<div style="display:flex;align-items:baseline;gap:12px;font-size:13.5px"><span style="width:14px;height:14px;background:#a4432c;border-radius:3px;position:relative;top:2px"></span><span>日志文件</span><span style="font-size:11.5px;color:#8a8578">30 天以前 · 412 项</span><span style="flex:1;border-bottom:1px dotted #b5ae9e"></span><span style="font:13px 'IBM Plex Mono',monospace">1.1 GB</span></div>
+<div style="display:flex;align-items:baseline;gap:12px;font-size:13.5px"><span style="width:14px;height:14px;border:1.5px solid #b5ae9e;border-radius:3px;position:relative;top:2px"></span><span style="color:#6d675a">下载残留</span><span style="font-size:11.5px;color:#8a8578">安装包 · 磁盘映像</span><span style="flex:1;border-bottom:1px dotted #b5ae9e"></span><span style="font:13px 'IBM Plex Mono',monospace;color:#8a8578">6.7 GB</span></div>
+<div style="display:flex;align-items:baseline;gap:12px;font-size:13.5px"><span style="width:14px;height:14px;background:#a4432c;border-radius:3px;position:relative;top:2px"></span><span>废纸篓</span><span style="font-size:11.5px;color:#8a8578">最早 6 月 12 日</span><span style="flex:1;border-bottom:1px dotted #b5ae9e"></span><span style="font:13px 'IBM Plex Mono',monospace">7.4 GB</span></div>
+<div style="display:flex;align-items:baseline;gap:12px;font-size:13.5px"><span style="width:14px;height:14px;background:#a4432c;border-radius:3px;position:relative;top:2px"></span><span>Xcode 派生数据</span><span style="font-size:11.5px;color:#8a8578">DerivedData · 可再生</span><span style="flex:1;border-bottom:1px dotted #b5ae9e"></span><span style="font:13px 'IBM Plex Mono',monospace">4.0 GB</span></div>
+<div style="display:flex;align-items:baseline;gap:12px;font-size:13.5px"><span style="width:14px;height:14px;border:1.5px solid #b5ae9e;border-radius:3px;position:relative;top:2px"></span><span style="color:#6d675a">浏览器缓存</span><span style="font-size:11.5px;color:#8a8578">Chrome · Safari</span><span style="flex:1;border-bottom:1px dotted #b5ae9e"></span><span style="font:13px 'IBM Plex Mono',monospace;color:#8a8578">2.3 GB</span></div>
+<div style="border-top:1px solid #26241f;margin-top:6px;padding-top:12px;display:flex;align-items:baseline;gap:12px">
+<span style="font:600 14px 'Noto Serif SC',serif">小计 · 已选 4 项</span><span style="flex:1;border-bottom:1px dotted #b5ae9e"></span><span style="font:600 16px 'IBM Plex Mono',monospace;color:#a4432c">20.7 GB</span>
+</div>
+</div>
+<div style="width:250px;border-left:1px solid #d8d2c3;padding-left:36px;display:flex;flex-direction:column;gap:20px">
+<div><div style="font:500 11px 'IBM Plex Mono',monospace;letter-spacing:2px;color:#8a8578">上次清理</div><div style="font:600 24px 'Noto Serif SC',serif;margin-top:4px">14 天前</div></div>
+<div><div style="font:500 11px 'IBM Plex Mono',monospace;letter-spacing:2px;color:#8a8578">累计已省</div><div style="font:600 24px 'Noto Serif SC',serif;margin-top:4px">312 GB</div></div>
+<div style="border-top:1px solid #d8d2c3;padding-top:16px;font-size:12px;line-height:1.8;color:#8a8578;text-wrap:pretty">清理规则：只移除可再生文件；带锁项目需要单独确认；操作可在 30 天内从废纸篓恢复。</div>
+</div>
+</div></div></div>
+
+<!-- ================= 软件 · 更新 ================= -->
+<div style="display:flex;flex-direction:column;gap:8px" data-screen-label="软件 · 更新">
+<span style="font:600 12px system-ui;color:#8a8578">软件 · 更新</span>
+<div style="width:1240px;background:#faf8f3;border:1px solid #c9c3b4;border-radius:10px;box-shadow:0 18px 40px rgba(38,36,31,.14);overflow:hidden">
+<div style="display:flex;align-items:center;padding:14px 20px 12px;gap:8px">
+<span style="width:12px;height:12px;border-radius:50%;background:#ff5f57"></span><span style="width:12px;height:12px;border-radius:50%;background:#febc2e"></span><span style="width:12px;height:12px;border-radius:50%;background:#28c840"></span>
+<span style="font:700 20px 'Noto Serif SC',serif;letter-spacing:6px;margin-left:22px">TIDY</span>
+<div style="display:flex;gap:26px;margin-left:44px;font-size:13.5px;color:#6d675a">
+<span>清理</span><span style="color:#a4432c;border-bottom:2px solid #a4432c;padding-bottom:3px;font-weight:600">软件</span><span>优化</span><span>分析</span><span>状态</span>
+</div>
+<span style="margin-left:auto;font:11.5px 'IBM Plex Mono',monospace;color:#8a8578">↻ 正在后台检查更新…</span>
+</div>
+<div style="margin:0 20px;border-top:2.5px solid #26241f"></div>
+<div style="margin:2px 20px 0;border-top:1px solid #26241f"></div>
+<div style="display:flex;align-items:baseline;gap:28px;padding:18px 48px 0">
+<span style="font:600 22px 'Noto Serif SC',serif;color:#c4bcaa">卸载</span>
+<span style="font:600 22px 'Noto Serif SC',serif;color:#a4432c;border-bottom:2.5px solid #a4432c;padding-bottom:4px">更新</span>
+<span style="font:600 22px 'Noto Serif SC',serif;color:#c4bcaa">启动项</span>
+<span style="margin-left:auto;font:11.5px 'IBM Plex Mono',monospace;color:#8a8578">来源诊断 · 7 项 ▸</span>
+</div>
+<div style="display:flex;padding:22px 48px 44px;gap:40px">
+<div style="flex:1;display:flex;flex-direction:column;gap:13px">
+<div style="display:flex;justify-content:space-between;align-items:baseline;border-bottom:1px solid #26241f;padding-bottom:10px">
+<span style="font-size:14px;font-weight:600;white-space:nowrap">可在 Tidy 内更新 <span style="font:12px 'IBM Plex Mono',monospace;color:#a4432c;white-space:nowrap">26 个</span></span>
+<span style="font:11.5px 'IBM Plex Mono',monospace;color:#8a8578">全部更新 →</span>
+</div>
+<div style="display:flex;align-items:baseline;gap:12px;font-size:13.5px"><span style="font-weight:600">Apifox</span><span style="font:10.5px 'IBM Plex Mono',monospace;color:#8a8578;border:1px solid #d8d2c3;border-radius:3px;padding:1px 6px">Electron</span><span style="font:12px 'IBM Plex Mono',monospace;color:#8a8578;white-space:nowrap">2.8.22 → <span style="color:#26241f">2.8.44</span></span><span style="flex:1;border-bottom:1px dotted #b5ae9e"></span><span style="font-size:12px;color:#8a8578">忽略</span><span style="font:600 13px 'Noto Serif SC',serif;color:#a4432c;border-bottom:1.5px solid #a4432c">更新 →</span></div>
+<div style="display:flex;align-items:baseline;gap:12px;font-size:13.5px"><span style="font-weight:600">Bitwarden</span><span style="font:10.5px 'IBM Plex Mono',monospace;color:#8a8578;border:1px solid #d8d2c3;border-radius:3px;padding:1px 6px">App Store</span><span style="font:12px 'IBM Plex Mono',monospace;color:#8a8578;white-space:nowrap">2025.8.2 → <span style="color:#26241f">2026.8.0</span></span><span style="flex:1;border-bottom:1px dotted #b5ae9e"></span><span style="font-size:12px;color:#8a8578">忽略</span><span style="font:600 13px 'Noto Serif SC',serif;color:#a4432c;border-bottom:1.5px solid #a4432c">更新 →</span></div>
+<div style="display:flex;align-items:baseline;gap:12px;font-size:13.5px"><span style="font-weight:600">Cortex</span><span style="font:10.5px 'IBM Plex Mono',monospace;color:#8a8578;border:1px solid #d8d2c3;border-radius:3px;padding:1px 6px">Electron</span><span style="font:12px 'IBM Plex Mono',monospace;color:#8a8578;white-space:nowrap">1.0.0 → <span style="color:#26241f">1.0.1</span></span><span style="flex:1;border-bottom:1px dotted #b5ae9e"></span><span style="font-size:12px;color:#8a8578">忽略</span><span style="font:600 13px 'Noto Serif SC',serif;color:#a4432c;border-bottom:1.5px solid #a4432c">更新 →</span></div>
+<div style="display:flex;align-items:baseline;gap:12px;font-size:13.5px"><span style="font-weight:600">DaisyDisk</span><span style="font:10.5px 'IBM Plex Mono',monospace;color:#8a8578;border:1px solid #d8d2c3;border-radius:3px;padding:1px 6px">App Store</span><span style="font:12px 'IBM Plex Mono',monospace;color:#8a8578;white-space:nowrap">4.31 → <span style="color:#26241f">4.34.1</span></span><span style="flex:1;border-bottom:1px dotted #b5ae9e"></span><span style="font-size:12px;color:#8a8578">忽略</span><span style="font:600 13px 'Noto Serif SC',serif;color:#a4432c;border-bottom:1.5px solid #a4432c">更新 →</span></div>
+<div style="display:flex;align-items:baseline;gap:12px;font-size:13.5px"><span style="font-weight:600">DartShell Pro</span><span style="font:10.5px 'IBM Plex Mono',monospace;color:#8a8578;border:1px solid #d8d2c3;border-radius:3px;padding:1px 6px">App Store</span><span style="font:12px 'IBM Plex Mono',monospace;color:#8a8578;white-space:nowrap">5.6.66 → <span style="color:#26241f">5.6.74</span></span><span style="flex:1;border-bottom:1px dotted #b5ae9e"></span><span style="font-size:12px;color:#8a8578">忽略</span><span style="font:600 13px 'Noto Serif SC',serif;color:#a4432c;border-bottom:1.5px solid #a4432c">更新 →</span></div>
+<div style="display:flex;align-items:baseline;gap:12px;font-size:13.5px"><span style="font-weight:600">Easydict</span><span style="font:10.5px 'IBM Plex Mono',monospace;color:#8a8578;border:1px solid #d8d2c3;border-radius:3px;padding:1px 6px">Sparkle</span><span style="font:12px 'IBM Plex Mono',monospace;color:#8a8578;white-space:nowrap">2.20.0 → <span style="color:#26241f">2.22.0</span></span><span style="flex:1;border-bottom:1px dotted #b5ae9e"></span><span style="font-size:12px;color:#8a8578">忽略</span><span style="font:600 13px 'Noto Serif SC',serif;color:#a4432c;border-bottom:1.5px solid #a4432c">更新 →</span></div>
+<div style="display:flex;align-items:baseline;gap:12px;font-size:13.5px"><span style="font-weight:600">EuDic_Trans_en</span><span style="font:10.5px 'IBM Plex Mono',monospace;color:#8a8578;border:1px solid #d8d2c3;border-radius:3px;padding:1px 6px">App Store</span><span style="font:12px 'IBM Plex Mono',monospace;color:#8a8578;white-space:nowrap">26.5.0 → <span style="color:#26241f">26.8.0</span></span><span style="flex:1;border-bottom:1px dotted #b5ae9e"></span><span style="font-size:12px;color:#8a8578">忽略</span><span style="font:600 13px 'Noto Serif SC',serif;color:#a4432c;border-bottom:1.5px solid #a4432c">更新 →</span></div>
+<span style="font-size:12px;color:#8a8578;margin-top:2px">… 其余 19 个</span>
+</div>
+<div style="width:270px;border-left:1px solid #d8d2c3;padding-left:36px;display:flex;flex-direction:column;gap:14px">
+<span style="font:500 11px 'IBM Plex Mono',monospace;letter-spacing:2px;color:#8a8578">来源诊断 · 7 项</span>
+<p style="margin:0;font-size:12.5px;line-height:1.7;color:#6d675a;text-wrap:pretty">7 个应用无法确定更新来源（无 Sparkle 源、不在 App Store）。展开可逐个指定检查方式。</p>
+<span style="font-size:12.5px;color:#a4432c;text-decoration:underline;text-underline-offset:3px">展开诊断列表 ▸</span>
+<div style="border-top:1px solid #d8d2c3;padding-top:14px;display:flex;flex-direction:column;gap:9px;font-size:12.5px">
+<div style="display:flex"><span style="color:#8a8578">来源</span><span style="flex:1"></span><span style="color:#8a8578">个数</span></div>
+<div style="display:flex"><span>App Store</span><span style="flex:1;border-bottom:1px dotted #d8d2c3;margin:0 8px"></span><span style="font:12px 'IBM Plex Mono',monospace">14</span></div>
+<div style="display:flex"><span>Sparkle</span><span style="flex:1;border-bottom:1px dotted #d8d2c3;margin:0 8px"></span><span style="font:12px 'IBM Plex Mono',monospace">7</span></div>
+<div style="display:flex"><span>Electron</span><span style="flex:1;border-bottom:1px dotted #d8d2c3;margin:0 8px"></span><span style="font:12px 'IBM Plex Mono',monospace">5</span></div>
+</div>
+<div style="border-top:1px solid #d8d2c3;padding-top:12px;font-size:12px;color:#8a8578">已忽略 3 个更新 · 查看</div>
+</div>
+</div></div></div>
+
+<!-- ================= 软件 · 启动项 ================= -->
+<div style="display:flex;flex-direction:column;gap:8px" data-screen-label="软件 · 启动项">
+<span style="font:600 12px system-ui;color:#8a8578">软件 · 启动项</span>
+<div style="width:1240px;background:#faf8f3;border:1px solid #c9c3b4;border-radius:10px;box-shadow:0 18px 40px rgba(38,36,31,.14);overflow:hidden">
+<div style="display:flex;align-items:center;padding:14px 20px 12px;gap:8px">
+<span style="width:12px;height:12px;border-radius:50%;background:#ff5f57"></span><span style="width:12px;height:12px;border-radius:50%;background:#febc2e"></span><span style="width:12px;height:12px;border-radius:50%;background:#28c840"></span>
+<span style="font:700 20px 'Noto Serif SC',serif;letter-spacing:6px;margin-left:22px">TIDY</span>
+<div style="display:flex;gap:26px;margin-left:44px;font-size:13.5px;color:#6d675a">
+<span>清理</span><span style="color:#a4432c;border-bottom:2px solid #a4432c;padding-bottom:3px;font-weight:600">软件</span><span>优化</span><span>分析</span><span>状态</span>
+</div>
+<span style="margin-left:auto;font:11.5px 'IBM Plex Mono',monospace;color:#8a8578">开机自启会拖慢启动速度</span>
+</div>
+<div style="margin:0 20px;border-top:2.5px solid #26241f"></div>
+<div style="margin:2px 20px 0;border-top:1px solid #26241f"></div>
+<div style="display:flex;align-items:baseline;gap:28px;padding:18px 48px 0">
+<span style="font:600 22px 'Noto Serif SC',serif;color:#c4bcaa">卸载</span>
+<span style="font:600 22px 'Noto Serif SC',serif;color:#c4bcaa">更新</span>
+<span style="font:600 22px 'Noto Serif SC',serif;color:#a4432c;border-bottom:2.5px solid #a4432c;padding-bottom:4px">启动项</span>
+<span style="margin-left:auto;font:11.5px 'IBM Plex Mono',monospace;color:#8a8578">登录项与辅助程序 · 28 个</span>
+</div>
+<div style="display:flex;padding:22px 48px 44px;gap:40px">
+<div style="flex:1;display:flex;flex-direction:column;gap:13px">
+<div style="display:flex;justify-content:space-between;align-items:baseline;border-bottom:1px solid #26241f;padding-bottom:10px">
+<span style="font-size:14px;font-weight:600">登录项</span>
+<span style="font:11.5px 'IBM Plex Mono',monospace;color:#8a8578">开 = 随系统启动</span>
+</div>
+<div style="display:flex;align-items:center;gap:12px;font-size:13.5px"><span style="font-weight:600">Bitwarden</span><span style="font-size:11.5px;color:#8a8578">Login Helper · 内嵌在 App 中</span><span style="flex:1;border-bottom:1px dotted #b5ae9e"></span><span style="font-size:12px;color:#8a8578">位置</span><span style="width:34px;height:18px;background:#a4432c;border-radius:10px;position:relative"><span style="position:absolute;right:2px;top:2px;width:14px;height:14px;border-radius:50%;background:#faf8f3"></span></span></div>
+<div style="display:flex;align-items:center;gap:12px;font-size:13.5px"><span style="font-weight:600">Bob</span><span style="font-size:11.5px;color:#8a8578">LaunchAtLoginHelper · 内嵌在 App 中</span><span style="flex:1;border-bottom:1px dotted #b5ae9e"></span><span style="font-size:12px;color:#8a8578">位置</span><span style="width:34px;height:18px;border:1.5px solid #c4bcaa;border-radius:10px;position:relative;box-sizing:border-box"><span style="position:absolute;left:2px;top:1.5px;width:12px;height:12px;border-radius:50%;background:#c4bcaa"></span></span></div>
+<div style="display:flex;align-items:center;gap:12px;font-size:13.5px"><span style="font-weight:600">Endel</span><span style="font-size:11.5px;color:#8a8578">Login Helper · 内嵌在 App 中</span><span style="flex:1;border-bottom:1px dotted #b5ae9e"></span><span style="font-size:12px;color:#8a8578">位置</span><span style="width:34px;height:18px;border:1.5px solid #c4bcaa;border-radius:10px;position:relative;box-sizing:border-box"><span style="position:absolute;left:2px;top:1.5px;width:12px;height:12px;border-radius:50%;background:#c4bcaa"></span></span></div>
+<div style="display:flex;align-items:center;gap:12px;font-size:13.5px"><span style="font-weight:600">Eudic</span><span style="font-size:11.5px;color:#8a8578">LightPeek_en · 内嵌在 App 中</span><span style="flex:1;border-bottom:1px dotted #b5ae9e"></span><span style="font-size:12px;color:#8a8578">位置</span><span style="width:34px;height:18px;background:#a4432c;border-radius:10px;position:relative"><span style="position:absolute;right:2px;top:2px;width:14px;height:14px;border-radius:50%;background:#faf8f3"></span></span></div>
+<div style="display:flex;align-items:center;gap:12px;font-size:13.5px"><span style="font-weight:600">Foxmail</span><span style="font-size:11.5px;color:#8a8578">LaunchFoxmailHelper · 内嵌在 App 中</span><span style="flex:1;border-bottom:1px dotted #b5ae9e"></span><span style="font-size:12px;color:#8a8578">位置</span><span style="width:34px;height:18px;border:1.5px solid #c4bcaa;border-radius:10px;position:relative;box-sizing:border-box"><span style="position:absolute;left:2px;top:1.5px;width:12px;height:12px;border-radius:50%;background:#c4bcaa"></span></span></div>
+<div style="display:flex;justify-content:space-between;align-items:baseline;border-bottom:1px solid #26241f;padding-bottom:10px;margin-top:14px">
+<span style="font-size:14px;font-weight:600">辅助程序 <span style="font:12px 'IBM Plex Mono',monospace;color:#8a8578">仅供确认</span></span>
+</div>
+<div style="display:flex;align-items:center;gap:12px;font-size:13.5px"><span style="font-weight:600">ego lite</span><span style="font:11px 'IBM Plex Mono',monospace;color:#8a8578">com.citrolabs.ego</span><span style="flex:1;border-bottom:1px dotted #b5ae9e"></span><span style="font-size:12px;color:#8a8578">位置</span><span style="font:11px 'IBM Plex Mono',monospace;color:#c4bcaa">只读</span></div>
+<div style="display:flex;align-items:center;gap:12px;font-size:13.5px"><span style="font-weight:600">Google Chrome</span><span style="font:11px 'IBM Plex Mono',monospace;color:#8a8578">com.google.Chrome</span><span style="flex:1;border-bottom:1px dotted #b5ae9e"></span><span style="font-size:12px;color:#8a8578">位置</span><span style="font:11px 'IBM Plex Mono',monospace;color:#c4bcaa">只读</span></div>
+<span style="font-size:12px;color:#8a8578;margin-top:2px">… 其余 21 个</span>
+</div>
+<div style="width:270px;border-left:1px solid #d8d2c3;padding-left:36px;display:flex;flex-direction:column;gap:16px">
+<div><div style="font:500 11px 'IBM Plex Mono',monospace;letter-spacing:2px;color:#8a8578">随系统启动</div><div style="font:600 28px 'Noto Serif SC',serif;margin-top:4px">9 <span style="font-size:13px;color:#8a8578">/ 28</span></div></div>
+<p style="margin:0;font-size:12.5px;line-height:1.7;color:#6d675a;text-wrap:pretty">关闭登录项后应用不再随系统启动；内嵌在 App 中的辅助程序由其宿主管理，这里仅列出供确认。</p>
+<div style="border-top:1px solid #d8d2c3;padding-top:12px;font-size:12.5px;color:#a4432c;text-decoration:underline;text-underline-offset:3px">在系统设置中管理…</div>
+</div>
+</div></div></div>
+
+<!-- ================= 软件 · 卸载 ================= -->
+<div style="display:flex;flex-direction:column;gap:8px" data-screen-label="软件 · 卸载">
+<span style="font:600 12px system-ui;color:#8a8578">软件 · 卸载</span>
+<div style="width:1240px;background:#faf8f3;border:1px solid #c9c3b4;border-radius:10px;box-shadow:0 18px 40px rgba(38,36,31,.14);overflow:hidden">
+<div style="display:flex;align-items:center;padding:14px 20px 12px;gap:8px">
+<span style="width:12px;height:12px;border-radius:50%;background:#ff5f57"></span><span style="width:12px;height:12px;border-radius:50%;background:#febc2e"></span><span style="width:12px;height:12px;border-radius:50%;background:#28c840"></span>
+<span style="font:700 20px 'Noto Serif SC',serif;letter-spacing:6px;margin-left:22px">TIDY</span>
+<div style="display:flex;gap:26px;margin-left:44px;font-size:13.5px;color:#6d675a">
+<span>清理</span><span style="color:#a4432c;border-bottom:2px solid #a4432c;padding-bottom:3px;font-weight:600">软件</span><span>优化</span><span>分析</span><span>状态</span>
+</div>
+<span style="margin-left:auto;font:11.5px 'IBM Plex Mono',monospace;color:#8a8578">已安装 125 · 共 96.4 GB</span>
+</div>
+<div style="margin:0 20px;border-top:2.5px solid #26241f"></div>
+<div style="margin:2px 20px 0;border-top:1px solid #26241f"></div>
+<div style="display:flex;align-items:baseline;gap:28px;padding:18px 48px 0">
+<span style="font:600 22px 'Noto Serif SC',serif;color:#a4432c;border-bottom:2.5px solid #a4432c;padding-bottom:4px">卸载</span>
+<span style="font:600 22px 'Noto Serif SC',serif;color:#c4bcaa">更新</span>
+<span style="font:600 22px 'Noto Serif SC',serif;color:#c4bcaa">启动项</span>
+<span style="margin-left:auto;font:11.5px 'IBM Plex Mono',monospace;color:#8a8578">125 个应用 · 按大小 ↓ · 刷新</span>
+</div>
+<div style="display:flex;padding:22px 48px 26px;gap:40px">
+<div style="width:400px;display:flex;flex-direction:column;gap:12px">
+<div style="display:flex;align-items:baseline;gap:10px;border-bottom:1px solid #26241f;padding-bottom:10px">
+<span style="font:600 17px 'Noto Serif SC',serif">名录</span>
+<span style="font:11.5px 'IBM Plex Mono',monospace;color:#8a8578">名称 ⇅ · 大小 ⇅</span>
+<span style="margin-left:auto;font-size:12.5px;color:#8a8578">搜索…</span>
+</div>
+<div style="display:flex;align-items:baseline;gap:10px;font-size:13.5px"><span style="width:13px;height:13px;background:#a4432c;border-radius:3px;position:relative;top:2px"></span><span style="font-weight:600">Xcode</span><span style="font-size:11px;color:#8a8578">26.3 · 昨天用过</span><span style="flex:1;border-bottom:1px dotted #b5ae9e"></span><span style="font:13px 'IBM Plex Mono',monospace">32.0 GB</span></div>
+<div style="display:flex;align-items:baseline;gap:10px;font-size:13.5px"><span style="width:13px;height:13px;border:1.5px solid #b5ae9e;border-radius:3px;position:relative;top:2px"></span><span>OrbStack</span><span style="font-size:11px;color:#8a8578">3 天前</span><span style="flex:1;border-bottom:1px dotted #b5ae9e"></span><span style="font:13px 'IBM Plex Mono',monospace">4.4 GB</span></div>
+<div style="display:flex;align-items:baseline;gap:10px;font-size:13.5px;color:#a4432c"><span style="width:13px;height:13px;border:1.5px solid #a4432c;border-radius:3px;position:relative;top:2px"></span><span style="font-weight:600">Figma</span><span style="font-size:11px">90 天未用</span><span style="flex:1;border-bottom:1px dotted #a4432c"></span><span style="font:600 13px 'IBM Plex Mono',monospace">2.1 GB</span></div>
+<div style="display:flex;align-items:baseline;gap:10px;font-size:13.5px"><span style="width:13px;height:13px;border:1.5px solid #b5ae9e;border-radius:3px;position:relative;top:2px"></span><span>Slack</span><span style="font-size:11px;color:#8a8578">今天</span><span style="flex:1;border-bottom:1px dotted #b5ae9e"></span><span style="font:13px 'IBM Plex Mono',monospace">1.8 GB</span></div>
+<div style="display:flex;align-items:baseline;gap:10px;font-size:13.5px"><span style="width:13px;height:13px;border:1.5px solid #b5ae9e;border-radius:3px;position:relative;top:2px"></span><span>Chrome</span><span style="font-size:11px;color:#8a8578">今天</span><span style="flex:1;border-bottom:1px dotted #b5ae9e"></span><span style="font:13px 'IBM Plex Mono',monospace">1.2 GB</span></div>
+<div style="display:flex;align-items:baseline;gap:10px;font-size:13.5px"><span style="width:13px;height:13px;border:1.5px solid #b5ae9e;border-radius:3px;position:relative;top:2px"></span><span>Sketch</span><span style="font-size:11px;color:#8a8578">140 天未用</span><span style="flex:1;border-bottom:1px dotted #b5ae9e"></span><span style="font:13px 'IBM Plex Mono',monospace">890 MB</span></div>
+<div style="display:flex;align-items:baseline;gap:10px;font-size:13.5px"><span style="width:13px;height:13px;border:1.5px solid #b5ae9e;border-radius:3px;position:relative;top:2px"></span><span>Zoom</span><span style="font-size:11px;color:#8a8578">上周</span><span style="flex:1;border-bottom:1px dotted #b5ae9e"></span><span style="font:13px 'IBM Plex Mono',monospace">610 MB</span></div>
+<span style="font-size:12px;color:#8a8578;margin-top:4px">… 其余 121 个</span>
+</div>
+<div style="flex:1;border-left:1px solid #26241f;padding-left:40px;display:flex;flex-direction:column;gap:14px">
+<div style="font:600 44px/1.1 'Noto Serif SC',serif">Figma</div>
+<span style="font:12px 'IBM Plex Mono',monospace;color:#8a8578">版本 125.5.6 · 装于 2024/03 · 上次打开 6 月 2 日</span>
+<div style="border-top:1px solid #26241f;padding-top:14px;display:flex;flex-direction:column;gap:11px;font-size:13.5px">
+<div style="display:flex;align-items:baseline"><span>应用本体</span><span style="flex:1;border-bottom:1px dotted #b5ae9e;margin:0 10px"></span><span style="font:13px 'IBM Plex Mono',monospace">1.4 GB</span></div>
+<div style="display:flex;align-items:baseline"><span>缓存</span><span style="flex:1;border-bottom:1px dotted #b5ae9e;margin:0 10px"></span><span style="font:13px 'IBM Plex Mono',monospace">480 MB</span></div>
+<div style="display:flex;align-items:baseline"><span>应用支持文件</span><span style="flex:1;border-bottom:1px dotted #b5ae9e;margin:0 10px"></span><span style="font:13px 'IBM Plex Mono',monospace">210 MB</span></div>
+<div style="display:flex;align-items:baseline"><span>偏好设置 · 2 项</span><span style="flex:1;border-bottom:1px dotted #b5ae9e;margin:0 10px"></span><span style="font:13px 'IBM Plex Mono',monospace">36 KB</span></div>
+<div style="border-top:1px solid #26241f;padding-top:12px;display:flex;align-items:baseline"><span style="font:600 14px 'Noto Serif SC',serif">合计</span><span style="flex:1;border-bottom:1px dotted #b5ae9e;margin:0 10px"></span><span style="font:600 16px 'IBM Plex Mono',monospace;color:#a4432c">2.1 GB</span></div>
+</div>
+<span style="font:600 18px 'Noto Serif SC',serif;color:#a4432c;border-bottom:2px solid #a4432c;align-self:flex-start;padding-bottom:2px;margin-top:10px">完全卸载 →</span>
+<span style="font-size:12px;color:#8a8578">卸载包含以上全部残留；仅移除本体请用"仅删应用"。</span>
+</div>
+<div style="width:250px;border-left:1px solid #d8d2c3;padding-left:36px;display:flex;flex-direction:column;gap:14px">
+<span style="font:500 11px 'IBM Plex Mono',monospace;letter-spacing:2px;color:#8a8578">建议关注</span>
+<div style="font-size:13px;line-height:1.6"><span style="color:#a4432c;font-weight:600">3 个应用</span> 超过 90 天未使用，合计 <span style="font:13px 'IBM Plex Mono',monospace">4.9 GB</span></div>
+<div style="display:flex;flex-direction:column;gap:9px;font-size:13px;border-top:1px solid #d8d2c3;padding-top:14px">
+<div style="display:flex"><span>Figma</span><span style="flex:1;border-bottom:1px dotted #d8d2c3;margin:0 8px"></span><span style="font:12px 'IBM Plex Mono',monospace;color:#8a8578">2.1 G</span></div>
+<div style="display:flex"><span>Sketch</span><span style="flex:1;border-bottom:1px dotted #d8d2c3;margin:0 8px"></span><span style="font:12px 'IBM Plex Mono',monospace;color:#8a8578">890 M</span></div>
+<div style="display:flex"><span>Loom</span><span style="flex:1;border-bottom:1px dotted #d8d2c3;margin:0 8px"></span><span style="font:12px 'IBM Plex Mono',monospace;color:#8a8578">1.9 G</span></div>
+</div>
+<span style="font-size:12.5px;color:#a4432c;text-decoration:underline;text-underline-offset:3px">批量卸载这 3 个…</span>
+</div>
+</div>
+<div style="margin:0 48px;border-top:1px solid #26241f;padding:14px 0 24px;display:flex;align-items:baseline;gap:14px">
+<span style="font:600 14px 'Noto Serif SC',serif">已选 1 项</span>
+<span style="font:12.5px 'IBM Plex Mono',monospace;color:#8a8578">合计 32.0 GB</span>
+<span style="font-size:12.5px;color:#8a8578;text-decoration:underline;text-underline-offset:3px">取消选择</span>
+<span style="flex:1;border-bottom:1px dotted #b5ae9e"></span>
+<span style="font:600 16px 'Noto Serif SC',serif;color:#a4432c;border-bottom:2px solid #a4432c;padding-bottom:2px">移除 1 项 →</span>
+</div>
+</div></div>
+
+<!-- ================= 优化 · 初始 ================= -->
+<div style="display:flex;flex-direction:column;gap:8px" data-screen-label="优化 · 初始">
+<span style="font:600 12px system-ui;color:#8a8578">优化 · 初始（未检查）</span>
+<div style="width:1240px;background:#faf8f3;border:1px solid #c9c3b4;border-radius:10px;box-shadow:0 18px 40px rgba(38,36,31,.14);overflow:hidden">
+<div style="display:flex;align-items:center;padding:14px 20px 12px;gap:8px">
+<span style="width:12px;height:12px;border-radius:50%;background:#ff5f57"></span><span style="width:12px;height:12px;border-radius:50%;background:#febc2e"></span><span style="width:12px;height:12px;border-radius:50%;background:#28c840"></span>
+<span style="font:700 20px 'Noto Serif SC',serif;letter-spacing:6px;margin-left:22px">TIDY</span>
+<div style="display:flex;gap:26px;margin-left:44px;font-size:13.5px;color:#6d675a">
+<span>清理</span><span>软件</span><span style="color:#a4432c;border-bottom:2px solid #a4432c;padding-bottom:3px;font-weight:600">优化</span><span>分析</span><span>状态</span>
+</div>
+<span style="margin-left:auto;font:11.5px 'IBM Plex Mono',monospace;color:#8a8578">上次维护 · 昨天 22:14</span>
+</div>
+<div style="margin:0 20px;border-top:2.5px solid #26241f"></div>
+<div style="margin:2px 20px 0;border-top:1px solid #26241f"></div>
+<div style="display:flex;flex-direction:column;align-items:center;text-align:center;padding:96px 48px 90px;gap:18px">
+<span style="font:500 12px 'IBM Plex Mono',monospace;letter-spacing:3px;color:#a4432c">例行专栏 · 系统维护</span>
+<div style="font:600 64px/1.15 'Noto Serif SC',serif;max-width:640px;text-wrap:balance">安全、有边界的<br>系统维护任务。</div>
+<p style="margin:0;max-width:440px;font-size:14px;line-height:1.8;color:#6d675a;text-wrap:pretty">检查六项例行维护：可清除空间、索引、缓存与维护脚本。全部使用系统公开接口，不做危险加速。</p>
+<div style="margin-top:22px;border:2px solid #a4432c;padding:14px 52px"><span style="font:600 22px 'Noto Serif SC',serif;color:#a4432c">开始检查 →</span></div>
+<div style="display:flex;gap:28px;margin-top:26px;font:11.5px 'IBM Plex Mono',monospace;color:#8a8578">
+<span>上次维护 · 昨天</span><span>已完成任务 · 23 次</span><span>预计用时 · 约 2 分钟</span>
+</div>
+</div>
+</div></div>
+
+<!-- ================= 优化 ================= -->
+<div style="display:flex;flex-direction:column;gap:8px" data-screen-label="优化">
+<span style="font:600 12px system-ui;color:#8a8578">优化</span>
+<div style="width:1240px;background:#faf8f3;border:1px solid #c9c3b4;border-radius:10px;box-shadow:0 18px 40px rgba(38,36,31,.14);overflow:hidden">
+<div style="display:flex;align-items:center;padding:14px 20px 12px;gap:8px">
+<span style="width:12px;height:12px;border-radius:50%;background:#ff5f57"></span><span style="width:12px;height:12px;border-radius:50%;background:#febc2e"></span><span style="width:12px;height:12px;border-radius:50%;background:#28c840"></span>
+<span style="font:700 20px 'Noto Serif SC',serif;letter-spacing:6px;margin-left:22px">TIDY</span>
+<div style="display:flex;gap:26px;margin-left:44px;font-size:13.5px;color:#6d675a">
+<span>清理</span><span>软件</span><span style="color:#a4432c;border-bottom:2px solid #a4432c;padding-bottom:3px;font-weight:600">优化</span><span>分析</span><span>状态</span>
+</div>
+<span style="margin-left:auto;font:11.5px 'IBM Plex Mono',monospace;color:#8a8578">上次维护 · 昨天 22:14</span>
+</div>
+<div style="margin:0 20px;border-top:2.5px solid #26241f"></div>
+<div style="margin:2px 20px 0;border-top:1px solid #26241f"></div>
+<div style="display:flex;padding:32px 48px 44px;gap:40px">
+<div style="flex:1;display:flex;flex-direction:column;gap:6px">
+<div style="display:flex;justify-content:space-between;align-items:baseline;border-bottom:1px solid #26241f;padding-bottom:12px;margin-bottom:16px">
+<span style="font:600 26px 'Noto Serif SC',serif">例行维护 · 六项</span>
+<span style="font:600 14px 'Noto Serif SC',serif;color:#a4432c;border-bottom:2px solid #a4432c;padding-bottom:2px">执行已选 3 项 →</span>
+</div>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:28px 40px">
+<div style="display:flex;gap:18px"><span style="font:600 34px/1 'Noto Serif SC',serif;color:#a4432c">01</span><div style="flex:1"><div style="font-size:14.5px;font-weight:600">释放可清除空间</div><div style="font-size:12.5px;color:#8a8578;line-height:1.6;margin-top:3px">让系统立即回收 snapshot 与暂存，预计 18 GB。</div><span style="font-size:12.5px;color:#a4432c;text-decoration:underline;text-underline-offset:3px">✓ 已选 · 取消</span></div></div>
+<div style="display:flex;gap:18px"><span style="font:600 34px/1 'Noto Serif SC',serif;color:#a4432c">02</span><div style="flex:1"><div style="font-size:14.5px;font-weight:600">重建 Spotlight 索引</div><div style="font-size:12.5px;color:#8a8578;line-height:1.6;margin-top:3px">搜索结果异常时使用，约需 40 分钟后台运行。</div><span style="font-size:12.5px;color:#a4432c;text-decoration:underline;text-underline-offset:3px">✓ 已选 · 取消</span></div></div>
+<div style="display:flex;gap:18px"><span style="font:600 34px/1 'Noto Serif SC',serif;color:#a4432c">03</span><div style="flex:1"><div style="font-size:14.5px;font-weight:600">清空剪贴板与最近项目</div><div style="font-size:12.5px;color:#8a8578;line-height:1.6;margin-top:3px">移除最近文稿记录与共享剪贴板内容。</div><span style="font-size:12.5px;color:#a4432c;text-decoration:underline;text-underline-offset:3px">✓ 已选 · 取消</span></div></div>
+<div style="display:flex;gap:18px"><span style="font:600 34px/1 'Noto Serif SC',serif;color:#c4bcaa">04</span><div style="flex:1"><div style="font-size:14.5px;font-weight:600;color:#6d675a">刷新 DNS 缓存</div><div style="font-size:12.5px;color:#8a8578;line-height:1.6;margin-top:3px">网页打不开或解析错误时使用。</div><span style="font:12px 'IBM Plex Mono',monospace;color:#8a8578">✓ 昨天已运行</span></div></div>
+<div style="display:flex;gap:18px"><span style="font:600 34px/1 'Noto Serif SC',serif;color:#c4bcaa">05</span><div style="flex:1"><div style="font-size:14.5px;font-weight:600;color:#6d675a">重启访达与程序坞</div><div style="font-size:12.5px;color:#8a8578;line-height:1.6;margin-top:3px">界面卡顿、图标异常时的轻量修复。</div><span style="font-size:12.5px;color:#8a8578;text-decoration:underline;text-underline-offset:3px">加入本次</span></div></div>
+<div style="display:flex;gap:18px"><span style="font:600 34px/1 'Noto Serif SC',serif;color:#c4bcaa">06</span><div style="flex:1"><div style="font-size:14.5px;font-weight:600;color:#6d675a">运行 macOS 维护脚本</div><div style="font-size:12.5px;color:#8a8578;line-height:1.6;margin-top:3px">轮换系统日志、更新系统数据库。</div><span style="font-size:12.5px;color:#8a8578;text-decoration:underline;text-underline-offset:3px">加入本次</span></div></div>
+</div>
+</div>
+<div style="width:250px;border-left:1px solid #d8d2c3;padding-left:36px;display:flex;flex-direction:column;gap:14px">
+<span style="font:500 11px 'IBM Plex Mono',monospace;letter-spacing:2px;color:#8a8578">维护日志</span>
+<div style="display:flex;flex-direction:column;gap:10px;font-size:12.5px">
+<div style="display:flex"><span style="color:#8a8578">8/31</span><span style="margin-left:10px">DNS 缓存</span><span style="flex:1;border-bottom:1px dotted #d8d2c3;margin:0 8px"></span><span style="color:#8a8578">✓</span></div>
+<div style="display:flex"><span style="color:#8a8578">8/24</span><span style="margin-left:10px">可清除空间</span><span style="flex:1;border-bottom:1px dotted #d8d2c3;margin:0 8px"></span><span style="color:#8a8578">21 GB</span></div>
+<div style="display:flex"><span style="color:#8a8578">8/18</span><span style="margin-left:10px">维护脚本</span><span style="flex:1;border-bottom:1px dotted #d8d2c3;margin:0 8px"></span><span style="color:#8a8578">✓</span></div>
+<div style="display:flex"><span style="color:#8a8578">8/10</span><span style="margin-left:10px">Spotlight</span><span style="flex:1;border-bottom:1px dotted #d8d2c3;margin:0 8px"></span><span style="color:#8a8578">38 分</span></div>
+</div>
+<div style="border-top:1px solid #d8d2c3;padding-top:14px;font-size:12px;line-height:1.8;color:#8a8578;text-wrap:pretty">所有任务使用系统公开接口，有明确边界，不做"深度加速"类危险操作。</div>
+</div>
+</div></div></div>
+
+<!-- ================= 分析 · 初始 ================= -->
+<div style="display:flex;flex-direction:column;gap:8px" data-screen-label="分析 · 初始">
+<span style="font:600 12px system-ui;color:#8a8578">分析 · 初始（未扫描）</span>
+<div style="width:1240px;background:#faf8f3;border:1px solid #c9c3b4;border-radius:10px;box-shadow:0 18px 40px rgba(38,36,31,.14);overflow:hidden">
+<div style="display:flex;align-items:center;padding:14px 20px 12px;gap:8px">
+<span style="width:12px;height:12px;border-radius:50%;background:#ff5f57"></span><span style="width:12px;height:12px;border-radius:50%;background:#febc2e"></span><span style="width:12px;height:12px;border-radius:50%;background:#28c840"></span>
+<span style="font:700 20px 'Noto Serif SC',serif;letter-spacing:6px;margin-left:22px">TIDY</span>
+<div style="display:flex;gap:26px;margin-left:44px;font-size:13.5px;color:#6d675a">
+<span>清理</span><span>软件</span><span>优化</span><span style="color:#a4432c;border-bottom:2px solid #a4432c;padding-bottom:3px;font-weight:600">分析</span><span>状态</span>
+</div>
+<span style="margin-left:auto;font:11.5px 'IBM Plex Mono',monospace;color:#8a8578">上次扫描 · 8 月 30 日 20:56</span>
+</div>
+<div style="margin:0 20px;border-top:2.5px solid #26241f"></div>
+<div style="margin:2px 20px 0;border-top:1px solid #26241f"></div>
+<div style="display:flex;flex-direction:column;align-items:center;text-align:center;padding:88px 48px 82px;gap:18px">
+<span style="font:500 12px 'IBM Plex Mono',monospace;letter-spacing:3px;color:#a4432c">空间调查 · 磁盘占用</span>
+<div style="font:600 64px/1.15 'Noto Serif SC',serif;max-width:640px;text-wrap:balance">744 GB 都去哪了？</div>
+<p style="margin:0;max-width:440px;font-size:14px;line-height:1.8;color:#6d675a;text-wrap:pretty">逐层统计每个目录的真实占用，按大小排出"账目"，点进任何一层继续深入。</p>
+<div style="display:flex;gap:22px;margin-top:16px;font-size:13.5px">
+<span style="border-bottom:2px solid #a4432c;color:#a4432c;font-weight:600;padding-bottom:3px">整个磁盘 · 994 GB</span>
+<span style="color:#8a8578">用户目录 ~ · 744 GB</span>
+<span style="color:#8a8578">选择文件夹…</span>
+</div>
+<div style="margin-top:18px;border:2px solid #a4432c;padding:14px 52px"><span style="font:600 22px 'Noto Serif SC',serif;color:#a4432c">开始分析 →</span></div>
+<span style="margin-top:22px;font:11.5px 'IBM Plex Mono',monospace;color:#8a8578">上次结果仍可查看 · 缓存于 8 月 30 日</span>
+</div>
+</div></div>
+
+<!-- ================= 分析 ================= -->
+<div style="display:flex;flex-direction:column;gap:8px" data-screen-label="分析">
+<span style="font:600 12px system-ui;color:#8a8578">分析（磁盘占用）</span>
+<div style="width:1240px;background:#faf8f3;border:1px solid #c9c3b4;border-radius:10px;box-shadow:0 18px 40px rgba(38,36,31,.14);overflow:hidden">
+<div style="display:flex;align-items:center;padding:14px 20px 12px;gap:8px">
+<span style="width:12px;height:12px;border-radius:50%;background:#ff5f57"></span><span style="width:12px;height:12px;border-radius:50%;background:#febc2e"></span><span style="width:12px;height:12px;border-radius:50%;background:#28c840"></span>
+<span style="font:700 20px 'Noto Serif SC',serif;letter-spacing:6px;margin-left:22px">TIDY</span>
+<div style="display:flex;gap:26px;margin-left:44px;font-size:13.5px;color:#6d675a">
+<span>清理</span><span>软件</span><span>优化</span><span style="color:#a4432c;border-bottom:2px solid #a4432c;padding-bottom:3px;font-weight:600">分析</span><span>状态</span>
+</div>
+<span style="margin-left:auto;font:11.5px 'IBM Plex Mono',monospace;color:#8a8578">缓存于 20:56 · 刷新</span>
+</div>
+<div style="margin:0 20px;border-top:2.5px solid #26241f"></div>
+<div style="margin:2px 20px 0;border-top:1px solid #26241f"></div>
+<div style="display:flex;padding:30px 48px 20px;gap:40px">
+<div style="flex:1;display:flex;flex-direction:column;gap:14px">
+<div style="display:flex;justify-content:space-between;align-items:baseline">
+<span style="font:600 26px 'Noto Serif SC',serif">整个磁盘 <span style="color:#c4bcaa">›</span> Users <span style="color:#c4bcaa">›</span> mike</span>
+<span style="font:12px 'IBM Plex Mono',monospace;color:#8a8578">442 项 · 744.05 GB</span>
+</div>
+<div style="border-top:1px solid #26241f;padding-top:16px;display:flex;flex-direction:column;gap:14px">
+<div><div style="display:flex;justify-content:space-between;font-size:14px"><span style="font-weight:600;color:#a4432c">Library</span><span style="font:13px 'IBM Plex Mono',monospace">304.34 GB · 41%</span></div><div style="height:12px;background:#a4432c;width:82%;margin-top:5px"></div></div>
+<div><div style="display:flex;justify-content:space-between;font-size:14px"><span>source</span><span style="font:13px 'IBM Plex Mono',monospace;color:#6d675a">180.47 GB · 24%</span></div><div style="height:12px;background:#c08468;width:48%;margin-top:5px"></div></div>
+<div><div style="display:flex;justify-content:space-between;font-size:14px"><span>models</span><span style="font:13px 'IBM Plex Mono',monospace;color:#6d675a">39.40 GB · 5%</span></div><div style="height:12px;background:#d9c1ac;width:11%;margin-top:5px"></div></div>
+<div><div style="display:flex;justify-content:space-between;font-size:14px"><span>OrbStack</span><span style="font:13px 'IBM Plex Mono',monospace;color:#6d675a">25.65 GB · 3%</span></div><div style="height:12px;background:#d9c1ac;width:7%;margin-top:5px"></div></div>
+<div><div style="display:flex;justify-content:space-between;font-size:14px"><span>.cache</span><span style="font:13px 'IBM Plex Mono',monospace;color:#6d675a">14.39 GB · 2%</span></div><div style="height:12px;background:#e8ddce;width:4%;margin-top:5px"></div></div>
+<div><div style="display:flex;justify-content:space-between;font-size:14px"><span style="color:#8a8578">其余 437 项</span><span style="font:13px 'IBM Plex Mono',monospace;color:#8a8578">179.80 GB · 24%</span></div><div style="height:12px;background:#efe9dc;width:48%;margin-top:5px"></div></div>
+</div>
+<span style="font-size:12px;color:#8a8578">点击目录名深入 · 面包屑返回上级</span>
+</div>
+<div style="width:330px;border-left:1px solid #26241f;padding-left:40px;display:flex;flex-direction:column;gap:13px">
+<div style="font:600 22px 'Noto Serif SC',serif">Library <span style="font-size:13px;color:#8a8578">内</span></div>
+<div style="display:flex;flex-direction:column;gap:10px;font-size:13.5px;border-top:1px solid #26241f;padding-top:14px">
+<div style="display:flex"><span>Caches</span><span style="flex:1;border-bottom:1px dotted #b5ae9e;margin:0 8px"></span><span style="font:12.5px 'IBM Plex Mono',monospace">120.2 G</span></div>
+<div style="display:flex"><span>App Support</span><span style="flex:1;border-bottom:1px dotted #b5ae9e;margin:0 8px"></span><span style="font:12.5px 'IBM Plex Mono',monospace">88.6 G</span></div>
+<div style="display:flex"><span>Containers</span><span style="flex:1;border-bottom:1px dotted #b5ae9e;margin:0 8px"></span><span style="font:12.5px 'IBM Plex Mono',monospace">41.3 G</span></div>
+<div style="display:flex"><span>Developer</span><span style="flex:1;border-bottom:1px dotted #b5ae9e;margin:0 8px"></span><span style="font:12.5px 'IBM Plex Mono',monospace">30.1 G</span></div>
+<div style="display:flex"><span style="color:#8a8578">其余 61 项</span><span style="flex:1;border-bottom:1px dotted #b5ae9e;margin:0 8px"></span><span style="font:12.5px 'IBM Plex Mono',monospace;color:#8a8578">24.1 G</span></div>
+</div>
+<span style="font:600 14px 'Noto Serif SC',serif;color:#a4432c;border-bottom:2px solid #a4432c;align-self:flex-start;padding-bottom:2px;margin-top:8px">进入 Library →</span>
+<span style="font-size:12.5px;color:#8a8578;text-decoration:underline;text-underline-offset:3px">把选中项移到废纸篓</span>
+</div>
+</div>
+<div style="margin:0 48px;border-top:1px solid #26241f;padding:14px 0 26px;display:flex;align-items:center;gap:16px">
+<span style="font:11.5px 'IBM Plex Mono',monospace;color:#8a8578">整盘</span>
+<div style="flex:1;display:flex;height:10px">
+<div style="width:41%;background:#a4432c"></div><div style="width:24%;background:#c08468"></div><div style="width:24%;background:#e0d5c2"></div><div style="width:11%;background:#efe9dc;border:1px dashed #c4bcaa;box-sizing:border-box"></div>
+</div>
+<span style="font:11.5px 'IBM Plex Mono',monospace;color:#8a8578">已用 880.57 GB · 可用 114.04 GB</span>
+</div>
+</div></div>
+
+<!-- ================= 状态 ================= -->
+<div style="display:flex;flex-direction:column;gap:8px" data-screen-label="状态">
+<span style="font:600 12px system-ui;color:#8a8578">状态（监控）</span>
+<div style="width:1240px;background:#faf8f3;border:1px solid #c9c3b4;border-radius:10px;box-shadow:0 18px 40px rgba(38,36,31,.14);overflow:hidden">
+<div style="display:flex;align-items:center;padding:14px 20px 12px;gap:8px">
+<span style="width:12px;height:12px;border-radius:50%;background:#ff5f57"></span><span style="width:12px;height:12px;border-radius:50%;background:#febc2e"></span><span style="width:12px;height:12px;border-radius:50%;background:#28c840"></span>
+<span style="font:700 20px 'Noto Serif SC',serif;letter-spacing:6px;margin-left:22px">TIDY</span>
+<div style="display:flex;gap:26px;margin-left:44px;font-size:13.5px;color:#6d675a">
+<span>清理</span><span>软件</span><span>优化</span><span>分析</span><span style="color:#a4432c;border-bottom:2px solid #a4432c;padding-bottom:3px;font-weight:600">状态</span>
+</div>
+<span style="margin-left:auto;font:11.5px 'IBM Plex Mono',monospace;color:#8a8578">M5 Pro · 48 GB · macOS 26.6.2</span>
+</div>
+<div style="margin:0 20px;border-top:2.5px solid #26241f"></div>
+<div style="margin:2px 20px 0;border-top:1px solid #26241f"></div>
+<div style="display:flex;padding:28px 48px 22px">
+<div style="flex:1;display:flex;flex-direction:column;gap:6px">
+<div style="font:600 58px/1 'Noto Serif SC',serif">23<span style="font-size:20px">%</span></div>
+<span style="font:11.5px 'IBM Plex Mono',monospace;color:#8a8578">CPU · 18 核</span>
+<svg width="120" height="22" viewBox="0 0 120 22" preserveAspectRatio="none"><polyline points="0,16 18,12 36,15 54,7 72,11 90,9 120,10" fill="none" stroke="#26241f" stroke-width="1.5"/></svg>
+</div>
+<div style="flex:1;border-left:1px solid #d8d2c3;padding-left:32px;display:flex;flex-direction:column;gap:6px">
+<div style="font:600 58px/1 'Noto Serif SC',serif;color:#a4432c">80<span style="font-size:20px">%</span></div>
+<span style="font:11.5px 'IBM Plex Mono',monospace;color:#a4432c">内存 · 压力 65% · 偏高</span>
+<svg width="120" height="22" viewBox="0 0 120 22" preserveAspectRatio="none"><polyline points="0,9 24,8 48,10 72,6 96,7 120,7" fill="none" stroke="#a4432c" stroke-width="1.5"/></svg>
+</div>
+<div style="flex:1;border-left:1px solid #d8d2c3;padding-left:32px;display:flex;flex-direction:column;gap:6px">
+<div style="font:600 58px/1 'Noto Serif SC',serif">54<span style="font-size:20px">%</span></div>
+<span style="font:11.5px 'IBM Plex Mono',monospace;color:#8a8578">GPU · 20 核 · 低负载</span>
+<svg width="120" height="22" viewBox="0 0 120 22" preserveAspectRatio="none"><polyline points="0,12 30,11 60,13 90,11 120,12" fill="none" stroke="#26241f" stroke-width="1.5"/></svg>
+</div>
+<div style="flex:1;border-left:1px solid #d8d2c3;padding-left:32px;display:flex;flex-direction:column;gap:6px">
+<div style="font:600 58px/1 'Noto Serif SC',serif">114<span style="font-size:20px">GB</span></div>
+<span style="font:11.5px 'IBM Plex Mono',monospace;color:#8a8578">磁盘可用 · 已用 89%</span>
+<div style="width:120px;height:8px;background:#efe9dc;margin-top:8px"><div style="width:89%;height:8px;background:#26241f"></div></div>
+</div>
+<div style="flex:1;border-left:1px solid #d8d2c3;padding-left:32px;display:flex;flex-direction:column;gap:6px">
+<div style="font:600 58px/1 'Noto Serif SC',serif">27<span style="font-size:20px">KB/s</span></div>
+<span style="font:11.5px 'IBM Plex Mono',monospace;color:#8a8578">网络 · utun8 · ↑10</span>
+<svg width="120" height="22" viewBox="0 0 120 22" preserveAspectRatio="none"><polyline points="0,18 24,17 42,4 60,17 90,16 120,16" fill="none" stroke="#26241f" stroke-width="1.5"/></svg>
+</div>
+<div style="flex:0.8;border-left:1px solid #d8d2c3;padding-left:32px;display:flex;flex-direction:column;gap:6px">
+<div style="font:600 58px/1 'Noto Serif SC',serif">31<span style="font-size:20px">°C</span></div>
+<span style="font:11.5px 'IBM Plex Mono',monospace;color:#8a8578">电池 100% · 46 循环</span>
+<span style="font:11.5px 'IBM Plex Mono',monospace;color:#8a8578">风扇 4090 RPM ×2</span>
+</div>
+</div>
+<div style="margin:0 48px;border-top:2px solid #26241f"></div>
+<div style="margin:2px 48px 0;border-top:1px solid #26241f"></div>
+<div style="display:flex;padding:20px 48px 36px;gap:40px">
+<div style="flex:1;display:flex;flex-direction:column;gap:10px">
+<span style="font:500 11px 'IBM Plex Mono',monospace;letter-spacing:2px;color:#8a8578">进程 · 按 CPU</span>
+<div style="display:flex;font-size:13.5px"><span style="color:#a4432c;font-weight:600">ApplicationsStorageExt…</span><span style="flex:1;border-bottom:1px dotted #b5ae9e;margin:0 8px"></span><span style="font:600 12.5px 'IBM Plex Mono',monospace;color:#a4432c">79.9</span></div>
+<div style="display:flex;font-size:13.5px"><span>StorageManagementSvc</span><span style="flex:1;border-bottom:1px dotted #b5ae9e;margin:0 8px"></span><span style="font:12.5px 'IBM Plex Mono',monospace">67.9</span></div>
+<div style="display:flex;font-size:13.5px"><span>Codex (Service)</span><span style="flex:1;border-bottom:1px dotted #b5ae9e;margin:0 8px"></span><span style="font:12.5px 'IBM Plex Mono',monospace">28.8</span></div>
+<div style="display:flex;font-size:13.5px"><span>WebKit.GPU</span><span style="flex:1;border-bottom:1px dotted #b5ae9e;margin:0 8px"></span><span style="font:12.5px 'IBM Plex Mono',monospace">28.7</span></div>
+<div style="display:flex;font-size:13.5px"><span>Tidy</span><span style="flex:1;border-bottom:1px dotted #b5ae9e;margin:0 8px"></span><span style="font:12.5px 'IBM Plex Mono',monospace">25.4</span></div>
+</div>
+<div style="flex:1;border-left:1px solid #26241f;padding-left:40px;display:flex;flex-direction:column;gap:10px">
+<span style="font:500 11px 'IBM Plex Mono',monospace;letter-spacing:2px;color:#8a8578">进程 · 按内存</span>
+<div style="display:flex;font-size:13.5px"><span>OrbStack Helper</span><span style="flex:1;border-bottom:1px dotted #b5ae9e;margin:0 8px"></span><span style="font:12.5px 'IBM Plex Mono',monospace">4.39 GB</span></div>
+<div style="display:flex;font-size:13.5px"><span>WebKit.WebContent</span><span style="flex:1;border-bottom:1px dotted #b5ae9e;margin:0 8px"></span><span style="font:12.5px 'IBM Plex Mono',monospace">248 MB</span></div>
+<div style="display:flex;font-size:13.5px"><span>Tidy</span><span style="flex:1;border-bottom:1px dotted #b5ae9e;margin:0 8px"></span><span style="font:12.5px 'IBM Plex Mono',monospace">192 MB</span></div>
+<div style="display:flex;font-size:13.5px"><span>Codex (Service)</span><span style="flex:1;border-bottom:1px dotted #b5ae9e;margin:0 8px"></span><span style="font:12.5px 'IBM Plex Mono',monospace">151 MB</span></div>
+<div style="display:flex;font-size:13.5px"><span>WebKit.GPU</span><span style="flex:1;border-bottom:1px dotted #b5ae9e;margin:0 8px"></span><span style="font:12.5px 'IBM Plex Mono',monospace">66 MB</span></div>
+</div>
+<div style="width:250px;border-left:1px solid #d8d2c3;padding-left:36px;display:flex;flex-direction:column;gap:12px">
+<span style="font:500 11px 'IBM Plex Mono',monospace;letter-spacing:2px;color:#8a8578">健康度</span>
+<div style="font:600 44px/1 'Noto Serif SC',serif">77<span style="font-size:16px;color:#8a8578"> / 一般</span></div>
+<span style="font-size:12.5px;color:#a4432c">内存指标偏高 — 建议关闭 OrbStack Helper</span>
+<span style="font:11.5px 'IBM Plex Mono',monospace;color:#8a8578">已运行 9d 12h · 自 8/20</span>
+</div>
+</div>
+</div></div>
+
+<!-- ================= 菜单栏小窗 ================= -->
+<div style="display:flex;flex-direction:column;gap:8px" data-screen-label="菜单栏小窗">
+<span style="font:600 12px system-ui;color:#8a8578">菜单栏小窗</span>
+<div style="width:320px;background:#faf8f3;border:1px solid #c9c3b4;border-radius:12px;box-shadow:0 18px 40px rgba(38,36,31,.18);overflow:hidden">
+<div style="padding:22px 26px 8px;display:flex;justify-content:space-between;align-items:baseline">
+<span style="font:700 14px 'Noto Serif SC',serif;letter-spacing:4px">TIDY</span>
+<span style="font:11px 'IBM Plex Mono',monospace;color:#8a8578">20:56</span>
+</div>
+<div style="margin:0 26px;border-top:2px solid #26241f"></div>
+<div style="margin:2px 26px 0;border-top:1px solid #26241f"></div>
+<div style="padding:16px 26px 22px;display:flex;flex-direction:column;gap:12px">
+<div style="font:600 42px/1 'Noto Serif SC',serif">114<span style="font-size:15px;margin-left:6px">GB 可用</span></div>
+<div style="height:7px;background:#efe9dc"><div style="width:89%;height:7px;background:#a4432c"></div></div>
+<div style="display:flex;justify-content:space-between;font:11.5px 'IBM Plex Mono',monospace;color:#8a8578">
+<span>CPU 23%</span><span>内存 80%</span><span>↓27 KB/s</span>
+</div>
+<div style="border-top:1px solid #d8d2c3;padding-top:12px;display:flex;flex-direction:column;gap:10px">
+<span style="font:600 14px 'Noto Serif SC',serif;color:#a4432c">快速清理 23.4 GB →</span>
+<span style="font-size:13px">打开 Tidy</span>
+<span style="font-size:13px;color:#8a8578">暂停监控 1 小时</span>
+</div>
+</div>
+</div></div>
+
+</div></div>
+</x-dc>
+</body>
+</html>
+

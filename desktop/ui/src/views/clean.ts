@@ -1,8 +1,12 @@
-// Clean view: particle-field hero → one merged scan (system clean + project
-// build artifacts + installer leftovers) → sectioned preview → confirm →
-// execute → freed-space hero with the absorbed-particles effect. Purge and
-// installer keep their own backend plans and two-phase funnels; this surface
-// only merges their sections into one flow.
+// Clean view (newspaper skin): a front-page hero — issue kicker, serif
+// headline, lede, framed CTA and a monospaced statline drawn from the local
+// ledger — then one merged scan (system clean + project build artifacts +
+// installer leftovers + docker) → ledger preview → confirm → execute →
+// reclaimed-space page. Purge and installer keep their own backend plans and
+// two-phase funnels; this surface only merges their sections into one flow.
+//
+// The celestial explorer survives as a newspaper "plate": a framed dark
+// astronomical inset, opened from a quiet link under the hero.
 
 import {
   appMeta,
@@ -23,65 +27,76 @@ import {
 } from "../particles";
 import { cleanTrashMode, dockerIdleMonths, purgeIdleDays } from "../prefs";
 import { esc, humanKb } from "../format";
+import { daysSince, lastReclaim, reclaimLog, totalFreedKb } from "../ledger";
 import { lang, t } from "../i18n";
 import type { View } from "../router";
 import type { BlockedCaches, PlanSummary, ProjectReport,
   DockerImage,
 } from "../types";
 
+/** Bodies with a bundled NASA texture; everything else is a data illustration. */
+const REAL_TEXTURES = new Set(["earth", "mars", "jupiter"]);
+
 export const clean: View = {
   mount(container) {
+    const previous = lastReclaim("clean");
+    // The "issue number" is simply how many clean runs this machine has seen,
+    // so the masthead conceit stays factual instead of decorative.
+    const issue = reclaimLog().filter((r) => r.kind === "clean").length + 1;
+    const total = totalFreedKb();
+
     container.innerHTML = `
       <div class="hero">
-        <button class="explore-toggle" id="explore-toggle" aria-pressed="false">
-          <span aria-hidden="true">✦</span>
-          <span id="explore-toggle-label">${t("clean.explore")}</span>
+        <span class="kicker">${t("clean.issue", { n: issue })}</span>
+        <div class="big">${t("clean.ready")}</div>
+        <p class="sub">${t("clean.ready.sub")}</p>
+        <button class="frame-cta" id="scan">${t("clean.scan")} →</button>
+        <div class="statline">
+          <span>${t("clean.stat.last")} · ${
+            previous ? t("clean.stat.daysAgo", { d: daysSince(previous.at) }) : "—"
+          }</span>
+          <span>${t("clean.stat.reclaimed")} · ${previous ? humanKb(previous.freedKb) : "—"}</span>
+          <span>${t("clean.stat.total")} · ${total > 0 ? humanKb(total) : "—"}</span>
+        </div>
+        <button class="link-quiet" id="explore-toggle" aria-pressed="false">
+          ✦ <span id="explore-toggle-label">${t("clean.explore")}</span>
         </button>
         <section class="explore-card" id="explore-card" aria-live="polite" hidden>
-          <div class="explore-presets" role="group" aria-label="${t("clean.explore.presets")}">
-            <button class="active" data-preset="all">${t("clean.explore.all")}</button>
-            <button data-preset="solar-system">${t("clean.explore.solar")}</button>
-            <button data-preset="earth-moon">${t("clean.explore.earthMoon")}</button>
-          </div>
           <div class="explore-card-head">
             <span id="explore-progress">${t("clean.explore.loading")}</span>
             <span class="explore-new" id="explore-new" hidden>${t("clean.explore.new")}</span>
+            <span class="spacer"></span>
+            <span class="explore-presets" role="group" aria-label="${t("clean.explore.presets")}">
+              <button class="active" data-preset="all">${t("clean.explore.all")}</button>
+              <button data-preset="solar-system">${t("clean.explore.solar")}</button>
+              <button data-preset="earth-moon">${t("clean.explore.earthMoon")}</button>
+            </span>
           </div>
-          <div class="explore-visual" id="explore-visual" data-kind="planet" aria-hidden="true">
-            <div class="explore-visual-orbit"></div>
-            <div class="explore-visual-body" id="explore-visual-body"></div>
-            <img class="explore-visual-image" id="explore-visual-image" alt="" hidden />
-            <span id="explore-visual-caption">${t("clean.explore.illustration")}</span>
-          </div>
+          <div class="explore-plate" id="explore-plate"></div>
           <div class="explore-name" id="explore-name">${t("clean.explore.prompt")}</div>
           <div class="explore-meta" id="explore-meta">${t("clean.explore.hint")}</div>
           <div class="explore-size" id="explore-size">${t("clean.explore.scale")}</div>
           <p class="explore-summary" id="explore-summary"></p>
-          <div class="explore-source" id="explore-source"></div>
-          <button class="explore-reset" id="explore-reset">${t("clean.explore.reset")}</button>
+          <div class="explore-source">
+            <span id="explore-texture">${t("clean.explore.illustration")}</span>
+            <span id="explore-source"></span>
+          </div>
+          <button class="link-quiet" id="explore-reset">${t("clean.explore.reset")}</button>
         </section>
-        <div class="big" style="font-size:24px">${t("clean.ready")}</div>
-        <div class="sub">${t("clean.ready.sub")}</div>
-        <button class="cta primary" id="scan">${t("clean.scan")}</button>
       </div>`;
-    const hero = container.querySelector<HTMLElement>(".hero")!;
     const toggle = container.querySelector<HTMLButtonElement>("#explore-toggle")!;
     const toggleLabel = container.querySelector<HTMLElement>("#explore-toggle-label")!;
     const card = container.querySelector<HTMLElement>("#explore-card")!;
-    const readyTitle = container.querySelector<HTMLElement>(".hero > .big")!;
-    const readySubtitle = container.querySelector<HTMLElement>(".hero > .sub")!;
+    const plate = container.querySelector<HTMLElement>("#explore-plate")!;
     const scanButton = container.querySelector<HTMLButtonElement>("#scan")!;
     const progress = container.querySelector<HTMLElement>("#explore-progress")!;
     const discoveryName = container.querySelector<HTMLElement>("#explore-name")!;
     const discoveryMeta = container.querySelector<HTMLElement>("#explore-meta")!;
     const discoverySize = container.querySelector<HTMLElement>("#explore-size")!;
     const discoverySummary = container.querySelector<HTMLElement>("#explore-summary")!;
+    const textureNote = container.querySelector<HTMLElement>("#explore-texture")!;
     const catalogSource = container.querySelector<HTMLElement>("#explore-source")!;
     const newBadge = container.querySelector<HTMLElement>("#explore-new")!;
-    const preview = container.querySelector<HTMLElement>("#explore-visual")!;
-    const previewBody = container.querySelector<HTMLElement>("#explore-visual-body")!;
-    const previewImage = container.querySelector<HTMLImageElement>("#explore-visual-image")!;
-    const previewCaption = container.querySelector<HTMLElement>("#explore-visual-caption")!;
     const presetButtons = Array.from(
       container.querySelectorAll<HTMLButtonElement>("[data-preset]"),
     );
@@ -92,24 +107,22 @@ export const clean: View = {
      * action. Leaving explorer mode restores the original quiet hero. */
     const setExploring = (active: boolean) => {
       exploring = active;
-      hero.classList.toggle("exploring", active);
       card.hidden = !active;
       toggle.setAttribute("aria-pressed", String(active));
       toggleLabel.textContent = t(active ? "clean.explore.exit" : "clean.explore");
-      readyTitle.setAttribute("aria-hidden", String(active));
-      readySubtitle.setAttribute("aria-hidden", String(active));
-      scanButton.disabled = active;
       particles?.setExploring(active);
       if (!active) toggle.focus({ preventScroll: true });
     };
 
-    particles = mountParticles(hero, "idle", "ember", {
+    // The particle field lives inside the plate, never behind the page: a
+    // night-sky canvas on paper stock would read as a printing error.
+    particles = mountParticles(plate, "idle", "ember", {
       interactive: true,
       targets: [],
       ariaLabel: t("clean.explore.aria"),
       onExit: () => setExploring(false),
-      onDiscovery: ({ target, discovered, total, isNew }) => {
-        progress.textContent = t("clean.explore.progress", { n: discovered, total });
+      onDiscovery: ({ target, discovered, total: catalogTotal, isNew }) => {
+        progress.textContent = t("clean.explore.progress", { n: discovered, total: catalogTotal });
         discoveryName.textContent = localizedCelestialName(target.id, target.name);
         const type = t(`explore.type.${target.bodyType}`);
         const distance =
@@ -124,12 +137,16 @@ export const clean: View = {
             ? t("clean.explore.radiusUnknown")
             : t("clean.explore.radius", { radius: formatRadius(target.radiusKm) });
         discoverySummary.textContent = lang() === "zh" ? target.summaryZh : target.summaryEn;
-        catalogSource.textContent = t("clean.explore.objectSource", {
+        // Say plainly whether the plate shows a photographed surface or a
+        // generated illustration — the catalog prose is factual, the art is not.
+        textureNote.textContent = REAL_TEXTURES.has(target.id)
+          ? t("clean.explore.realTexture")
+          : t("clean.explore.illustration");
+        catalogSource.textContent = ` · ${t("clean.explore.objectSource", {
           source: target.sourceUrl.includes("science.nasa.gov")
             ? "NASA Solar System"
             : "NASA Exoplanet Archive",
-        });
-        renderCelestialPreview(preview, previewBody, previewImage, previewCaption, target);
+        })}`;
         newBadge.hidden = !isNew;
       },
     });
@@ -144,14 +161,16 @@ export const clean: View = {
           n: 0,
           total: catalog.objects.length,
         });
-        catalogSource.textContent = catalog.archiveComplete
-          ? t("clean.explore.catalog", { source: catalog.sourceName })
-          : t("clean.explore.offlineCatalog");
+        catalogSource.textContent = ` · ${
+          catalog.archiveComplete
+            ? t("clean.explore.catalog", { source: catalog.sourceName })
+            : t("clean.explore.offlineCatalog")
+        }`;
         if (catalog.warning) catalogSource.title = catalog.warning;
       })
       .catch(() => {
         progress.textContent = t("clean.explore.loadFailed");
-        catalogSource.textContent = t("clean.explore.loadFailedHint");
+        catalogSource.textContent = ` · ${t("clean.explore.loadFailedHint")}`;
       });
     toggle.addEventListener("click", () => setExploring(!exploring));
     const setPreset = (preset: CelestialPreset) => {
@@ -184,8 +203,8 @@ export const clean: View = {
         title: t("prev.header"),
         verb: t("clean.go"),
         helperAvailable: meta.helper_available,
-        particles: "ember",
         home: meta.home,
+        ledger: "clean",
         trashOverride: cleanTrashMode(),
         onCancel: () => {
           void cancelTask(purgeTask);
@@ -200,7 +219,7 @@ export const clean: View = {
               size: humanKb(blocked.total_kb),
               n: blocked.count,
             });
-            parts.push(`<div class="muted" style="margin-top:6px">${hint}</div>`);
+            parts.push(`<p class="lede" style="margin-top:6px">${hint}</p>`);
           }
           // Project git blockers stay report-only badges, never a verdict.
           const flagged = projects.filter((p) => p.blockers.length > 0);
@@ -258,12 +277,12 @@ export const clean: View = {
           }
           return "";
         },
-        confirmNote: (selected) => {
+        confirmNote: (selectedItems) => {
           const roots = new Set<string>();
           let kb = 0;
           let recent = 0;
           let dockerCount = 0;
-          for (const item of selected) {
+          for (const item of selectedItems) {
             if (imageOf(images, item.id) || item.id === "build-cache") {
               dockerCount += 1;
               continue;
@@ -367,46 +386,4 @@ function localizedCelestialName(id: string, fallback: string): string {
     "eris",
   ]);
   return solarIds.has(id) ? t(`explore.name.${id}`) : fallback;
-}
-
-const REAL_TEXTURES: Readonly<Record<string, string>> = {
-  earth: "/planet-earth.jpg",
-  mars: "/planet-mars.jpg",
-  jupiter: "/planet-jupiter.jpg",
-};
-
-/** Render an honest visual companion to the catalog prose. Three bundled NASA
- * textures are identified as real textures; every other body gets a stable,
- * explicitly labelled data illustration derived from its type and id. */
-function renderCelestialPreview(
-  preview: HTMLElement,
-  body: HTMLElement,
-  image: HTMLImageElement,
-  caption: HTMLElement,
-  target: import("../explore").CelestialTarget,
-): void {
-  const texture = REAL_TEXTURES[target.id];
-  const hue = stableHue(target.id);
-  preview.dataset.kind = target.bodyType;
-  preview.style.setProperty("--preview-hue", String(hue));
-  image.hidden = !texture;
-  body.hidden = Boolean(texture);
-  if (texture) {
-    image.src = texture;
-    caption.textContent = t("clean.explore.realTexture");
-  } else {
-    image.removeAttribute("src");
-    caption.textContent = t("clean.explore.illustration");
-  }
-}
-
-/** FNV-1a produces a stable color identity without persisting presentation
- * fields in the scientific catalog. */
-function stableHue(id: string): number {
-  let hash = 2_166_136_261;
-  for (const char of id) {
-    hash ^= char.charCodeAt(0);
-    hash = Math.imul(hash, 16_777_619);
-  }
-  return Math.abs(hash) % 360;
 }

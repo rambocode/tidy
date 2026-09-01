@@ -1,14 +1,16 @@
-// Status view (reference design): 4×2 metric card grid — health with
-// hardware chips, CPU with per-core bars, GPU with a rolling sparkline,
-// memory with pressure + swap, battery detail, disk gradient bar, network
-// area chart, fan RPM with a rolling sparkline (read-only SMC; control would
-// need the privileged helper) — and a sortable 50-row process table.
+// Status view (newspaper skin): a six-column metric strip set in giant serif
+// numerals — CPU with per-core bars, memory with pressure, GPU, disk, network,
+// and battery/fan (read-only SMC; fan *control* would need the privileged
+// helper) — then a double rule, the two top-process ledgers and the health
+// rail, and finally the full sortable process table as the continuation
+// below the fold. The hardware line is printed in the masthead marginalia.
 // Refreshes every 2s while mounted only.
 
 import { appIcon, processDetail, revealInFinder, signalProcess, statusSnapshot } from "../ipc";
-import { esc, humanBytes, humanUptime } from "../format";
+import { esc, humanBytes, humanUptime, splitUnit } from "../format";
 import { t } from "../i18n";
 import { formatTemp } from "../prefs";
+import { setNavMeta } from "../router";
 import type { View } from "../router";
 import type { FanStatus, ProcessDetail, ProcessInfo, StatusSnapshot } from "../types";
 
@@ -18,7 +20,6 @@ let timer: number | null = null;
 const gpuHistory: number[] = [];
 const rxHistory: number[] = [];
 const txHistory: number[] = [];
-const fanHistory: number[] = [];
 const HISTORY = 30;
 
 /** Process table sort state. */
@@ -122,7 +123,7 @@ function sparkline(buf: number[], color: string, autoScale = false): string {
     <polyline points="${points}" fill="none" stroke="${color}" stroke-width="1.5" /></svg>`;
 }
 
-/** Dual-line network chart (rx green, tx blue), auto-scaled together. */
+/** Dual-line network chart (rx inked area, tx rust line), auto-scaled together. */
 function netChart(): string {
   if (rxHistory.length < 2) return `<svg class="spark" viewBox="0 0 100 30"></svg>`;
   const max = Math.max(1, ...rxHistory, ...txHistory);
@@ -136,53 +137,31 @@ function netChart(): string {
       : `<polyline points="${pts}" fill="none" stroke="${color}" stroke-width="1.5" />`;
   };
   return `<svg class="spark" viewBox="0 0 100 30" preserveAspectRatio="none">
-    ${line(rxHistory, "#4fbf74", true)}${line(txHistory, "#5aa9e6", false)}</svg>`;
+    ${line(rxHistory, "#26241f", true)}${line(txHistory, "#a4432c", false)}</svg>`;
 }
 
-/** Fan card body: live RPM from unprivileged SMC reads plus a rolling
- * sparkline. Read-only by design — fan *control* is an SMC write and needs
- * the signed privileged helper, so no control buttons are offered. */
-function fanBody(fans: FanStatus[]): string {
-  if (fans.length === 0)
-    return `<div class="value">—<small> RPM</small></div>
-     <div class="foot" style="margin-top:14px">${t("st.fan.none")}</div>`;
-  const rpm = Math.round(Math.max(...fans.map((f) => f.actual_rpm)));
-  const maxRpm = fans[0].max_rpm;
-  const minRpm = fans[0].min_rpm;
-  // Scale against the hardware max when known, so an idling fan draws a low
-  // line instead of autoscale pinning a flat idle curve to the top.
-  const buf = maxRpm ? fanHistory.map((v) => Math.min(100, (v / maxRpm) * 100)) : fanHistory;
-  const detail =
-    fans.length > 1
-      ? `${fans.map((f) => Math.round(f.actual_rpm)).join(" / ")} RPM`
-      : minRpm !== null && maxRpm !== null
-        ? `${t("st.fan.range")} ${Math.round(minRpm)}–${Math.round(maxRpm)}`
-        : "";
-  return `<div class="value">${rpm}<small> RPM</small></div>
-   ${sparkline(buf, "var(--accent)", !maxRpm)}
-   <div class="foot">${detail ? `${detail} · ` : ""}${t("st.fan.macos")}</div>`;
-}
-
-/** One metric card shell. */
-function card(head: string, tag: string, body: string): string {
-  return `<div class="card">
-    <div class="card-head">${head}${tag ? `<span class="tag badge">${tag}</span>` : ""}</div>
-    ${body}
+/** One column of the metric strip: a giant serif reading, a monospaced
+ * caption, and an optional chart. `hot` turns the whole column rust. */
+function metric(value: string, unit: string, label: string, chart: string, hot = false): string {
+  return `<div class="metric ${hot ? "hot" : ""}">
+    <div class="figure md">${value}<span class="unit">${unit}</span></div>
+    <span class="metric-label">${label}</span>
+    ${chart}
   </div>`;
 }
 
-/** Skeleton card grid: the instant first paint before any snapshot exists,
- * so opening the tab never shows a blank screen while sampling runs. */
+/** Skeleton strip: the instant first paint before any snapshot exists, so
+ * opening the tab never shows a blank screen while sampling runs. */
 function renderSkeleton(container: HTMLElement): void {
-  const card = `<div class="card">
-    <div class="skel-line" style="width:40%"></div>
-    <div class="skel-line" style="width:55%;height:22px;margin-top:14px"></div>
-    <div class="skel-line" style="width:72%;margin-top:14px"></div>
+  const col = `<div class="metric">
+    <div class="skel-line" style="width:60%;height:40px"></div>
+    <div class="skel-line" style="width:80%;margin-top:10px"></div>
   </div>`;
   container.innerHTML = `
-    <div class="content-narrow" style="max-width:1280px">
-      <div class="cards status-grid">${card.repeat(8)}</div>
-      <div class="panel">
+    <div class="content-narrow">
+      <div class="metric-strip">${col.repeat(6)}</div>
+      <div class="rule-double"></div>
+      <div style="padding-top:20px">
         <div class="skel-line" style="width:30%"></div>
         <div class="skel-line" style="width:90%;margin-top:12px"></div>
         <div class="skel-line" style="width:85%;margin-top:8px"></div>
@@ -205,10 +184,6 @@ async function refresh(container: HTMLElement): Promise<void> {
   push(gpuHistory, s.gpu.utilization_percent ?? 0);
   push(rxHistory, s.network.rx_rate_bps);
   push(txHistory, s.network.tx_rate_bps);
-  // `?? []` degrades gracefully when the UI is hot-reloaded against an older
-  // backend whose snapshot has no fans field yet.
-  if ((s.fans ?? []).length > 0)
-    push(fanHistory, Math.max(...s.fans.map((f) => f.actual_rpm)));
   renderSnapshot(container, s);
 }
 
@@ -218,102 +193,144 @@ function renderSnapshot(container: HTMLElement, s: StatusSnapshot): void {
   const fans = s.fans ?? [];
   const { score, message } = health(s);
   const memPct = (s.memory_used_bytes / s.memory_total_bytes) * 100;
+  const pressure = s.memory_pressure_percent ?? 0;
   const root = s.disks.find((d) => d.mount_point === "/") ?? s.disks[0];
   const bootDate = new Date(Date.now() - s.uptime_seconds * 1000);
-  const topProc = s.top_processes[0];
+  const usedPct = root ? ((root.total_bytes - root.available_bytes) / root.total_bytes) * 100 : 0;
 
-  const healthCard = `<div class="card health-card">
-    <div class="card-head">☀ ${t("st.health")}
-      <span class="tag">
-        <span class="badge">${esc(s.hardware.chip.replace("Apple ", ""))}</span>
-        <span class="badge">${s.hardware.memory_gb} GB</span>
-        <span class="badge">macOS ${esc(s.hardware.os_version)}</span>
-      </span>
-    </div>
-    <div>
-      <div class="value">${score}<small> ${score >= 85 ? t("st.good") : t("st.fair")}</small></div>
-      <div class="foot" style="margin-top:6px">${esc(message)}</div>
-      <div class="foot" style="margin-top:14px">${t("st.uptime")} ${humanUptime(s.uptime_seconds)} · ${t("st.since")} ${bootDate.getMonth() + 1}/${bootDate.getDate()}</div>
-    </div>
-  </div>`;
-
-  const cpuCard = card(
-    `⌁ ${t("st.cpu")}`,
-    `×${s.cpu_count}`,
-    `<div class="value">${s.cpu_usage_percent.toFixed(0)}<small>%</small></div>
-     ${coreBars(s.per_core_percent)}
-     <div class="foot">${loadLabel(s)} · ${t("st.load")} ${s.load_avg_1m.toFixed(1)} / ${s.cpu_count} ${t("st.cores")}</div>`,
+  // The hardware line belongs in the masthead marginalia, exactly where the
+  // reference prints it.
+  setNavMeta(
+    `${esc(s.hardware.chip.replace("Apple ", ""))} · ${s.hardware.memory_gb} GB · macOS ${esc(
+      s.hardware.os_version,
+    )}`,
   );
 
-  const gpuCard = card(
-    `▣ ${t("st.gpu")}`,
-    s.gpu.core_count ? `${s.gpu.core_count} ${t("st.gpucores")}` : "",
-    `<div class="value">${s.gpu.utilization_percent ?? 0}<small>%</small></div>
-     ${sparkline(gpuHistory, "var(--warn)")}
-     <div class="foot">${loadLabel(s)} · ${s.gpu.core_count ?? "—"} ${t("st.gpucores")}</div>`,
-  );
+  const memHot = pressure > 50 || memPct > 90;
+  const cpuHot = s.cpu_usage_percent > 80;
 
-  const memCard = card(
-    `▤ ${t("st.mem")}`,
-    s.memory_pressure_percent !== null
-      ? `${t("st.pressure")} ${s.memory_pressure_percent}%`
-      : humanBytes(s.memory_total_bytes),
-    `<div class="value">${memPct.toFixed(0)}<small>%</small></div>
-     <div class="meter"><div style="width:${Math.min(100, memPct)}%"></div></div>
-     <div class="foot">${humanBytes(s.memory_used_bytes)} · ${t("st.swap")} ${humanBytes(s.swap_used_bytes)}</div>`,
-  );
+  const strip = [
+    metric(
+      s.cpu_usage_percent.toFixed(0),
+      "%",
+      `${t("st.cpu")} · ${s.cpu_count} ${t("st.cores")}`,
+      coreBars(s.per_core_percent),
+      cpuHot,
+    ),
+    metric(
+      memPct.toFixed(0),
+      "%",
+      s.memory_pressure_percent !== null
+        ? `${t("st.mem")} · ${t("st.pressure")} ${pressure}%`
+        : `${t("st.mem")} · ${humanBytes(s.memory_total_bytes)}`,
+      `<div class="meter ${memHot ? "accent" : ""}"><div style="width:${Math.min(100, memPct)}%"></div></div>`,
+      memHot,
+    ),
+    metric(
+      String(s.gpu.utilization_percent ?? 0),
+      "%",
+      `${t("st.gpu")} · ${s.gpu.core_count ?? "—"} ${t("st.gpucores")} · ${loadLabel(s)}`,
+      sparkline(gpuHistory, "var(--ink)"),
+    ),
+    root
+      ? metric(
+          ...splitUnit(humanBytes(root.available_bytes)),
+          `${t("st.disk")} · ${t("st.used")} ${usedPct.toFixed(0)}%`,
+          `<div class="meter"><div style="width:${usedPct.toFixed(0)}%"></div></div>`,
+        )
+      : "",
+    metric(
+      splitUnit(humanBytes(s.network.rx_rate_bps))[0],
+      `${splitUnit(humanBytes(s.network.rx_rate_bps))[1]}/s`,
+      `${t("st.net")}${s.network.interface ? ` · ${esc(s.network.interface)}` : ""} · ↑${humanBytes(s.network.tx_rate_bps)}`,
+      netChart(),
+    ),
+    batteryMetric(s, fans),
+  ].join("");
 
-  const batteryCard = s.battery
-    ? card(
-        `▮ ${t("st.battery")}`,
-        s.battery.health_percent !== null
-          ? `${t("st.health.badge")} ${s.battery.health_percent}%`
-          : "",
-        `<div class="value">${s.battery.percent}<small>% ${s.battery.charging ? "⚡" : ""} ${
-          s.battery.watts !== null && s.battery.watts > 0.5
-            ? `${s.battery.watts.toFixed(0)}W`
-            : t("st.charged")
-        }</small></div>
-       <div class="foot">${s.battery.cycle_count ?? "—"} ${t("st.cycles")} · ${
-         s.battery.temperature_c !== null ? formatTemp(s.battery.temperature_c) : "—"
-       }</div>
-       ${topProc ? `<div class="foot">🔥 ${t("st.topdrain")} ${esc(topProc.name)} · ${topProc.cpu_percent.toFixed(1)}</div>` : ""}`,
-      )
-    : "";
+  const procColumn = (label: string, rows: string) =>
+    `<div class="col-main">
+      <span class="sec-label">${label}</span>
+      <div class="ledger tight">${rows}</div>
+    </div>`;
 
-  const diskCard = root
-    ? card(
-        `◫ ${t("st.disk")}`,
-        humanBytes(root.total_bytes),
-        `<div class="value">${humanBytes(root.available_bytes)}<small> ${t("st.avail")}</small></div>
-       <div class="meter disk-meter"><div style="width:${(((root.total_bytes - root.available_bytes) / root.total_bytes) * 100).toFixed(0)}%"></div></div>
-       <div class="foot">${t("st.used")} ${humanBytes(root.total_bytes - root.available_bytes)} · ${(((root.total_bytes - root.available_bytes) / root.total_bytes) * 100).toFixed(0)}%</div>`,
-      )
-    : "";
-
-  const netCard = card(
-    `⇅ ${t("st.net")}`,
-    s.network.interface ? esc(s.network.interface) : "",
-    `<div class="value">${humanBytes(s.network.rx_rate_bps)}<small>/s</small></div>
-     ${netChart()}
-     <div class="foot">↑ ${humanBytes(s.network.tx_rate_bps)}/s${s.network.interface ? ` · ${esc(s.network.interface)}` : ""}</div>`,
-  );
-
-  const fanCard = card(`✽ ${t("st.fan")}`, fans.length > 1 ? `×${fans.length}` : "", fanBody(fans));
+  const byCpu = [...s.top_processes].sort((a, b) => b.cpu_percent - a.cpu_percent).slice(0, 5);
+  const byMem = [...s.top_processes].sort((a, b) => b.memory_bytes - a.memory_bytes).slice(0, 5);
+  const ledRow = (name: string, value: string, hot: boolean) =>
+    `<div class="led ${hot ? "flag" : ""}">
+      <span class="name">${esc(name)}</span>
+      <span class="dots"></span>
+      <span class="amt">${esc(value)}</span>
+    </div>`;
 
   container.innerHTML = `
-    <div class="content-narrow" style="max-width:1280px">
-      <div class="cards status-grid">
-        ${healthCard}${cpuCard}${gpuCard}${memCard}
-        ${batteryCard}${diskCard}${netCard}${fanCard}
+    <div class="content-narrow">
+      <div class="metric-strip">${strip}</div>
+      <div class="rule-double"></div>
+      <div class="cols" style="padding-top:20px">
+        ${procColumn(
+          t("st.proc.byCpu"),
+          byCpu
+            .map((p) => ledRow(p.name, p.cpu_percent.toFixed(1), p.cpu_percent > 100))
+            .join(""),
+        )}
+        <div class="col-main col-rule">
+          <span class="sec-label">${t("st.proc.byMem")}</span>
+          <div class="ledger tight">
+            ${byMem.map((p) => ledRow(p.name, humanBytes(p.memory_bytes), false)).join("")}
+          </div>
+        </div>
+        <div class="col-side">
+          <span class="sec-label">${t("st.health")}</span>
+          <div class="figure" style="font-size:44px">${score}<small style="font-size:16px;color:var(--ink-faint)"> / ${
+            score >= 85 ? t("st.good") : t("st.fair")
+          }</small></div>
+          <span class="health-note">${esc(message)}</span>
+          <span class="mono muted" style="font-size:11.5px">
+            ${t("st.uptime")} ${humanUptime(s.uptime_seconds)} · ${t("st.since")} ${bootDate.getMonth() + 1}/${bootDate.getDate()}
+          </span>
+        </div>
       </div>
-      <div class="panel" id="proc-panel">${procTable(s)}</div>
-      <div class="muted" style="text-align:center">${esc(s.platform)} · ${esc(s.host)}</div>
+      <div class="rule" style="margin-top:26px;padding-top:16px">
+        <span class="sec-label">${t("st.proc.all", { n: s.top_processes.length })}</span>
+        <div id="proc-panel" style="margin-top:10px">${procTable(s)}</div>
+      </div>
+      <div class="muted mono" style="text-align:center;font-size:11px;padding:14px 0 4px">
+        ${esc(s.platform)} · ${esc(s.host)}
+      </div>
     </div>`;
 
   wireProcTable(container);
-
 }
+
+/** Sixth strip column: battery when present, otherwise fan RPM — whichever
+ * the hardware actually reports, never an empty slot. */
+function batteryMetric(s: StatusSnapshot, fans: FanStatus[]): string {
+  const fanLine =
+    fans.length > 0
+      ? `${t("st.fan")} ${Math.round(Math.max(...fans.map((f) => f.actual_rpm)))} RPM ×${fans.length}`
+      : t("st.fan.none");
+  if (s.battery) {
+    // The reference leads this column with temperature and demotes charge to
+    // the caption; fall back to charge when the SMC reports no reading.
+    const temp = s.battery.temperature_c !== null ? formatTemp(s.battery.temperature_c) : null;
+    const [value, unit] = temp ? splitUnit(temp) : [String(s.battery.percent), "%"];
+    return `<div class="metric" style="flex:0.8">
+      <div class="figure md">${value}<span class="unit">${unit}</span></div>
+      <span class="metric-label">${t("st.battery")} ${s.battery.percent}%${
+        s.battery.charging ? " ⚡" : ""
+      } · ${s.battery.cycle_count ?? "—"} ${t("st.cycles")}</span>
+      <span class="metric-label">${fanLine}</span>
+    </div>`;
+  }
+  return `<div class="metric" style="flex:0.8">
+    <div class="figure md">${
+      fans.length > 0 ? Math.round(Math.max(...fans.map((f) => f.actual_rpm))) : "—"
+    }<span class="unit">RPM</span></div>
+    <span class="metric-label">${t("st.fan")} · ${t("st.fan.macos")}</span>
+  </div>`;
+}
+
 
 /** Full process table markup (thead + tbody) from a snapshot. */
 function procTable(s: StatusSnapshot): string {

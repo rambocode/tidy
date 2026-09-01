@@ -1,27 +1,35 @@
-// Analyze view (reference design): gold particle sidebar with the directory
-// list, breadcrumb on top, and a squarified treemap filling the main area. Clicking
-// a block or sidebar row drills in; multi-select for Trash-only deletion.
+// Analyze view (newspaper skin): the "space investigation" column. A
+// breadcrumb headline, then the directory listing set as a ranked account —
+// name, size, share, and a solid ink bar — with the largest child previewed
+// in the right rail and the whole-disk split printed as a footer strip. The
+// squarified treemap survives behind a view switch for people who read shapes
+// faster than numbers.
 // Completed listings are cached for the session and an in-flight scan keeps
 // running across tab switches — re-entering the tab never restarts a scan.
 
-import { analyzeScan, appMeta, cancelTask, newTaskId, planDeletePaths } from "../ipc";
+import { analyzeScan, appMeta, cancelTask, newTaskId, planDeletePaths, statusSnapshot } from "../ipc";
 import { renderFlow } from "../flow";
-import { mountParticles } from "../particles";
-import { esc, humanKb } from "../format";
+import { esc, humanBytes, humanKb } from "../format";
 import { t } from "../i18n";
+import { setNavMeta } from "../router";
 import { squarify } from "../treemap";
 import type { View } from "../router";
 import type { DirListing } from "../types";
 
-/** Warm block palette from the reference design, assigned by rank. */
+/** Rank-ordered bar washes: the leader is rust, the tail fades into paper. */
+const BARS = ["#a4432c", "#c08468", "#d9c1ac", "#d9c1ac", "#e8ddce", "#efe9dc"];
+
+/** Warm block palette for the optional treemap view. */
 const PALETTE = [
-  "#c9a25e", "#c98b4a", "#b95f43", "#8f7a92", "#7c6f83",
-  "#6e6258", "#a3865a", "#7f8a6a", "#9a6a55", "#6a7a8a",
+  "#a4432c", "#b95f43", "#c08468", "#c9a25e", "#a3865a",
+  "#8f7a92", "#7c6f83", "#6e6258", "#7f8a6a", "#6a7a8a",
 ];
 
 /** Current directory (persists across navigations within the session). */
 let currentRoot = "";
 let home = "";
+/** Ledger (ranked bars) or treemap; persists across navigations. */
+let viewMode: "ledger" | "treemap" = "ledger";
 
 /** Cache of completed listings by root, persisted to localStorage so a
  * relaunch re-opens the last listings without re-scanning. Tab switches
@@ -112,12 +120,51 @@ export const analyze: View = {
     if (pending) renderScanning(container, pending);
     else if (listingCache.has(currentRoot))
       renderListing(container, listingCache.get(currentRoot)!);
-    else startScan(currentRoot);
+    else renderIdle(container);
   },
   unmount() {
     mounted = null;
   },
 };
+
+/** Idle page: the investigation's standing headline and the scope choices. */
+function renderIdle(container: HTMLElement): void {
+  const scopes: { label: string; root: string }[] = [
+    { label: t("ana.whole"), root: "/" },
+    { label: t("ana.homeScope"), root: home },
+  ];
+  container.innerHTML = `
+    <div class="hero">
+      <span class="kicker">${t("ana.kicker")}</span>
+      <div class="big">${t("ana.headline")}</div>
+      <p class="sub">${t("ana.lede")}</p>
+      <div style="display:flex;gap:22px;margin-top:16px;font-size:13.5px">
+        ${scopes
+          .map(
+            (s, i) =>
+              `<a href="#" data-scope="${esc(s.root)}" class="${i === 1 ? "" : "muted"}"
+                 style="${i === 1 ? "border-bottom:2px solid var(--rust);font-weight:600;padding-bottom:3px" : "color:var(--ink-faint)"}"
+              >${esc(s.label)} · ${esc(tildify(s.root))}</a>`,
+          )
+          .join("")}
+      </div>
+      <button class="frame-cta" id="start">${t("ana.start")} →</button>
+      ${
+        cachedAt.has(currentRoot)
+          ? `<span class="statline"><span>${t("ana.cached", { time: fmtTime(cachedAt.get(currentRoot)!) })}</span></span>`
+          : ""
+      }
+    </div>`;
+
+  container.querySelectorAll<HTMLAnchorElement>("a[data-scope]").forEach((a) => {
+    a.addEventListener("click", (ev) => {
+      ev.preventDefault();
+      currentRoot = a.dataset.scope!;
+      renderIdle(container);
+    });
+  });
+  container.querySelector("#start")!.addEventListener("click", () => startScan(currentRoot));
+}
 
 /** Navigate to a directory: serve from cache or start a scan. */
 function openDir(root: string): void {
@@ -165,83 +212,160 @@ function startScan(root: string, fresh = false): void {
     });
 }
 
-/** Scanning hero with live progress; shown fresh or when returning mid-scan. */
-function renderScanning(container: HTMLElement, state: { root: string; taskId: string; label: string }): void {
+/** Scanning page with live progress; shown fresh or when returning mid-scan. */
+function renderScanning(
+  container: HTMLElement,
+  state: { root: string; taskId: string; label: string },
+): void {
   container.innerHTML = `
     <div class="hero">
-      <div class="sub">${t("ana.scanning")} ${esc(state.root)} … <span id="scan-progress">${esc(state.label)}</span></div>
-      <button class="cta" id="cancel">${t("flow.cancel")}</button>
+      <span class="kicker">${t("ana.scanning")}</span>
+      <div class="big">${esc(tildify(state.root))}</div>
+      <p class="sub mono" id="scan-progress">${esc(state.label)}</p>
+      <button class="link-quiet" id="cancel">${t("flow.cancel")}</button>
     </div>`;
-  mountParticles(container.querySelector<HTMLElement>(".hero")!, "scan", "gold");
   container
     .querySelector("#cancel")!
     .addEventListener("click", () => void cancelTask(state.taskId));
 }
 
-/** Sidebar + treemap render. */
+/** Ranked ledger (or treemap) + child rail + whole-disk strip. */
 function renderListing(container: HTMLElement, listing: DirListing): void {
   const entries = listing.entries;
-  const side = entries
-    .map(
-      (e, idx) => `<div class="item" data-dir="${e.is_dir ? esc(e.path) : ""}">
-        <span style="color:${PALETTE[idx % PALETTE.length]}">📁</span>
-        <div class="grow">
-          <div class="name">${esc(e.name)}</div>
-          <div class="size">${humanKb(e.size_kb)}</div>
-        </div>
-        <input type="checkbox" data-path="${esc(e.path)}" />
-        <span class="muted chev-slot">${e.is_dir ? "›" : ""}</span>
-      </div>`,
-    )
-    .join("");
+  const TOP = 6;
+  const shown = entries.slice(0, TOP);
+  const rest = entries.slice(TOP);
+  const restKb = rest.reduce((sum, e) => sum + e.size_kb, 0);
+  const maxKb = Math.max(1, shown[0]?.size_kb ?? 1, restKb);
+
+  /** One ranked row: label + size/share on a line, a solid bar underneath. */
+  const barRow = (
+    name: string,
+    kb: number,
+    idx: number,
+    path: string | null,
+    lead: boolean,
+  ) => {
+    const share = listing.total_kb > 0 ? Math.round((kb / listing.total_kb) * 100) : 0;
+    const width = Math.max(1, Math.round((kb / maxKb) * 100));
+    return `<div class="bar-row ${path ? "dir" : ""} ${lead ? "lead" : ""}" ${path ? `data-dir="${esc(path)}"` : ""}>
+      <div class="bar-line">
+        <span class="bar-name">${esc(name)}</span>
+        <span class="bar-size">${humanKb(kb)} · ${share}%</span>
+      </div>
+      <div class="bar" style="width:${width}%;background:${BARS[Math.min(idx, BARS.length - 1)]}"></div>
+    </div>`;
+  };
+
+  const bars = [
+    ...shown.map((e, idx) => barRow(e.name, e.size_kb, idx, e.is_dir ? e.path : null, idx === 0)),
+    restKb > 0
+      ? barRow(t("ana.restN", { n: rest.length }), restKb, BARS.length - 1, null, false)
+      : "",
+  ].join("");
+
+  // The rail previews the largest child directory. Its own children are only
+  // printed when that directory has already been scanned — a rail must never
+  // trigger a second walk behind the reader's back.
+  const leadEntry = shown.find((e) => e.is_dir);
+  const leadListing = leadEntry ? listingCache.get(leadEntry.path) : undefined;
+  const railRows = leadListing
+    ? [
+        ...leadListing.entries.slice(0, 4).map(
+          (e) => `<div class="led">
+            <span>${esc(e.name)}</span><span class="dots"></span>
+            <span class="amt">${humanKb(e.size_kb)}</span>
+          </div>`,
+        ),
+        leadListing.entries.length > 4
+          ? `<div class="led"><span class="muted">${t("ana.restN", {
+              n: leadListing.entries.length - 4,
+            })}</span><span class="dots"></span><span class="amt dim">${humanKb(
+              leadListing.entries.slice(4).reduce((sum, e) => sum + e.size_kb, 0),
+            )}</span></div>`
+          : "",
+      ].join("")
+    : `<div class="led"><span class="muted">${t("ana.railUnscanned")}</span></div>`;
 
   container.innerHTML = `
     <div class="ana-layout">
-      <div class="ana-side">
-        <div class="head">
-          <div class="particle-box"></div>
-          <div class="total">${entries.length} ${t("ana.items")} · ${humanKb(listing.total_kb)}</div>
+      <div class="col-main">
+        <div style="display:flex;justify-content:space-between;align-items:baseline;gap:16px">
+          <div class="crumbs">${breadcrumbs(listing.root)}</div>
+          <span class="mono muted" style="font-size:12px;white-space:nowrap;flex-shrink:0">
+            ${entries.length} ${t("ana.items")} · ${humanKb(listing.total_kb)}
+            ${listing.truncated ? `<span class="badge warn">${t("ana.cancelled")}</span>` : ""}
+          </span>
         </div>
-        <div class="muted" style="padding:4px 10px; font-size:11px">${t("ana.dir")}</div>
-        ${side}
-      </div>
-      <div class="ana-main">
-        <div class="crumbs">
-          ${breadcrumbs(listing.root)}
-          <span style="flex:1"></span>
-          <span>${t("ana.current")} ${humanKb(listing.total_kb)}</span>
-          ${listing.truncated ? `<span class="badge warn">${t("ana.cancelled")}</span>` : ""}
-          ${cachedAt.has(listing.root) ? `<span class="muted">${t("ana.cached", { time: fmtTime(cachedAt.get(listing.root)!) })}</span>` : ""}
-          <button id="rescan" title="${t("ana.refresh")}" style="padding:4px 10px">↻</button>
-          <button id="trash-selected" disabled style="padding:4px 12px">${t("ana.trash")}</button>
+        <div class="rule" style="padding-top:16px">
+          ${viewMode === "ledger" ? `<div style="display:flex;flex-direction:column;gap:14px">${bars}</div>` : `<div class="treemap" id="treemap"></div>`}
         </div>
-        <div class="treemap" id="treemap"></div>
-        <div class="muted" style="margin-top:8px;font-size:11px">${t("ana.hint")}</div>
+        <span class="muted" style="font-size:12px">${t("ana.hint")}</span>
       </div>
+      <div class="col-main col-rule" style="flex:0 0 330px">
+        <div class="rail-title">
+          ${leadEntry ? `${esc(leadEntry.name)} <span class="unit">${t("ana.inside")}</span>` : t("ana.selection")}
+        </div>
+        <div class="ledger tight rule" style="padding-top:14px">${railRows}</div>
+        ${leadEntry ? `<button class="link-cta sm" id="enter-lead">${t("ana.enter", { name: leadEntry.name })} →</button>` : ""}
+        <button class="link-quiet" id="trash-selected" disabled>${t("ana.trash")}</button>
+        <div class="rule-soft" style="padding-top:14px">
+          <div class="sec-label" style="margin-bottom:8px">${t("ana.pick")}</div>
+          <div class="ledger tight">
+            ${entries
+              .slice(0, 10)
+              .map(
+                (e) => `<div class="led center">
+                  <input type="checkbox" data-path="${esc(e.path)}" />
+                  <span class="note" style="font-size:12.5px;color:var(--ink)">${esc(e.name)}</span>
+                  <span class="dots"></span>
+                  <span class="amt dim">${humanKb(e.size_kb)}</span>
+                </div>`,
+              )
+              .join("")}
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="disk-strip" id="disk-strip">
+      <span>${t("ana.disk")}</span>
+      <div class="strip" id="strip"></div>
+      <span id="disk-label">…</span>
     </div>`;
 
-  // Small idle particle field where the Jupiter sphere used to sit.
-  mountParticles(container.querySelector<HTMLElement>(".particle-box")!, "idle", "gold");
+  setNavMeta(
+    `${
+      cachedAt.has(listing.root)
+        ? esc(t("ana.cached", { time: fmtTime(cachedAt.get(listing.root)!) }))
+        : ""
+    } <a href="#" id="toggle-view">${esc(viewMode === "ledger" ? t("ana.viewTreemap") : t("ana.viewLedger"))}</a> · <a href="#" id="rescan">${esc(t("ana.refresh"))}</a>`,
+  );
+  document.getElementById("toggle-view")?.addEventListener("click", (ev) => {
+    ev.preventDefault();
+    viewMode = viewMode === "ledger" ? "treemap" : "ledger";
+    renderListing(container, listing);
+  });
+  document.getElementById("rescan")?.addEventListener("click", (ev) => {
+    ev.preventDefault();
+    dropListing(listing.root);
+    startScan(listing.root, true);
+  });
 
-  renderTreemap(container, listing);
+  if (viewMode === "treemap") renderTreemap(container, listing);
+  void renderDiskStrip(container);
 
-  // Navigation: sidebar rows and breadcrumb links.
-  container.querySelectorAll<HTMLElement>(".ana-side .item").forEach((row) => {
-    row.addEventListener("click", (ev) => {
-      if ((ev.target as HTMLElement).tagName === "INPUT") return;
-      const dir = row.dataset.dir;
-      if (dir) openDir(dir);
-    });
+  // Navigation: ranked rows, treemap blocks, the rail button, breadcrumbs.
+  container.querySelectorAll<HTMLElement>(".bar-row.dir").forEach((row) => {
+    row.addEventListener("click", () => openDir(row.dataset.dir!));
+  });
+  container.querySelector("#enter-lead")?.addEventListener("click", () => {
+    if (leadEntry) openDir(leadEntry.path);
   });
   container.querySelectorAll<HTMLAnchorElement>("a.crumb").forEach((a) => {
     a.addEventListener("click", (ev) => {
       ev.preventDefault();
       openDir(a.dataset.dir!);
     });
-  });
-  container.querySelector("#rescan")!.addEventListener("click", () => {
-    dropListing(listing.root);
-    startScan(listing.root, true);
   });
 
   // Selection → Trash flow.
@@ -261,19 +385,43 @@ function renderListing(container: HTMLElement, listing: DirListing): void {
     // Deletion invalidates every cached size along the ancestor chain, so the
     // whole cache goes, not just this root.
     clearListings();
+    setNavMeta(null);
     renderFlow(container, newTaskId(), {
       title: t("ana.trash"),
       verb: t("ana.trash"),
       helperAvailable: meta.helper_available,
-      particles: "gold",
+      ledger: "analyze",
+      home,
       plan: (taskId) => planDeletePaths(paths, taskId),
     });
   });
 }
 
+/** Whole-disk footer strip: used vs available on the boot volume. */
+async function renderDiskStrip(container: HTMLElement): Promise<void> {
+  const strip = container.querySelector<HTMLElement>("#strip");
+  const label = container.querySelector<HTMLElement>("#disk-label");
+  if (!strip || !label) return;
+  try {
+    const snapshot = await statusSnapshot();
+    const root = snapshot.disks.find((d) => d.mount_point === "/") ?? snapshot.disks[0];
+    if (!root || !strip.isConnected) return;
+    const used = root.total_bytes - root.available_bytes;
+    const usedPct = (used / root.total_bytes) * 100;
+    strip.innerHTML = `
+      <div style="width:${usedPct.toFixed(1)}%;background:var(--rust)"></div>
+      <div style="flex:1;background:var(--wash-1);border:1px dashed var(--ink-ghost);box-sizing:border-box"></div>`;
+    label.textContent = `${t("st.used")} ${humanBytes(used)} · ${t("st.avail")} ${humanBytes(root.available_bytes)}`;
+  } catch {
+    // The strip is context, not content: a failed snapshot just leaves it out.
+    container.querySelector("#disk-strip")?.remove();
+  }
+}
+
 /** Fill the treemap area: top blocks + one aggregate block for the tail. */
 function renderTreemap(container: HTMLElement, listing: DirListing): void {
-  const box = container.querySelector<HTMLElement>("#treemap")!;
+  const box = container.querySelector<HTMLElement>("#treemap");
+  if (!box) return;
   const W = box.clientWidth || 700;
   const H = box.clientHeight || 460;
 
@@ -289,15 +437,13 @@ function renderTreemap(container: HTMLElement, listing: DirListing): void {
     .map((r, idx) => {
       const isRest = idx >= shown.length;
       const entry = shown[idx];
-      const label = isRest
-        ? `${rest.length} ${t("ana.rest")}`
-        : esc(entry.name);
+      const label = isRest ? t("ana.restN", { n: rest.length }) : esc(entry.name);
       const size = isRest ? restKb : entry.size_kb;
       const showText = r.w > 70 && r.h > 40;
       return `<div class="block" data-dir="${!isRest && entry.is_dir ? esc(entry.path) : ""}"
         style="left:${r.x}px;top:${r.y}px;width:${r.w}px;height:${r.h}px;
-        background:${isRest ? "#5c554d" : PALETTE[idx % PALETTE.length]}">
-        ${showText ? `<div class="bname">${isRest ? "▦ " : "📁 "}${label}</div><div class="bsize">${humanKb(size)}</div>` : ""}
+        background:${isRest ? "#6e6258" : PALETTE[idx % PALETTE.length]}">
+        ${showText ? `<div class="bname">${label}</div><div class="bsize">${humanKb(size)}</div>` : ""}
       </div>`;
     })
     .join("");
@@ -310,15 +456,37 @@ function renderTreemap(container: HTMLElement, listing: DirListing): void {
   });
 }
 
-/** Clickable breadcrumb chain; the home prefix collapses to the disk root. */
+/** Abbreviate the home prefix to ~ for display. */
+function tildify(path: string): string {
+  if (home && path.startsWith(home)) return `~${path.slice(home.length)}`;
+  return path;
+}
+
+/** How many crumbs a deep path keeps: the disk root plus the last two levels. */
+const CRUMB_KEEP = 3;
+
+/**
+ * Clickable breadcrumb chain, set as a headline. A deep path would otherwise
+ * wrap to four lines and run into the rail, so anything longer than
+ * CRUMB_KEEP collapses in the middle to an ellipsis that jumps to the parent;
+ * the full path stays available as a tooltip.
+ */
 function breadcrumbs(root: string): string {
-  const parts = root.split("/").filter(Boolean);
+  const crumbs = [{ name: t("ana.whole"), dir: "/" }];
   let acc = "";
-  const links = parts.map((part) => {
+  for (const part of root.split("/").filter(Boolean)) {
     acc += "/" + part;
-    return `<a href="#" class="crumb" data-dir="${esc(acc)}">${esc(part)}</a> ›`;
-  });
-  return [`<a href="#" class="crumb" data-dir="/">⏏ ${t("ana.whole")}</a> ›`, ...links]
-    .join(" ")
-    .replace(/›\s*$/, "");
+    crumbs.push({ name: part, dir: acc });
+  }
+  const link = (c: { name: string; dir: string }) =>
+    `<a href="#" class="crumb" data-dir="${esc(c.dir)}" title="${esc(c.dir)}">${esc(c.name)}</a>`;
+  const parts =
+    crumbs.length > CRUMB_KEEP + 1
+      ? [
+          link(crumbs[0]),
+          link({ ...crumbs[crumbs.length - 3], name: "…" }),
+          ...crumbs.slice(-2).map(link),
+        ]
+      : crumbs.map(link);
+  return parts.join(' <span class="sep">›</span> ');
 }

@@ -1,33 +1,64 @@
-/* Tidy design tokens. The graphite shell keeps destructive work calm and
-   legible; route themes make only restrained atmospheric shifts while the
-   Flow teal remains the single interactive accent. Keep these values aligned
-   with docs/BRAND_GUIDELINES.md. */
+/* Tidy design tokens — "newspaper ledger" skin.
+   The whole surface is a printed page: warm paper stock, ink-black rules,
+   serif display numerals, monospaced marginalia, and a single rust-red
+   accent that marks everything actionable. Keep these values aligned with
+   the high-fidelity reference (design/Tidy 高保真 报纸风.dc.html). */
 :root {
-  --font-mono: "SF Mono", ui-monospace, Menlo, monospace;
-  --font-ui: -apple-system, "SF Pro Text", "PingFang SC", sans-serif;
+  /* Web fonts are unavailable (CSP is default-src 'self'), so every family
+     is a stack of faces that ship with macOS. */
+  --font-serif: "Noto Serif SC", "Source Han Serif SC", "Songti SC", "STSong",
+    Georgia, "Times New Roman", serif;
+  --font-mono: "IBM Plex Mono", "SF Mono", ui-monospace, Menlo, monospace;
+  --font-ui: -apple-system, "SF Pro Text", "PingFang SC", system-ui, sans-serif;
 
-  /* Brand primitives. */
-  --brand-paper: #ffffff;
-  --brand-mist: #eaf8f7;
-  --brand-teal: #0cc2c7;
-  --brand-teal-bright: #53d6d7;
-  --brand-graphite: #1e262f;
-  --brand-graphite-raised: #27323d;
+  /* Paper stock and ink. */
+  --paper: #faf8f3;
+  --paper-desk: #e7e3da;
+  --ink: #26241f;
+  --ink-soft: #6d675a;
+  --ink-faint: #8a8578;
+  --ink-ghost: #c4bcaa;
 
-  /* Semantic color. */
-  --fg: #f2f7f7;
-  --fg-dim: #aab8bc;
-  --fg-faint: #748389;
-  --ok: #55c790;
-  --warn: #d6a73b;
-  --danger: #e06056;
-  /* Selection control fill (checked checkbox), matching the reference UI. */
-  --check: #d9583e;
+  /* The single accent. Everything clickable is rust; nothing else is. */
+  --rust: #a4432c;
+  --rust-dark: #7e3020;
 
-  /* Geometry and rhythm. */
-  --radius-sm: 8px;
-  --radius: 12px;
-  --radius-lg: 18px;
+  /* Rules: the column grammar of the page. */
+  --rule-strong: #26241f;
+  --rule-soft: #d8d2c3;
+  --rule-edge: #c9c3b4;
+  --leader: #b5ae9e;
+
+  /* Washes for bars, fills and blocks, light → dark. */
+  --wash-1: #efe9dc;
+  --wash-2: #e8ddce;
+  --wash-3: #e0d5c2;
+  --wash-4: #d9c1ac;
+  --wash-5: #c08468;
+
+  /* Semantic aliases. Existing markup speaks these names; the newspaper
+     palette answers to them so no view has to know the skin's vocabulary. */
+  --fg: var(--ink);
+  --fg-dim: var(--ink-soft);
+  --fg-faint: var(--ink-faint);
+  --accent: var(--rust);
+  --panel: rgba(38, 36, 31, 0.03);
+  --panel-solid: var(--paper);
+  --border: var(--rule-soft);
+  --hover: rgba(164, 67, 44, 0.06);
+  --check: var(--rust);
+
+  /* Status colours stay inside the print palette — muted moss, ochre, rust —
+     so a warning never breaks the two-ink look. */
+  --ok: #4e6b4a;
+  --warn: #9a6a1f;
+  --danger: var(--rust);
+
+  /* Geometry and rhythm. Print has square corners; only the window shell and
+     tiny chips get a radius. */
+  --radius-sm: 3px;
+  --radius: 4px;
+  --radius-lg: 10px;
   --pad: 16px;
   --space-1: 4px;
   --space-2: 8px;
@@ -35,44 +66,19 @@
   --space-4: 16px;
   --space-5: 24px;
   --space-6: 32px;
-  --motion-fast: 140ms;
-  --motion-base: 220ms;
+  --motion-fast: 120ms;
+  --motion-base: 180ms;
   --ease-standard: cubic-bezier(0.2, 0.8, 0.2, 1);
 
-  /* neutral fallback theme */
-  --bg-top: #1a2650;
-  --bg-bottom: #121219;
-  --panel: rgba(255, 255, 255, 0.045);
-  --panel-solid: var(--brand-graphite-raised);
-  --border: rgba(255, 255, 255, 0.09);
-  --hover: rgba(255, 255, 255, 0.07);
-  --accent: var(--brand-teal-bright);
+  /* Page gutters: the masthead reserves room for the real traffic lights
+     (titleBarStyle: Overlay), the body keeps the reference's 48px margins. */
+  --mast-lights: 78px;
+  --page-gutter: 48px;
 }
 
-/* Per-tab atmospheres sampled from Mole.app (top tint → bottom base). The
-   accent stays teal everywhere; only the sky changes so each tab is
-   recognisable at a glance. */
-body[data-theme="clean"] {
-  --bg-top: #1a2650;
-  --bg-bottom: #121219;
-}
-
-body[data-theme="apps"] {
-  --bg-top: #33201f;
-  --bg-bottom: #1b191d;
-}
-
-body[data-theme="optimize"] {
-  --bg-top: #35301b;
-  --bg-bottom: #1c1b1f;
-}
-
-body[data-theme="analyze"] {
-  --bg-top: #402b1a;
-  --bg-bottom: #1d1b1f;
-}
-
-body[data-theme="status"] {
-  --bg-top: #3d361c;
-  --bg-bottom: #232226;
+/* One page stock for every tab: a newspaper does not change paper between
+   sections. The per-route hook stays so a view can still tint its own
+   marginalia if it ever needs to. */
+body[data-theme] {
+  --paper: #faf8f3;
 }

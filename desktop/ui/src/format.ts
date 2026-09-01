@@ -33,3 +33,21 @@ export function esc(text: string): string {
     .replaceAll('"', "&quot;")
     .replaceAll("'", "&#39;");
 }
+
+/** Split a formatted size like "135.02GB" into its numeral and unit so the
+ * newspaper figure can set them at different sizes. A trailing ".00" is
+ * dropped — a headline numeral does not print empty decimals. */
+export function splitUnit(text: string): [string, string] {
+  const m = /^([\d.]+)\s*(.*)$/.exec(text);
+  if (!m) return [text, ""];
+  return [m[1].replace(/\.0+$/, ""), m[2]];
+}
+
+/** Size step for a headline numeral. The 104px default is set for readings
+ * like "23.4"; a six- or seven-digit total would run past its column, so long
+ * numerals step down instead of overflowing. */
+export function figureClass(numeral: string): string {
+  if (numeral.length >= 7) return "xlong";
+  if (numeral.length >= 5) return "long";
+  return "";
+}
