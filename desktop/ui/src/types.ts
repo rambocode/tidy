@@ -301,3 +301,24 @@ export interface CleanPlanPayload {
   summary: PlanSummary;
   blocked: BlockedCaches;
 }
+
+/** 后端持有的设置（前端 localStorage 存不下的那几项）。 */
+export interface AppSettings {
+  update_autocheck: boolean;
+}
+
+/** 一个可用的 Tidy 新版本。 */
+export interface UpdateInfo {
+  version: string;
+  current_version: string;
+  notes: string | null;
+  /** 当前版本低于 feed 声明的最低版本：提示不可关闭。 */
+  mandatory: boolean;
+}
+
+/** 更新包下载进度。 */
+export interface DownloadProgress {
+  downloaded: number;
+  total: number | null;
+}
+

@@ -12,6 +12,7 @@ pub mod plan;
 pub mod policy;
 pub mod probes;
 pub mod providers;
+pub mod settings;
 pub mod sink;
 pub mod state;
 pub mod validate;

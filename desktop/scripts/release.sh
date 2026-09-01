@@ -32,6 +32,15 @@ done
 IDENTITY="${APPLE_SIGNING_IDENTITY:-Developer ID Application: Jiangwei Lan (HQ537XMLJY)}"
 PROFILE="${NOTARY_PROFILE:-tidy-notary}"
 
+# 自更新包的 minisign 私钥。没有它 tauri 不会产出 .app.tar.gz.sig，
+# publish 这一步就没东西可发（release.sh 本身仍然能出签名 DMG）。
+export TAURI_SIGNING_PRIVATE_KEY_PATH="${TAURI_SIGNING_PRIVATE_KEY_PATH:-$HOME/.tauri/tidy-updater.key}"
+export TAURI_SIGNING_PRIVATE_KEY_PASSWORD="${TAURI_SIGNING_PRIVATE_KEY_PASSWORD:-}"
+if [ ! -f "$TAURI_SIGNING_PRIVATE_KEY_PATH" ]; then
+  echo "⚠ 找不到更新签名私钥 $TAURI_SIGNING_PRIVATE_KEY_PATH —— 这次不会产出自更新包。" >&2
+  unset TAURI_SIGNING_PRIVATE_KEY_PATH
+fi
+
 echo "▶ building + signing with: $IDENTITY"
 export APPLE_SIGNING_IDENTITY="$IDENTITY"
 npm ci --prefix ui
@@ -79,3 +88,4 @@ xcrun stapler validate "$DMG"
 echo "▶ gatekeeper check"
 spctl --assess --type open --context context:primary-signature -v "$DMG"
 echo "✅ release ready: $DMG"
+echo "   下一步：make publish  # 生成 latest.json 并发到 GitHub Releases"

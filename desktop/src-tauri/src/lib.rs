@@ -7,6 +7,7 @@ mod dto;
 mod error;
 mod state;
 mod tray_anim;
+mod update;
 
 use std::sync::atomic::{AtomicBool, Ordering};
 use tauri::menu::{MenuBuilder, MenuItemBuilder};
@@ -173,6 +174,9 @@ pub fn run() {
         // Analyze's "pick a folder" scope. Only the open dialog is granted; the
         // picker returns a path string and grants the webview no fs access.
         .plugin(tauri_plugin_dialog::init())
+        // Tidy 自身的更新。检查/安装都在 Rust 侧发起，前端只调薄命令，
+        // 所以窗口 CSP 不需要放开任何外部源。
+        .plugin(tauri_plugin_updater::Builder::new().build())
         .invoke_handler(tauri::generate_handler![
             commands::app_meta,
             commands::status_snapshot,
@@ -215,6 +219,10 @@ pub fn run() {
             commands::autostart_set,
             commands::tray_set_visible,
             commands::set_keep_in_tray,
+            commands::app_settings,
+            commands::set_update_autocheck,
+            commands::update_check,
+            commands::update_install,
         ])
         .run(tauri::generate_context!())
         .expect("error while running mole desktop");

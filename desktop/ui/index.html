@@ -13,6 +13,8 @@
       <!-- "deep" makes the whole masthead a drag region; Tauri's drag script
            still lets the <a> section tabs and any meta links click through. -->
       <nav id="nav" data-tauri-drag-region="deep"></nav>
+      <!-- 首次遥测告知与"有新版本"共用这一个槽位，见 src/banner.ts -->
+      <div id="banner"></div>
       <main id="view"></main>
     </div>
     <script type="module" src="/src/main.ts"></script>

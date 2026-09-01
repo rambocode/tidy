@@ -33,6 +33,8 @@ tauri-plugin-drag = "2"
 core-foundation = "0.10"
 core-graphics = "0.24"
 tauri-plugin-dialog = "2"
+tauri-plugin-updater = "2"
+semver = "1"
 
 [dev-dependencies]
 tempfile.workspace = true

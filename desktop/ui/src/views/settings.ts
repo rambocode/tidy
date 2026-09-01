@@ -5,6 +5,7 @@
 
 import {
   appMeta,
+  appSettings,
   autostartGet,
   autostartSet,
   fdaStatus,
@@ -12,10 +13,14 @@ import {
   fdaHelperHide,
   openFdaSettings,
   purgePathsGet,
+  setUpdateAutocheck,
   touchidStatus,
+  updateCheck,
   whitelistGet,
   whitelistSet,
 } from "../ipc";
+import { showUpdateBanner } from "../banner";
+import type { AppSettings } from "../types";
 import { PRODUCT_NAME } from "../brand";
 import { esc } from "../format";
 import { lang, langMode, setLang, t } from "../i18n";
@@ -64,13 +69,14 @@ export const settings: View = {
     unlistenHelper = undefined;
   },
   async mount(container) {
-    const [meta, fda, autostart, wl, purgePaths, touchid] = await Promise.all([
+    const [meta, fda, autostart, wl, purgePaths, touchid, backend] = await Promise.all([
       appMeta(),
       fdaStatus(),
       autostartGet(),
       whitelistGet(),
       purgePathsGet(),
       touchidStatus(),
+      appSettings(),
     ]);
 
     const draw = () => {
@@ -81,7 +87,7 @@ export const settings: View = {
       ];
       const body =
         tab === "general"
-          ? generalTab(fda, autostart)
+          ? generalTab(fda, autostart, backend)
           : tab === "tools"
             ? toolsTab(wl.patterns, purgePaths, touchid.enabled)
             : menubarTab();
@@ -124,7 +130,7 @@ export const settings: View = {
 };
 
 /** 通用 tab. */
-function generalTab(fda: boolean, autostart: boolean): string {
+function generalTab(fda: boolean, autostart: boolean, backend: AppSettings): string {
   const mode = langMode();
   return [
     row(
@@ -145,6 +151,15 @@ function generalTab(fda: boolean, autostart: boolean): string {
       segmented("seg-temp", [["c", "°C"], ["f", "°F"]], pref("temp-unit", "c")),
     ),
     row(t("set.autostart"), t("set.autostart.desc"), toggle("tg-autostart", autostart)),
+    row(
+      t("set.selfupdate"),
+      t("set.selfupdate.desc"),
+      `<div class="set-inline">
+         <button id="upd-check">${t("set.selfupdate.check")}</button>
+         ${toggle("tg-autocheck", backend.update_autocheck)}
+       </div>`,
+    ),
+    `<div id="upd-check-status" class="muted set-note"></div>`,
   ].join("");
 }
 
@@ -273,6 +288,24 @@ function wire(container: HTMLElement, redraw: () => void): void {
     });
   };
   wireToggle("tg-autostart", (on) => void autostartSet(on));
+  wireToggle("tg-autocheck", (on) => void setUpdateAutocheck(on));
+
+  // 手动检查绕开 24 小时频率限制（auto=false）：用户主动点了就该真发请求。
+  container.querySelector("#upd-check")?.addEventListener("click", async () => {
+    const status = container.querySelector<HTMLElement>("#upd-check-status")!;
+    status.textContent = t("set.selfupdate.checking");
+    try {
+      const info = await updateCheck(false);
+      if (info) {
+        status.textContent = t("set.selfupdate.found", { version: info.version });
+        showUpdateBanner(info);
+      } else {
+        status.textContent = t("set.selfupdate.latest");
+      }
+    } catch {
+      status.textContent = t("set.selfupdate.failed");
+    }
+  });
   wireToggle("tg-tray", (on) => {
     setPref("tray-visible", on ? "1" : "0");
     applyBackendPrefs();

@@ -1,6 +1,6 @@
 # Tidy standalone Makefile — adapted from the original Mole repo's desktop-*
 # targets so the README's `make desktop-*` commands also work in this checkout.
-.PHONY: dev build bundle release check desktop-dev desktop-build desktop-bundle desktop-check
+.PHONY: dev build bundle release publish check desktop-dev desktop-build desktop-bundle desktop-check
 
 # The tauri CLI must run from desktop/ (it locates src-tauri/tauri.conf.json
 # by scanning subfolders of the invocation directory).
@@ -20,6 +20,10 @@ bundle:
 # notarytool credential setup).
 release:
 	desktop/scripts/release.sh
+
+# 把 make release 的产物发到 GitHub Releases，并生成自更新 feed。
+publish:
+	desktop/scripts/publish.sh
 
 check:
 	cd desktop && cargo fmt --check && cargo clippy --workspace -- -D warnings && cargo test --workspace

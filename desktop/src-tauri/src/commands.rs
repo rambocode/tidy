@@ -1273,3 +1273,55 @@ mod fda_helper_tests {
         eprintln!("frame = {:?}", super::system_settings_frame());
     }
 }
+
+// ---------------------------------------------------------------------------
+// 自更新与遥测
+// ---------------------------------------------------------------------------
+
+/// 后端持有的应用设置：前端 localStorage 存不了的那几项。
+#[derive(Serialize)]
+pub struct AppSettings {
+    /// 启动时自动检查 Tidy 自身的更新。
+    pub update_autocheck: bool,
+}
+
+/// 读取后端持有的设置。
+#[tauri::command]
+pub fn app_settings() -> AppSettings {
+    AppSettings {
+        update_autocheck: mole_core::settings::bool_or(
+            &crate::home(),
+            crate::update::KEY_AUTOCHECK,
+            true,
+        ),
+    }
+}
+
+/// 开关：启动时自动检查更新。
+#[tauri::command]
+pub fn set_update_autocheck(on: bool) -> Result<(), IpcError> {
+    mole_core::settings::set(
+        &crate::home(),
+        crate::update::KEY_AUTOCHECK,
+        if on { "1" } else { "0" },
+    )
+    .map_err(IpcError::from)
+}
+
+/// 检查 Tidy 自身是否有新版本。
+#[tauri::command]
+pub async fn update_check(
+    app: tauri::AppHandle,
+    auto: bool,
+) -> Result<Option<crate::update::UpdateInfo>, IpcError> {
+    crate::update::check(&app, auto, &crate::home()).await
+}
+
+/// 下载、验签、安装新版本，然后重启。
+#[tauri::command]
+pub async fn update_install(
+    app: tauri::AppHandle,
+    on_progress: Channel<crate::update::DownloadProgress>,
+) -> Result<(), IpcError> {
+    crate::update::install(&app, on_progress).await
+}

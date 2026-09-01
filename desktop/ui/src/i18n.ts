@@ -272,6 +272,21 @@ const DICT: Record<Lang, Record<string, string>> = {
     "set.helper.on": "系统授权:可用",
     "set.helper.off": "系统授权:不可用(系统级操作已置灰)",
 
+    "set.selfupdate": "自动检查 Tidy 更新",
+    "set.selfupdate.desc": "启动时静默检查一次(每 24 小时最多一次),发现新版才提示",
+    "set.selfupdate.check": "立即检查",
+    "set.selfupdate.checking": "正在检查…",
+    "set.selfupdate.latest": "已是最新版本",
+    "set.selfupdate.found": "发现新版本 {version}",
+    "set.selfupdate.failed": "检查失败,请稍后再试",
+
+    "upd.self.available": "Tidy {version} 已发布",
+    "upd.self.mandatory": "必须更新到 Tidy {version} 才能继续安全使用",
+    "upd.self.later": "稍后",
+    "upd.self.go": "更新并重启",
+    "upd.self.downloading": "下载中…",
+    "upd.self.retry": "重试",
+
     "flow.scanning": "正在扫描",
     "flow.cancel": "取消",
     "flow.nothing": "没有可处理的项目 ✨",
@@ -662,6 +677,21 @@ const DICT: Record<Lang, Record<string, string>> = {
     "set.keeptray.desc": "Closing the window keeps {app} running in the menu bar",
     "set.helper.on": "System authorization: available",
     "set.helper.off": "System authorization: unavailable (system-scope actions gated)",
+
+    "set.selfupdate": "Check for Tidy updates",
+    "set.selfupdate.desc": "Checks quietly at launch (at most once every 24 hours); only speaks up when a new version exists",
+    "set.selfupdate.check": "Check now",
+    "set.selfupdate.checking": "Checking…",
+    "set.selfupdate.latest": "You are on the latest version",
+    "set.selfupdate.found": "Version {version} is available",
+    "set.selfupdate.failed": "Check failed, try again later",
+
+    "upd.self.available": "Tidy {version} is out",
+    "upd.self.mandatory": "Update to Tidy {version} is required to keep using it safely",
+    "upd.self.later": "Later",
+    "upd.self.go": "Update and restart",
+    "upd.self.downloading": "Downloading…",
+    "upd.self.retry": "Retry",
 
     "flow.scanning": "Scanning",
     "flow.cancel": "Cancel",

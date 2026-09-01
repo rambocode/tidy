@@ -2,7 +2,9 @@
 // backend-affecting prefs, and listen for tray-menu navigation events.
 
 import { listen } from "@tauri-apps/api/event";
+import { showUpdateBanner } from "./banner";
 import { mountFdaHelper } from "./fda-helper";
+import { appSettings, updateCheck } from "./ipc";
 import { applyBackendPrefs } from "./prefs";
 import { register, start } from "./router";
 import { analyze } from "./views/analyze";
@@ -36,4 +38,27 @@ applyBackendPrefs();
 void listen<string>("mole-nav", (event) => {
   location.hash = event.payload;
 });
+void bootBanner();
+}
+
+/** 启动后延迟拉起的检查间隔：先让窗口画完、扫描预热跑起来。 */
+const UPDATE_CHECK_DELAY_MS = 5000;
+
+/**
+ * 决定报头下面那条提示显示什么。
+ *
+ * 自动检查关掉时这里一个网络请求都不发——包括强制更新。止血能力不该成为
+ * 绕过用户明确关闭的理由，代价是那部分用户只能靠公告知道要升级。
+ */
+async function bootBanner(): Promise<void> {
+  const settings = await appSettings().catch(() => null);
+  if (!settings) return;
+  if (!settings.update_autocheck) return;
+  window.setTimeout(() => {
+    void updateCheck(true)
+      .then((info) => {
+        if (info) showUpdateBanner(info);
+      })
+      .catch(() => {});
+  }, UPDATE_CHECK_DELAY_MS);
 }

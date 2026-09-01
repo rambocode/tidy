@@ -25,7 +25,11 @@ import type {
   UpdateResult,
   WhitelistPayload,
   DockerPlanPayload,
+  AppSettings,
+  UpdateInfo,
+  DownloadProgress,
 } from "./types";
+
 
 /** Build a progress channel from a plain callback. */
 function channel<T>(cb: (event: T) => void): Channel<T> {
@@ -167,3 +171,16 @@ export const autostartGet = () => invoke<boolean>("autostart_get");
 export const autostartSet = (enable: boolean) => invoke<void>("autostart_set", { enable });
 export const traySetVisible = (visible: boolean) => invoke<void>("tray_set_visible", { visible });
 export const setKeepInTray = (enable: boolean) => invoke<void>("set_keep_in_tray", { enable });
+
+// --- 后端设置、自更新 -------------------------------------------------------
+
+export const appSettings = () => invoke<AppSettings>("app_settings");
+export const setUpdateAutocheck = (on: boolean) =>
+  invoke<void>("set_update_autocheck", { on });
+/** `auto` 为真时受"启动自动检查"开关与 24 小时频率限制约束。 */
+export const updateCheck = (auto: boolean) =>
+  invoke<UpdateInfo | null>("update_check", { auto });
+
+/** 下载、验签、安装，成功后应用会自行重启（这个 Promise 不会 resolve）。 */
+export const updateInstall = (onProgress: (p: DownloadProgress) => void) =>
+  invoke<void>("update_install", { onProgress: channel(onProgress) });
