@@ -3,12 +3,44 @@
    serif display numerals, monospaced marginalia, and a single rust-red
    accent that marks everything actionable. Keep these values aligned with
    the high-fidelity reference (design/Tidy 高保真 报纸风.dc.html). */
+
+/* The reference's two faces ship with the app rather than loading from a CDN:
+   the app's CSP is `default-src 'self'`, and a desktop tool must render the
+   same offline. Both are SIL OFL 1.1 (licences beside the files) and are
+   subset by desktop/scripts/subset-fonts.py — Noto Serif SC keeps ~3.4k
+   common hanzi plus Latin, so a rare glyph in a file or app name falls
+   through to the system Song face instead of shipping an 8 MB font. */
+@font-face {
+  font-family: "Noto Serif SC Subset";
+  src: url("/fonts/NotoSerifSC-subset.woff2") format("woff2");
+  /* One variable file covers every weight the skin uses (400/600/700). */
+  font-weight: 200 900;
+  font-style: normal;
+  font-display: block;
+}
+
+@font-face {
+  font-family: "IBM Plex Mono Subset";
+  src: url("/fonts/IBMPlexMono-400.woff2") format("woff2");
+  font-weight: 400;
+  font-style: normal;
+  font-display: block;
+}
+
+@font-face {
+  font-family: "IBM Plex Mono Subset";
+  src: url("/fonts/IBMPlexMono-500.woff2") format("woff2");
+  font-weight: 500 700;
+  font-style: normal;
+  font-display: block;
+}
+
 :root {
-  /* Web fonts are unavailable (CSP is default-src 'self'), so every family
-     is a stack of faces that ship with macOS. */
-  --font-serif: "Noto Serif SC", "Source Han Serif SC", "Songti SC", "STSong",
-    Georgia, "Times New Roman", serif;
-  --font-mono: "IBM Plex Mono", "SF Mono", ui-monospace, Menlo, monospace;
+  /* Bundled faces first; the macOS stacks behind them cover whatever the
+     subsets leave out. */
+  --font-serif: "Noto Serif SC Subset", "Songti SC", "STSong", Georgia,
+    "Times New Roman", serif;
+  --font-mono: "IBM Plex Mono Subset", "SF Mono", ui-monospace, Menlo, monospace;
   --font-ui: -apple-system, "SF Pro Text", "PingFang SC", system-ui, sans-serif;
 
   /* Paper stock and ink. */
