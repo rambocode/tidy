@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>隐私说明 — Tidy</title>
-<meta name="description" content="Tidy 网站与桌面应用的数据处理说明：本站不使用 Cookie 与分析脚本；应用的状态与历史保存在本机，仅在检查软件更新时联网。">
+<meta name="description" content="Tidy 网站与桌面应用的数据处理说明：本站不使用 Cookie 与分析脚本；应用的状态与历史保存在本机；匿名使用统计默认开启且可随时关闭，不含路径、文件名与体积。">
 <link rel="canonical" href="https://tidy.example.com/zh/privacy/">
 <link rel="alternate" hreflang="zh-Hans" href="https://tidy.example.com/zh/privacy/">
 <link rel="alternate" hreflang="en" href="https://tidy.example.com/en/privacy/">
@@ -23,42 +23,71 @@
       <a href="/zh/#trust">安全</a>
       <a href="/zh/blog/">Blog</a>
       <span class="lang-switch"><a href="/zh/privacy/" aria-current="true">中</a>/<a href="/en/privacy/">EN</a></span>
-      <a class="btn btn-primary" href="https://github.com/tw93/mole" target="_blank" rel="noopener noreferrer">查看源码</a>
+      <a class="btn btn-primary" href="https://github.com/rambocode/tidy" target="_blank" rel="noopener noreferrer">查看源码</a>
     </nav>
   </div>
 </header>
 
 <main id="main" class="wrap legal">
   <h1>隐私说明</h1>
-  <p>最后更新：2026-08-17。本页描述的是仓库中当前已实现的行为，不是未来计划。</p>
+  <p>最后更新：2026-09-01。本页描述的是仓库中当前已实现的行为，不是未来计划。</p>
 
   <h2>本网站</h2>
   <p>本站是一组静态页面，不设置任何 Cookie，不加载分析、埋点或第三方追踪脚本，也没有登录、表单或评论功能。页面上唯一的对外链接指向 GitHub。</p>
   <p>静态托管服务商可能出于运维目的记录访问日志（IP、User-Agent、请求路径）。这部分数据由托管方处理，不在本项目掌握范围内；一旦确定托管方，本节会补上具体服务商名称。</p>
 
   <h2>桌面应用</h2>
-  <p>Tidy 在你的 Mac 上本地运行。仓库中不存在分析、埋点或崩溃上报代码，应用窗口的内容安全策略被限定为 <code>default-src 'self'</code>。</p>
+  <p>Tidy 在你的 Mac 上本地运行。所有扫描、预览与删除都发生在本机，应用窗口的内容安全策略被限定为 <code>default-src 'self'</code>，网页层没有任何对外网络权限。</p>
+  <p>应用会发送一份<strong>匿名使用统计</strong>，默认开启，可以随时关掉。下面「匿名使用统计」一节逐条列出了采集的全部字段。</p>
 
   <h3>保存在本机的数据</h3>
   <ul>
-    <li><code>~/.config/mole</code>：共享状态，包括语言偏好与白名单。</li>
+    <li><code>~/.config/mole</code>：共享状态，包括语言偏好、白名单，以及 <code>settings</code>（自动检查更新与使用统计的开关、随机安装标识）。</li>
     <li><code>~/Library/Logs/mole</code>：操作历史 <code>operations.log</code> 与删除历史 <code>deletions.log</code>。两者格式与 Mole 命令行逐字节兼容。</li>
   </ul>
   <p>这些文件从不上传。删除它们即清除历史；应用会在下次操作时重新创建。</p>
 
   <h3>什么时候会联网</h3>
-  <p>只有当你主动运行「检查软件更新」时，应用才会发出网络请求，目标限于：</p>
+  <p>应用只在三种情况下发出网络请求：</p>
   <ul>
-    <li>Apple 的 bundle ID 查询接口，用于确认 Mac App Store 应用的商品页；</li>
-    <li>已安装应用自身声明的 Sparkle feed（HTTPS）；</li>
-    <li>Electron 应用 <code>app-update.yml</code> 中声明的提供方与 GitHub release API。</li>
+    <li><strong>你主动运行「检查软件更新」</strong>（检查你安装的其他应用有没有新版）；</li>
+    <li><strong>检查 Tidy 自身的更新</strong>：启动后拉取一次 GitHub Releases 上的 <code>latest.json</code>，每 24 小时最多一次。可在「设置 › 通用」关闭，关闭后一个请求都不会发；</li>
+    <li><strong>发送匿名使用统计</strong>：见下一节，可关闭。</li>
   </ul>
-  <p>Homebrew 部分读取的是本机 <code>brew</code> 命令的输出，不产生额外的网络请求。请求内容仅包含判断版本所需的应用标识与版本号，不包含文件路径、文件内容、剪贴板或个人信息。一次扫描结果 15 分钟后过期。</p>
+  <p>检查其他应用更新时，请求目标限于：Apple 的 bundle ID 查询接口（确认 Mac App Store 商品页）、已安装应用自身声明的 Sparkle feed（HTTPS）、Electron 应用 <code>app-update.yml</code> 中声明的提供方与 GitHub release API。Homebrew 部分读取的是本机 <code>brew</code> 命令的输出，不产生额外的网络请求。请求内容仅包含判断版本所需的应用标识与版本号，不包含文件路径、文件内容、剪贴板或个人信息。一次扫描结果 15 分钟后过期。</p>
+
+  <h3>匿名使用统计</h3>
+  <p>目的只有一个：知道哪些功能真的有人用、哪个版本上出了什么错。<strong>默认开启</strong>，首次启动时会有一条明确告知，可在「设置 › 通用 › 匿名使用统计」随时关闭。</p>
+  <p>关掉之后立即停止上报，本机的待发队列与随机安装标识一并删除。重新打开会生成一个新的标识，在统计上等同于一个新用户。</p>
+
+  <p><strong>随机安装标识</strong>：首次开启时生成一个随机 UUID，存在 <code>~/.config/mole/settings</code>。它与硬件序列号、Apple ID、MAC 地址、IP 地址都无关，删除该文件即变成新用户。</p>
+
+  <p><strong>采集的全部事件与字段</strong>（这是完整清单，不是举例）：</p>
+  <table class="legal-table">
+    <thead><tr><th>事件</th><th>字段</th></tr></thead>
+    <tbody>
+      <tr><td><code>app_launched</code></td><td>是否首次启动</td></tr>
+      <tr><td><code>view_opened</code></td><td>界面名（清理 / 软件 / 优化 / 分析 / 状态 / 设置）</td></tr>
+      <tr><td><code>scan_completed</code></td><td>扫描类型、耗时毫秒数</td></tr>
+      <tr><td><code>clean_executed</code></td><td>删除模式（废纸篓 / 永久）、结果（成功 / 部分 / 失败 / 取消）</td></tr>
+      <tr><td><code>app_uninstalled</code></td><td>无字段</td></tr>
+      <tr><td><code>optimize_run</code></td><td>优化任务的固定标识（如 <code>flushDNS</code>）</td></tr>
+      <tr><td><code>updates_run</code></td><td>更新来源（homebrew / app_store / sparkle / electron / website）</td></tr>
+      <tr><td><code>self_update</code></td><td>旧版本号、新版本号、结果</td></tr>
+      <tr><td><code>error_occurred</code></td><td>预定义错误码、发生在哪个界面</td></tr>
+    </tbody>
+  </table>
+  <p>每条事件另外带上：随机安装标识、Tidy 版本号、macOS 版本号、界面语言。</p>
+
+  <p><strong>刻意不采集的</strong>：清理释放了多少空间、扫到多少项、卸载了几个应用、任何路径、任何文件名、任何应用名称、机器名、错误消息原文（原文里常常带绝对路径）。这些字段在代码里是**结构性**排除的——事件属性的类型只允许固定常量，不接受运行期字符串。</p>
+
+  <p><strong>数据发往哪里</strong>：先经过我们自己的 Cloudflare Worker 代理，代理在转发前会删除请求中的客户端 IP 相关请求头，然后转发给 PostHog 做聚合分析。也就是说 PostHog 拿不到你的 IP，也无法据此定位。</p>
+  <p>事件先在本机排队，每 60 秒或退出时批量发送一次；发送失败会写入 <code>~/.config/mole/telemetry-queue.json</code>，下次启动补发，队列最多保留 500 条。</p>
 
   <h3>不会发生的事</h3>
   <ul>
     <li>不会读取或上传你的文档内容。</li>
-    <li>不会把扫描出的路径、文件名或体积发送到任何服务器。</li>
+    <li>不会把扫描出的路径、文件名、应用名或体积发送到任何服务器——包括使用统计在内。</li>
     <li>不会在后台静默执行删除：任何删除都需要你在预览界面上勾选并确认。</li>
   </ul>
 
@@ -66,7 +95,7 @@
   <p>应用只在你选择的范围内访问文件系统。系统范围的操作需要尚未发布的特权助手，因此目前会直接以 <code>requires_admin</code> 拒绝，不会请求 shell 提权。</p>
 
   <h2>变更与联系</h2>
-  <p>本说明随应用行为变更同步更新。有疑问或发现描述与代码不符，请在 <a href="https://github.com/tw93/mole/issues" target="_blank" rel="noopener noreferrer">GitHub Issues</a> 提出。</p>
+  <p>本说明随应用行为变更同步更新。有疑问或发现描述与代码不符，请在 <a href="https://github.com/rambocode/tidy/issues" target="_blank" rel="noopener noreferrer">GitHub Issues</a> 提出。</p>
 </main>
 
 <footer class="site-footer">

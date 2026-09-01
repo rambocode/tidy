@@ -36,7 +36,7 @@
   "inLanguage": ["zh-Hans", "en"],
   "isAccessibleForFree": true,
   "url": "https://tidy.example.com/zh/",
-  "codeRepository": "https://github.com/tw93/mole",
+  "codeRepository": "https://github.com/rambocode/tidy",
   "description": "Mole 的开源 macOS 桌面端：清理、卸载、优化、磁盘分析先预览后执行，执行范围严格等于用户勾选的候选集合。"
 }
 </script>
@@ -54,7 +54,7 @@
       <a href="#faq" data-optional>常见问题</a>
       <a href="/zh/blog/">Blog</a>
       <span class="lang-switch"><a href="/zh/" aria-current="true">中</a>/<a href="/en/">EN</a></span>
-      <a class="btn btn-primary" href="https://github.com/tw93/mole" target="_blank" rel="noopener noreferrer">查看源码</a>
+      <a class="btn btn-primary" href="https://github.com/rambocode/tidy" target="_blank" rel="noopener noreferrer">查看源码</a>
     </nav>
   </div>
 </header>
@@ -67,7 +67,7 @@
       <h1>看得清楚，清得放心</h1>
       <p class="lead">Tidy 是 Mole 的开源 macOS 桌面端。清理、卸载、优化、磁盘分析都先把完整候选清单摆在你面前；你勾了什么，它就只删什么——工程上做不到多删一个文件。</p>
       <div class="hero-actions">
-        <a class="btn btn-primary btn-lg" href="https://github.com/tw93/mole" target="_blank" rel="noopener noreferrer">在 GitHub 上查看源码</a>
+        <a class="btn btn-primary btn-lg" href="https://github.com/rambocode/tidy" target="_blank" rel="noopener noreferrer">在 GitHub 上查看源码</a>
         <a class="btn btn-secondary btn-lg" href="#build">怎么自行构建</a>
       </div>
       <p class="requirements">
@@ -310,9 +310,9 @@
     <div class="wrap">
       <p class="eyebrow">获取方式</p>
       <h2>开源，目前需要自行构建</h2>
-      <p class="lead section-intro">源码在 <a href="https://github.com/tw93/mole" target="_blank" rel="noopener noreferrer">github.com/tw93/mole</a> 的 <code>desktop/</code> 目录。需要 Rust stable 与 Node ≥ 20。</p>
-      <pre><code>git clone https://github.com/tw93/mole.git
-cd mole/desktop
+      <p class="lead section-intro">源码在 <a href="https://github.com/rambocode/tidy" target="_blank" rel="noopener noreferrer">github.com/rambocode/tidy</a> 的 <code>desktop/</code> 目录。需要 Rust stable 与 Node ≥ 20。</p>
+      <pre><code>git clone https://github.com/rambocode/tidy.git
+cd tidy/desktop
 
 # 后端测试
 cargo test --workspace
@@ -365,7 +365,7 @@ cd ui &amp;&amp; npm install &amp;&amp; npx tauri dev</code></pre>
       <h2>遇到拒绝原因看不懂的地方，直接开 issue</h2>
       <div class="feedback">
         <p>项目还没有发布安装包，也就还没有公开的用户评价，所以这里不会摆任何推荐语。现在唯一的反馈渠道是 GitHub Issues：贴上你看到的拒绝原因（<code>probe_failed</code>、<code>requires_admin</code> 等）和 <code>~/Library/Logs/mole</code> 里对应的那几行，比描述现象更容易定位。</p>
-        <p style="margin-bottom:0"><a class="btn btn-secondary" href="https://github.com/tw93/mole/issues" target="_blank" rel="noopener noreferrer">在 GitHub 提交问题</a></p>
+        <p style="margin-bottom:0"><a class="btn btn-secondary" href="https://github.com/rambocode/tidy/issues" target="_blank" rel="noopener noreferrer">在 GitHub 提交问题</a></p>
       </div>
     </div>
   </section>
@@ -375,7 +375,7 @@ cd ui &amp;&amp; npm install &amp;&amp; npx tauri dev</code></pre>
       <h2>先看清楚，再决定删什么</h2>
       <p class="lead">源码、安全边界、日志格式全部公开可查。</p>
       <div class="hero-actions">
-        <a class="btn btn-primary btn-lg" href="https://github.com/tw93/mole" target="_blank" rel="noopener noreferrer">在 GitHub 上查看源码</a>
+        <a class="btn btn-primary btn-lg" href="https://github.com/rambocode/tidy" target="_blank" rel="noopener noreferrer">在 GitHub 上查看源码</a>
         <a class="btn btn-secondary btn-lg" href="/zh/blog/">读读 Blog</a>
       </div>
     </div>
@@ -404,8 +404,8 @@ cd ui &amp;&amp; npm install &amp;&amp; npx tauri dev</code></pre>
         <ul>
           <li><a href="/zh/blog/">Blog</a></li>
           <li><a href="/zh/blog/rss.xml">RSS</a></li>
-          <li><a href="https://github.com/tw93/mole" target="_blank" rel="noopener noreferrer">GitHub</a></li>
-          <li><a href="https://github.com/tw93/mole/issues" target="_blank" rel="noopener noreferrer">提交问题</a></li>
+          <li><a href="https://github.com/rambocode/tidy" target="_blank" rel="noopener noreferrer">GitHub</a></li>
+          <li><a href="https://github.com/rambocode/tidy/issues" target="_blank" rel="noopener noreferrer">提交问题</a></li>
         </ul>
       </div>
       <div>

@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Privacy — Tidy</title>
-<meta name="description" content="How the Tidy site and desktop app handle data: no cookies or analytics on the site; app state and history stay local, and the app reaches the network only during update checks.">
+<meta name="description" content="How Tidy's website and desktop app handle data: no cookies or analytics scripts on the site; app state and history stay on your Mac; anonymous usage statistics are on by default, switchable off, and never include paths, filenames or sizes.">
 <link rel="canonical" href="https://tidy.example.com/en/privacy/">
 <link rel="alternate" hreflang="zh-Hans" href="https://tidy.example.com/zh/privacy/">
 <link rel="alternate" hreflang="en" href="https://tidy.example.com/en/privacy/">
@@ -23,42 +23,71 @@
       <a href="/en/#trust">Safety</a>
       <a href="/en/blog/">Blog</a>
       <span class="lang-switch"><a href="/zh/privacy/">中</a>/<a href="/en/privacy/" aria-current="true">EN</a></span>
-      <a class="btn btn-primary" href="https://github.com/tw93/mole" target="_blank" rel="noopener noreferrer">View source</a>
+      <a class="btn btn-primary" href="https://github.com/rambocode/tidy" target="_blank" rel="noopener noreferrer">View source</a>
     </nav>
   </div>
 </header>
 
 <main id="main" class="wrap legal">
   <h1>Privacy</h1>
-  <p>Last updated 2026-08-17. This page describes behavior implemented in the repository today, not future plans.</p>
+  <p>Last updated 2026-09-01. This page describes behavior implemented in the repository today, not future plans.</p>
 
   <h2>This website</h2>
   <p>The site is a set of static pages. It sets no cookies, loads no analytics or third-party tracking scripts, and has no accounts, forms, or comments. The only outbound links point at GitHub.</p>
   <p>A static host may keep operational access logs (IP, user agent, request path). That data is processed by the hosting provider and is outside this project's control; once a provider is chosen, this section will name it.</p>
 
   <h2>The desktop app</h2>
-  <p>Tidy runs locally on your Mac. The repository contains no analytics, telemetry, or crash-reporting code, and the app window's content security policy is limited to <code>default-src 'self'</code>.</p>
+  <p>Tidy runs locally on your Mac. Every scan, preview and deletion happens on your machine, and the app window's content security policy is limited to <code>default-src 'self'</code>, so the web layer has no outbound network access at all.</p>
+  <p>The app does send <strong>anonymous usage statistics</strong>. This is on by default and can be turned off at any time. The "Anonymous usage statistics" section below lists every field it collects.</p>
 
   <h3>What is stored locally</h3>
   <ul>
-    <li><code>~/.config/mole</code> — shared state including language preference and the whitelist.</li>
+    <li><code>~/.config/mole</code> — shared state including language preference, the whitelist, and <code>settings</code> (the update-check and usage-statistics switches, plus the random install identifier).</li>
     <li><code>~/Library/Logs/mole</code> — operation history in <code>operations.log</code> and deletion history in <code>deletions.log</code>, both byte-compatible with the Mole CLI.</li>
   </ul>
   <p>These files are never uploaded. Deleting them clears the history; the app recreates them on the next operation.</p>
 
   <h3>When the app uses the network</h3>
-  <p>Only when you deliberately run a software update check, and only to:</p>
+  <p>The app makes network requests in exactly three situations:</p>
   <ul>
-    <li>Apple's bundle-ID lookup, to resolve the exact Mac App Store product page;</li>
-    <li>the Sparkle feed an installed app declares for itself (HTTPS);</li>
-    <li>the provider declared in an Electron app's <code>app-update.yml</code>, and the GitHub release API.</li>
+    <li><strong>You deliberately run a software update check</strong> (checking the other apps you have installed);</li>
+    <li><strong>Checking for a Tidy update</strong> — one fetch of <code>latest.json</code> from GitHub Releases after launch, at most once every 24 hours. Turn it off in Settings › General and no request is made at all;</li>
+    <li><strong>Sending anonymous usage statistics</strong> — see the next section; can be turned off.</li>
   </ul>
-  <p>The Homebrew path reads local <code>brew</code> output and makes no additional network request. Requests carry only the app identifier and version needed to compare releases — never file paths, file contents, clipboard data, or personal information. A scan result expires after 15 minutes.</p>
+  <p>When checking other apps, requests go only to: Apple's bundle-ID lookup (to resolve the exact Mac App Store product page), the Sparkle feed an installed app declares for itself (HTTPS), and the provider declared in an Electron app's <code>app-update.yml</code> plus the GitHub release API. The Homebrew path reads local <code>brew</code> output and makes no additional network request. Requests carry only the app identifier and version needed to compare releases — never file paths, file contents, clipboard data, or personal information. A scan result expires after 15 minutes.</p>
+
+  <h3>Anonymous usage statistics</h3>
+  <p>They answer one question: which features people actually use, and what goes wrong on which version. <strong>On by default</strong>, announced explicitly on first launch, and switchable at any time under Settings › General › Anonymous usage statistics.</p>
+  <p>Turning it off stops reporting immediately and deletes both the pending local queue and the random install identifier. Turning it back on generates a new identifier, which statistically makes you a new user.</p>
+
+  <p><strong>Random install identifier</strong>: a random UUID generated when statistics are first enabled, stored in <code>~/.config/mole/settings</code>. It is unrelated to your hardware serial, Apple ID, MAC address or IP address. Delete the file and you become a new user.</p>
+
+  <p><strong>Every event and field collected</strong> (this is the complete list, not a sample):</p>
+  <table class="legal-table">
+    <thead><tr><th>Event</th><th>Fields</th></tr></thead>
+    <tbody>
+      <tr><td><code>app_launched</code></td><td>whether this is the first launch</td></tr>
+      <tr><td><code>view_opened</code></td><td>screen name (clean / apps / optimize / analyze / status / settings)</td></tr>
+      <tr><td><code>scan_completed</code></td><td>scan type, duration in milliseconds</td></tr>
+      <tr><td><code>clean_executed</code></td><td>delete mode (trash / permanent), result (ok / partial / failed / cancelled)</td></tr>
+      <tr><td><code>app_uninstalled</code></td><td>no fields</td></tr>
+      <tr><td><code>optimize_run</code></td><td>the fixed task identifier (e.g. <code>flushDNS</code>)</td></tr>
+      <tr><td><code>updates_run</code></td><td>update source (homebrew / app_store / sparkle / electron / website)</td></tr>
+      <tr><td><code>self_update</code></td><td>previous version, new version, result</td></tr>
+      <tr><td><code>error_occurred</code></td><td>a predefined error code, and which screen it happened on</td></tr>
+    </tbody>
+  </table>
+  <p>Every event also carries: the random install identifier, the Tidy version, the macOS version, and the interface language.</p>
+
+  <p><strong>Deliberately not collected</strong>: how much space was reclaimed, how many items were found, how many apps were uninstalled, any path, any filename, any application name, your machine name, or raw error messages (those routinely contain absolute paths). These are excluded <em>structurally</em> in the code — event property types accept only fixed constants, never runtime strings.</p>
+
+  <p><strong>Where the data goes</strong>: first to our own Cloudflare Worker proxy, which strips client-IP headers before forwarding, then to PostHog for aggregation. PostHog therefore never receives your IP address and cannot geolocate you from it.</p>
+  <p>Events are queued locally and sent in batches every 60 seconds or on exit. A failed send is written to <code>~/.config/mole/telemetry-queue.json</code> and retried on the next launch; the queue holds at most 500 events.</p>
 
   <h3>What does not happen</h3>
   <ul>
     <li>Your document contents are never read or uploaded.</li>
-    <li>Scanned paths, filenames, and sizes are never sent to any server.</li>
+    <li>Scanned paths, filenames, application names, and sizes are never sent to any server — usage statistics included.</li>
     <li>Nothing is deleted in the background: every deletion requires your selection and confirmation in the preview.</li>
   </ul>
 
@@ -66,7 +95,7 @@
   <p>The app touches the filesystem only within the scope you choose. System-scope actions require the privileged helper, which has not shipped, so they refuse with <code>requires_admin</code> instead of prompting for shell elevation.</p>
 
   <h2>Changes and contact</h2>
-  <p>This page is updated alongside changes in app behavior. If anything here disagrees with the code, please say so in <a href="https://github.com/tw93/mole/issues" target="_blank" rel="noopener noreferrer">GitHub Issues</a>.</p>
+  <p>This page is updated alongside changes in app behavior. If anything here disagrees with the code, please say so in <a href="https://github.com/rambocode/tidy/issues" target="_blank" rel="noopener noreferrer">GitHub Issues</a>.</p>
 </main>
 
 <footer class="site-footer">

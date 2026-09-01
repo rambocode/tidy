@@ -485,3 +485,13 @@ pre code { background: none; padding: 0; }
   html { scroll-behavior: auto; }
   * { transition-duration: 1ms !important; animation-duration: 1ms !important; }
 }
+
+/* 隐私页的字段清单表：一列事件名、一列字段，行高与正文一致。 */
+.legal-table { width: 100%; border-collapse: collapse; font-size: 14px; margin: var(--space-4) 0; }
+.legal-table th, .legal-table td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--border); vertical-align: top; }
+.legal-table th { font-size: 13px; letter-spacing: 0.02em; color: var(--fg-dim); }
+.legal-table td:first-child { white-space: nowrap; }
+
+@media (max-width: 640px) {
+  .legal-table { display: block; overflow-x: auto; }
+}

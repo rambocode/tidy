@@ -134,7 +134,8 @@ convert 原图.png -resize 1080x -strip                            assets/media/
 | --- | --- | --- |
 | 尚未发布安装包 | `src-tauri/tauri.conf.json` 的 `bundle.active: false`，版本 0.1.0 | 首次发布时全站更新 |
 | 系统范围操作以 `requires_admin` 拒绝 | 特权助手的 SMAppService/XPC 传输未发布 | 传输层发布后更新 |
-| 没有任何分析或埋点 | 仓库中无 analytics / telemetry / 崩溃上报代码 | 引入任何统计前必须先改隐私页 |
+| 匿名使用统计默认开、可关闭 | `desktop/crates/mole-telemetry`，字段清单见 `event.rs` | 采集面一变，`zh/privacy` 与 `en/privacy` 的字段表必须同步改 |
+| 应用会检查自身更新 | `desktop/src-tauri/src/update.rs`，feed 在 GitHub Releases | 换分发渠道时更新隐私页的联网说明 |
 | 主 CTA 指向 GitHub | 目前没有下载地址 | 有下载页后改为下载 |
 
 站点刻意没有的东西：用户评价（还没有公开评价，不能编造）、下载按钮（还没有安装包）、
