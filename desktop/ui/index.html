@@ -10,7 +10,9 @@
   </head>
   <body>
     <div id="app">
-      <nav id="nav" data-tauri-drag-region></nav>
+      <!-- "deep" makes the whole masthead a drag region; Tauri's drag script
+           still lets the <a> section tabs and any meta links click through. -->
+      <nav id="nav" data-tauri-drag-region="deep"></nav>
       <main id="view"></main>
     </div>
     <script type="module" src="/src/main.ts"></script>

@@ -71,6 +71,10 @@ a:hover {
   flex: 0 0 auto;
   padding: 0 20px;
   background: var(--paper);
+  /* The masthead is the window's title bar (data-tauri-drag-region="deep"):
+     a drag must move the window, not start selecting the wordmark. */
+  user-select: none;
+  cursor: default;
 }
 
 .masthead {
