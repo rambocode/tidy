@@ -4,14 +4,10 @@
 // installer leftovers + docker) → ledger preview → confirm → execute →
 // reclaimed-space page. Purge and installer keep their own backend plans and
 // two-phase funnels; this surface only merges their sections into one flow.
-//
-// The celestial explorer survives as a newspaper "plate": a framed dark
-// astronomical inset, opened from a quiet link under the hero.
 
 import {
   appMeta,
   cancelTask,
-  celestialCatalog,
   newTaskId,
   planClean,
   planInstaller,
@@ -20,22 +16,15 @@ import {
   executeDocker,
 } from "../ipc";
 import { renderFlow } from "../flow";
-import {
-  mountParticles,
-  type CelestialPreset,
-  type ParticleController,
-} from "../particles";
+import { renderFrontPage } from "../frontpage";
 import { cleanTrashMode, dockerIdleMonths, purgeIdleDays } from "../prefs";
 import { esc, humanKb } from "../format";
 import { daysSince, lastReclaim, reclaimLog, totalFreedKb } from "../ledger";
-import { lang, t } from "../i18n";
+import { dateline, relativeDay, t } from "../i18n";
 import type { View } from "../router";
 import type { BlockedCaches, PlanSummary, ProjectReport,
   DockerImage,
 } from "../types";
-
-/** Bodies with a bundled NASA texture; everything else is a data illustration. */
-const REAL_TEXTURES = new Set(["earth", "mars", "jupiter"]);
 
 export const clean: View = {
   mount(container) {
@@ -45,146 +34,31 @@ export const clean: View = {
     const issue = reclaimLog().filter((r) => r.kind === "clean").length + 1;
     const total = totalFreedKb();
 
-    container.innerHTML = `
-      <div class="hero">
-        <span class="kicker">${t("clean.issue", { n: issue })}</span>
-        <div class="big">${t("clean.ready")}</div>
-        <p class="sub">${t("clean.ready.sub")}</p>
-        <button class="frame-cta" id="scan">${t("clean.scan")} →</button>
-        <div class="statline">
-          <span>${t("clean.stat.last")} · ${
-            previous ? t("clean.stat.daysAgo", { d: daysSince(previous.at) }) : "—"
-          }</span>
-          <span>${t("clean.stat.reclaimed")} · ${previous ? humanKb(previous.freedKb) : "—"}</span>
-          <span>${t("clean.stat.total")} · ${total > 0 ? humanKb(total) : "—"}</span>
-        </div>
-        <button class="link-quiet" id="explore-toggle" aria-pressed="false">
-          ✦ <span id="explore-toggle-label">${t("clean.explore")}</span>
-        </button>
-        <section class="explore-card" id="explore-card" aria-live="polite" hidden>
-          <div class="explore-card-head">
-            <span id="explore-progress">${t("clean.explore.loading")}</span>
-            <span class="explore-new" id="explore-new" hidden>${t("clean.explore.new")}</span>
-            <span class="spacer"></span>
-            <span class="explore-presets" role="group" aria-label="${t("clean.explore.presets")}">
-              <button class="active" data-preset="all">${t("clean.explore.all")}</button>
-              <button data-preset="solar-system">${t("clean.explore.solar")}</button>
-              <button data-preset="earth-moon">${t("clean.explore.earthMoon")}</button>
-            </span>
-          </div>
-          <div class="explore-plate" id="explore-plate"></div>
-          <div class="explore-name" id="explore-name">${t("clean.explore.prompt")}</div>
-          <div class="explore-meta" id="explore-meta">${t("clean.explore.hint")}</div>
-          <div class="explore-size" id="explore-size">${t("clean.explore.scale")}</div>
-          <p class="explore-summary" id="explore-summary"></p>
-          <div class="explore-source">
-            <span id="explore-texture">${t("clean.explore.illustration")}</span>
-            <span id="explore-source"></span>
-          </div>
-          <button class="link-quiet" id="explore-reset">${t("clean.explore.reset")}</button>
-        </section>
-      </div>`;
-    const toggle = container.querySelector<HTMLButtonElement>("#explore-toggle")!;
-    const toggleLabel = container.querySelector<HTMLElement>("#explore-toggle-label")!;
-    const card = container.querySelector<HTMLElement>("#explore-card")!;
-    const plate = container.querySelector<HTMLElement>("#explore-plate")!;
-    const scanButton = container.querySelector<HTMLButtonElement>("#scan")!;
-    const progress = container.querySelector<HTMLElement>("#explore-progress")!;
-    const discoveryName = container.querySelector<HTMLElement>("#explore-name")!;
-    const discoveryMeta = container.querySelector<HTMLElement>("#explore-meta")!;
-    const discoverySize = container.querySelector<HTMLElement>("#explore-size")!;
-    const discoverySummary = container.querySelector<HTMLElement>("#explore-summary")!;
-    const textureNote = container.querySelector<HTMLElement>("#explore-texture")!;
-    const catalogSource = container.querySelector<HTMLElement>("#explore-source")!;
-    const newBadge = container.querySelector<HTMLElement>("#explore-new")!;
-    const presetButtons = Array.from(
-      container.querySelectorAll<HTMLButtonElement>("[data-preset]"),
-    );
-    let exploring = false;
-    let particles: ParticleController | null = null;
-
-    /** Keep the optional entertainment layer separate from the primary clean
-     * action. Leaving explorer mode restores the original quiet hero. */
-    const setExploring = (active: boolean) => {
-      exploring = active;
-      card.hidden = !active;
-      toggle.setAttribute("aria-pressed", String(active));
-      toggleLabel.textContent = t(active ? "clean.explore.exit" : "clean.explore");
-      particles?.setExploring(active);
-      if (!active) toggle.focus({ preventScroll: true });
-    };
-
-    // The particle field lives inside the plate, never behind the page: a
-    // night-sky canvas on paper stock would read as a printing error.
-    particles = mountParticles(plate, "idle", "ember", {
-      interactive: true,
-      targets: [],
-      ariaLabel: t("clean.explore.aria"),
-      onExit: () => setExploring(false),
-      onDiscovery: ({ target, discovered, total: catalogTotal, isNew }) => {
-        progress.textContent = t("clean.explore.progress", { n: discovered, total: catalogTotal });
-        discoveryName.textContent = localizedCelestialName(target.id, target.name);
-        const type = t(`explore.type.${target.bodyType}`);
-        const distance =
-          target.distanceLy === null
-            ? t("clean.explore.distanceUnknown")
-            : target.distanceLy < 0.000_001
-            ? t("clean.explore.local")
-            : t("clean.explore.distance", { distance: formatDistance(target.distanceLy) });
-        discoveryMeta.textContent = `${type} · ${distance}`;
-        discoverySize.textContent =
-          target.radiusKm === null
-            ? t("clean.explore.radiusUnknown")
-            : t("clean.explore.radius", { radius: formatRadius(target.radiusKm) });
-        discoverySummary.textContent = lang() === "zh" ? target.summaryZh : target.summaryEn;
-        // Say plainly whether the plate shows a photographed surface or a
-        // generated illustration — the catalog prose is factual, the art is not.
-        textureNote.textContent = REAL_TEXTURES.has(target.id)
-          ? t("clean.explore.realTexture")
-          : t("clean.explore.illustration");
-        catalogSource.textContent = ` · ${t("clean.explore.objectSource", {
-          source: target.sourceUrl.includes("science.nasa.gov")
-            ? "NASA Solar System"
-            : "NASA Exoplanet Archive",
-        })}`;
-        newBadge.hidden = !isNew;
-      },
+    const scanButton = renderFrontPage(container, {
+      kicker: t("clean.issue", { n: issue }),
+      strapline: t("clean.strapline"),
+      // The plate number is the issue number, so the numeral on the page and
+      // the one in the kicker are always the same fact.
+      watermark: String(issue),
+      headlineHtml: t("clean.headline"),
+      desk: t("clean.desk"),
+      dateline: dateline(),
+      action: t("clean.scan"),
+      actionNote: t("clean.scanNote"),
+      noteBody: t("clean.standfirst"),
+      stats: [
+        {
+          label: t("clean.stat.last"),
+          value: previous ? relativeDay(daysSince(previous.at)) : "—",
+        },
+        {
+          label: t("clean.stat.reclaimed"),
+          value: previous ? humanKb(previous.freedKb) : "—",
+        },
+        { label: t("clean.stat.total"), value: total > 0 ? humanKb(total) : "—" },
+      ],
     });
 
-    // Catalog loading is independent of the cleaning flow. SQLite opens and
-    // any network refresh run on a blocking backend worker, so the main action
-    // and the ambient animation remain responsive.
-    void celestialCatalog()
-      .then((catalog) => {
-        particles?.setTargets(catalog.objects);
-        progress.textContent = t("clean.explore.progress", {
-          n: 0,
-          total: catalog.objects.length,
-        });
-        catalogSource.textContent = ` · ${
-          catalog.archiveComplete
-            ? t("clean.explore.catalog", { source: catalog.sourceName })
-            : t("clean.explore.offlineCatalog")
-        }`;
-        if (catalog.warning) catalogSource.title = catalog.warning;
-      })
-      .catch(() => {
-        progress.textContent = t("clean.explore.loadFailed");
-        catalogSource.textContent = ` · ${t("clean.explore.loadFailedHint")}`;
-      });
-    toggle.addEventListener("click", () => setExploring(!exploring));
-    const setPreset = (preset: CelestialPreset) => {
-      particles?.focusPreset(preset);
-      for (const button of presetButtons) {
-        button.classList.toggle("active", button.dataset.preset === preset);
-      }
-    };
-    for (const button of presetButtons) {
-      button.addEventListener("click", () => setPreset(button.dataset.preset as CelestialPreset));
-    }
-    container
-      .querySelector("#explore-reset")!
-      .addEventListener("click", () => setPreset("all"));
 
     scanButton.addEventListener("click", async () => {
       const meta = await appMeta();
@@ -352,38 +226,4 @@ function imageOf(images: DockerImage[], id: string): DockerImage | undefined {
 /** Shorten a project path for progress/badge display. */
 function shorten(path: string): string {
   return path.split("/").slice(-2).join("/");
-}
-
-/** Compact scientific distances without rounding nearby objects to zero. */
-function formatDistance(lightYears: number): string {
-  if (lightYears < 0.01) return lightYears.toExponential(2);
-  if (lightYears < 100) return lightYears.toFixed(2);
-  return Math.round(lightYears).toLocaleString();
-}
-
-/** Physical radius shown in km; marker rendering applies the documented
- * logarithmic scale separately so this factual value is never distorted. */
-function formatRadius(radiusKm: number): string {
-  return Math.round(radiusKm).toLocaleString();
-}
-
-/** Solar System common names are localized; catalog designations remain
- * untouched because identifiers such as K2-9 or HD 2039 are proper names. */
-function localizedCelestialName(id: string, fallback: string): string {
-  const solarIds = new Set([
-    "sun",
-    "mercury",
-    "venus",
-    "earth",
-    "moon",
-    "mars",
-    "jupiter",
-    "saturn",
-    "uranus",
-    "neptune",
-    "ceres",
-    "pluto",
-    "eris",
-  ]);
-  return solarIds.has(id) ? t(`explore.name.${id}`) : fallback;
 }

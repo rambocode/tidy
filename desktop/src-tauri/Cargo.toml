@@ -32,6 +32,7 @@ tauri = { version = "2", features = ["tray-icon", "image-png"] }
 tauri-plugin-drag = "2"
 core-foundation = "0.10"
 core-graphics = "0.24"
+tauri-plugin-dialog = "2"
 
 [dev-dependencies]
 tempfile.workspace = true

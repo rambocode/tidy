@@ -1,7 +1,7 @@
 {
   "$schema": "../gen/schemas/desktop-schema.json",
   "identifier": "default",
-  "description": "Core window capabilities only; no fs/shell plugin surface.",
+  "description": "Core window capabilities plus the folder-open dialog; no fs/shell plugin surface.",
   "windows": [
     "main",
     "fda-helper"
@@ -9,6 +9,7 @@
   "permissions": [
     "core:default",
     "core:window:allow-start-dragging",
-    "drag:default"
+    "drag:default",
+    "dialog:allow-open"
   ]
 }

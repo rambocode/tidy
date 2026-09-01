@@ -15,55 +15,8 @@ const DICT: Record<Lang, Record<string, string>> = {
     "nav.status": "状态",
     "nav.settings": "设置",
 
-    "clean.ready": "今天的磁盘，<br>值得一次彻底的整理。",
-    "clean.ready.sub": "扫描系统缓存、日志、下载残留与废纸篓。只找可再生文件，不触碰文稿与应用数据。",
     "clean.scan": "开始扫描",
     "clean.scanning": "正在扫描",
-    "clean.explore": "探索星河",
-    "clean.explore.exit": "退出探索",
-    "clean.explore.progress": "已查看 {n}/{total}",
-    "clean.explore.loading": "正在读取星体目录…",
-    "clean.explore.loadFailed": "星体目录不可用",
-    "clean.explore.loadFailedHint": "请重新进入页面后重试",
-    "clean.explore.prompt": "选择发光星体开始探索",
-    "clean.explore.hint": "拖动立体旋转 · 滚轮缩放 · 点击查看",
-    "clean.explore.presets": "观测快捷方式",
-    "clean.explore.all": "全部星图",
-    "clean.explore.solar": "太阳系",
-    "clean.explore.earthMoon": "地月系",
-    "clean.explore.realTexture": "NASA 真实纹理",
-    "clean.explore.illustration": "数据化示意",
-    "clean.explore.reset": "重置视角",
-    "clean.explore.local": "本地星体",
-    "clean.explore.distance": "距离 {distance} 光年",
-    "clean.explore.distanceUnknown": "距离未知",
-    "clean.explore.radius": "实际平均半径 {radius} km",
-    "clean.explore.radiusUnknown": "实际半径尚无可靠记录",
-    "clean.explore.scale": "星体按实际半径的对数比例显示",
-    "clean.explore.catalog": "目录来源：{source}",
-    "clean.explore.objectSource": "对象来源：{source}",
-    "clean.explore.offlineCatalog": "离线太阳系目录 · 联网后自动补全",
-    "clean.explore.new": "新发现",
-    "clean.explore.aria": "星体探索画布。拖动立体旋转星图，滚轮以视觉中心缩放，点击查看星体介绍。数字 1 打开太阳系，数字 2 打开地月系。",
-    "explore.earth": "地球",
-    "explore.name.sun": "太阳",
-    "explore.name.mercury": "水星",
-    "explore.name.venus": "金星",
-    "explore.name.earth": "地球",
-    "explore.name.moon": "月球",
-    "explore.name.mars": "火星",
-    "explore.name.jupiter": "木星",
-    "explore.name.saturn": "土星",
-    "explore.name.uranus": "天王星",
-    "explore.name.neptune": "海王星",
-    "explore.name.ceres": "谷神星",
-    "explore.name.pluto": "冥王星",
-    "explore.name.eris": "阋神星",
-    "explore.type.star": "恒星",
-    "explore.type.planet": "行星",
-    "explore.type.dwarf_planet": "矮行星",
-    "explore.type.moon": "天然卫星",
-    "explore.type.exoplanet": "确认系外行星",
     "clean.found": "可清理",
     "clean.go": "清理",
     "clean.items": "项",
@@ -202,8 +155,6 @@ const DICT: Record<Lang, Record<string, string>> = {
     "cat.containers": "Containers",
     "cat.other": "其他",
 
-    "opt.title": "安全、有边界的<br>系统维护任务。",
-    "opt.sub": "检查例行维护项目：可清除空间、索引、缓存与维护脚本。全部使用系统公开接口，不做危险加速。",
     "opt.run": "开始优化",
     "opt.running": "正在深度优化系统",
     "opt.done": "优化完成",
@@ -337,12 +288,45 @@ const DICT: Record<Lang, Record<string, string>> = {
     "flow.admin": "需管理员",
     "flow.adminhint": "需要系统授权",
 
+    "front.note": "编者按",
+
+    "clean.strapline": "只清可再生文件 · 全程可预览",
+    "clean.headline": "今天的磁盘，<br>值得一次<em>彻底</em>的整理。",
+    "clean.desk": "本刊编辑部 · 磁盘管理组",
+    "clean.scanNote": "扫描不改动任何文件",
+    "clean.standfirst": "扫描的对象只有四类：系统缓存、过期日志、下载残留与废纸篓。它们都能由系统重新生成——你的文稿、照片与应用数据，从不在清理之列。",
+
+    "opt.numerals": "cjk",
+    "opt.strapline": "{n} 项例行 · 全部走系统公开接口",
+    "opt.headline": "机器不需要奇迹，<br>只需要<em>按时</em>的照料。",
+    "opt.desk": "本刊编辑部 · 系统维护组",
+    "opt.checkNote": "检查不改动任何设置",
+    "opt.minutes": "约 {m} 分钟",
+    "opt.neverRun": "尚未运行过维护",
+    "opt.stat.eta": "预计用时",
+    "opt.times": "{n} 次",
+    "opt.standfirst": "维护只有六项：可清除空间、索引、缓存与维护脚本，每一项都有明确边界。我们不做“深度加速”——那些奇迹，通常以稳定性为代价。",
+
+    "ana.strapline": "逐层统计 · 按大小排出账目",
+    "ana.headline": "每一 GB，<br>都该有<em>去向</em>可查。",
+    "ana.desk": "本刊编辑部 · 空间调查组",
+    "ana.lastScan": "上次扫描",
+    "ana.neverScanned": "尚未扫描过",
+    "ana.pickFolder": "选择文件夹…",
+    "ana.cachedResult": "上次结果仍可查看",
+    "ana.cachedNote": "缓存于 {time}",
+    "ana.freshNote": "首次扫描会遍历整层目录",
+    "ana.diskTotal": "整盘容量",
+    "ana.diskUsed": "已用",
+    "ana.diskFree": "可用",
+    "ana.standfirst": "占用不是罪，看不见才是。逐层统计每个目录的真实大小，把磁盘排成一本可以核对的账，点进任何一层继续深入。",
+
     "time.today": "今天",
     "time.yesterday": "昨天",
 
-    "clean.issue": "第 {n} 期 · 智能清理",
+    "clean.issue": "第 {n} 期 · 智能清理专栏",
     "clean.stat.last": "上次清理",
-    "clean.stat.reclaimed": "回收",
+    "clean.stat.reclaimed": "当期回收",
     "clean.stat.total": "累计已省",
     "clean.stat.daysAgo": "{d} 天前",
 
@@ -361,7 +345,6 @@ const DICT: Record<Lang, Record<string, string>> = {
     "opt.check": "开始检查",
     "opt.stat.last": "上次维护",
     "opt.stat.done": "已完成任务",
-    "opt.stat.count": "本期共 {n} 项",
     "opt.listTitle": "例行维护 · {n} 项",
     "opt.runSelected": "执行已选 {n} 项",
     "opt.chosen": "已选 · 取消",
@@ -372,8 +355,6 @@ const DICT: Record<Lang, Record<string, string>> = {
     "opt.doneSub": "本期维护到此结束。",
 
     "ana.kicker": "空间调查 · 磁盘占用",
-    "ana.headline": "空间都去哪了？",
-    "ana.lede": "逐层统计每个目录的真实占用，按大小排出“账目”，点进任何一层继续深入。",
     "ana.start": "开始分析",
     "ana.homeScope": "用户目录",
     "ana.restN": "其余 {n} 项",
@@ -424,55 +405,8 @@ const DICT: Record<Lang, Record<string, string>> = {
     "nav.status": "Status",
     "nav.settings": "Settings",
 
-    "clean.ready": "Your disk deserves<br>a proper tidy today.",
-    "clean.ready.sub": "Scans system caches, logs, download leftovers and the Trash. Only regenerable files — never your documents or app data.",
     "clean.scan": "Start Scan",
     "clean.scanning": "Scanning",
-    "clean.explore": "Explore Galaxy",
-    "clean.explore.exit": "Exit Explorer",
-    "clean.explore.progress": "Viewed {n}/{total}",
-    "clean.explore.loading": "Loading celestial catalog…",
-    "clean.explore.loadFailed": "Celestial catalog unavailable",
-    "clean.explore.loadFailedHint": "Leave and reopen this page to retry",
-    "clean.explore.prompt": "Select a glowing object to begin",
-    "clean.explore.hint": "Drag in 3D · Scroll to zoom · Click to inspect",
-    "clean.explore.presets": "Observation shortcuts",
-    "clean.explore.all": "Full sky",
-    "clean.explore.solar": "Solar System",
-    "clean.explore.earthMoon": "Earth–Moon",
-    "clean.explore.realTexture": "NASA texture",
-    "clean.explore.illustration": "Data illustration",
-    "clean.explore.reset": "Reset view",
-    "clean.explore.local": "Local object",
-    "clean.explore.distance": "{distance} light-years away",
-    "clean.explore.distanceUnknown": "Distance unknown",
-    "clean.explore.radius": "Actual mean radius {radius} km",
-    "clean.explore.radiusUnknown": "No reliable radius recorded",
-    "clean.explore.scale": "Objects use a logarithmic scale of their physical radii",
-    "clean.explore.catalog": "Catalog: {source}",
-    "clean.explore.objectSource": "Object source: {source}",
-    "clean.explore.offlineCatalog": "Offline Solar System catalog · expands when online",
-    "clean.explore.new": "New discovery",
-    "clean.explore.aria": "Celestial explorer. Drag to rotate the sky in 3D, scroll to zoom around the visual center, and click an object for details. Press 1 for the Solar System or 2 for Earth and Moon.",
-    "explore.earth": "Earth",
-    "explore.name.sun": "Sun",
-    "explore.name.mercury": "Mercury",
-    "explore.name.venus": "Venus",
-    "explore.name.earth": "Earth",
-    "explore.name.moon": "Moon",
-    "explore.name.mars": "Mars",
-    "explore.name.jupiter": "Jupiter",
-    "explore.name.saturn": "Saturn",
-    "explore.name.uranus": "Uranus",
-    "explore.name.neptune": "Neptune",
-    "explore.name.ceres": "Ceres",
-    "explore.name.pluto": "Pluto",
-    "explore.name.eris": "Eris",
-    "explore.type.star": "Star",
-    "explore.type.planet": "Planet",
-    "explore.type.dwarf_planet": "Dwarf planet",
-    "explore.type.moon": "Natural satellite",
-    "explore.type.exoplanet": "Confirmed exoplanet",
     "clean.found": "reclaimable",
     "clean.go": "Clean",
     "clean.items": "items",
@@ -611,8 +545,6 @@ const DICT: Record<Lang, Record<string, string>> = {
     "cat.containers": "Containers",
     "cat.other": "Other",
 
-    "opt.title": "Safe, bounded<br>system maintenance.",
-    "opt.sub": "Routine maintenance: purgeable space, indexes, caches and upkeep scripts. All through public system interfaces — no risky \"boosts\".",
     "opt.run": "Optimize",
     "opt.running": "Deep-optimizing the system",
     "opt.done": "Optimization complete",
@@ -746,12 +678,45 @@ const DICT: Record<Lang, Record<string, string>> = {
     "flow.admin": "admin",
     "flow.adminhint": "needs system authorization",
 
+    "front.note": "From the editors",
+
+    "clean.strapline": "Regenerable files only · fully previewable",
+    "clean.headline": "Your disk deserves<br>one <em>proper</em> tidy today.",
+    "clean.desk": "Editorial desk · Disk management",
+    "clean.scanNote": "scanning changes nothing",
+    "clean.standfirst": "Only four things are ever scanned: system caches, stale logs, download leftovers and the Trash. Every one of them can be regenerated — your documents, photos and app data are never on the list.",
+
+    "opt.numerals": "latin",
+    "opt.strapline": "{n} routine tasks · public system interfaces only",
+    "opt.headline": "Machines need no miracles,<br>only care <em>on time</em>.",
+    "opt.desk": "Editorial desk · System maintenance",
+    "opt.checkNote": "the check changes no settings",
+    "opt.minutes": "about {m} min",
+    "opt.neverRun": "No maintenance run yet",
+    "opt.stat.eta": "Estimated time",
+    "opt.times": "{n}",
+    "opt.standfirst": "Maintenance is six tasks and no more: purgeable space, indexes, caches and upkeep scripts, each with a clear boundary. We do not do \"deep boosts\" — those miracles are usually paid for in stability.",
+
+    "ana.strapline": "Level by level · ranked as an account",
+    "ana.headline": "Every gigabyte<br>should have a <em>address</em>.",
+    "ana.desk": "Editorial desk · Space investigation",
+    "ana.lastScan": "Last scan",
+    "ana.neverScanned": "Not scanned yet",
+    "ana.pickFolder": "Choose a folder…",
+    "ana.cachedResult": "Previous result still readable",
+    "ana.cachedNote": "cached {time}",
+    "ana.freshNote": "The first scan walks the whole level",
+    "ana.diskTotal": "Disk capacity",
+    "ana.diskUsed": "Used",
+    "ana.diskFree": "Available",
+    "ana.standfirst": "Taking up space is no crime; being invisible is. Tidy measures the real size of every directory, level by level, and lays the disk out as an account you can check and drill into.",
+
     "time.today": "today",
     "time.yesterday": "yesterday",
 
-    "clean.issue": "Issue {n} · Smart Clean",
+    "clean.issue": "Issue {n} · The Smart Clean column",
     "clean.stat.last": "Last clean",
-    "clean.stat.reclaimed": "Reclaimed",
+    "clean.stat.reclaimed": "Reclaimed this issue",
     "clean.stat.total": "Saved in total",
     "clean.stat.daysAgo": "{d} days ago",
 
@@ -770,7 +735,6 @@ const DICT: Record<Lang, Record<string, string>> = {
     "opt.check": "Start check",
     "opt.stat.last": "Last maintenance",
     "opt.stat.done": "Tasks completed",
-    "opt.stat.count": "{n} tasks this issue",
     "opt.listTitle": "Routine maintenance · {n} tasks",
     "opt.runSelected": "Run {n} selected",
     "opt.chosen": "Selected · remove",
@@ -781,8 +745,6 @@ const DICT: Record<Lang, Record<string, string>> = {
     "opt.doneSub": "That closes this issue's maintenance.",
 
     "ana.kicker": "Space investigation · Disk usage",
-    "ana.headline": "Where did the space go?",
-    "ana.lede": "Measures the real size of every directory, level by level, and ranks it as an account you can drill into.",
     "ana.start": "Start analysis",
     "ana.homeScope": "Home",
     "ana.restN": "{n} more",
@@ -859,4 +821,52 @@ export function setLang(l: "auto" | Lang): void {
   if (l === "auto") localStorage.removeItem("mole-lang");
   else localStorage.setItem("mole-lang", l);
   window.dispatchEvent(new HashChangeEvent("hashchange"));
+}
+
+/** Active BCP-47 locale for Intl formatting. */
+function locale(): string {
+  return lang() === "zh" ? "zh-CN" : "en-US";
+}
+
+/** Masthead dateline with the clock, e.g. "周二 · 9月1日 · 20:56". */
+export function mastheadDate(): string {
+  const now = new Date();
+  const weekday = new Intl.DateTimeFormat(locale(), { weekday: "short" }).format(now);
+  const date = new Intl.DateTimeFormat(locale(), { month: "long", day: "numeric" }).format(now);
+  const time = new Intl.DateTimeFormat(locale(), {
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  }).format(now);
+  return `${weekday} · ${date} · ${time}`;
+}
+
+/** Byline dateline without the clock, e.g. "周二 · 9月1日". */
+export function dateline(): string {
+  const now = new Date();
+  const weekday = new Intl.DateTimeFormat(locale(), { weekday: "short" }).format(now);
+  const date = new Intl.DateTimeFormat(locale(), { month: "long", day: "numeric" }).format(now);
+  return `${weekday} · ${date}`;
+}
+
+/** Day-and-clock stamp for a past event, e.g. "昨天 22:14" / "8月30日 20:56". */
+export function timestamp(at: number): string {
+  const when = new Date(at);
+  const time = new Intl.DateTimeFormat(locale(), {
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  }).format(when);
+  const days = Math.floor((Date.now() - at) / 86_400_000);
+  if (days <= 0) return `${t("time.today")} ${time}`;
+  if (days === 1) return `${t("time.yesterday")} ${time}`;
+  const date = new Intl.DateTimeFormat(locale(), { month: "long", day: "numeric" }).format(when);
+  return `${date} ${time}`;
+}
+
+/** "今天" / "昨天" / "N 天前" for a whole-day distance. */
+export function relativeDay(days: number): string {
+  if (days <= 0) return t("time.today");
+  if (days === 1) return t("time.yesterday");
+  return t("clean.stat.daysAgo", { d: days });
 }

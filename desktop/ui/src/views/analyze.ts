@@ -8,9 +8,11 @@
 // running across tab switches — re-entering the tab never restarts a scan.
 
 import { analyzeScan, appMeta, cancelTask, newTaskId, planDeletePaths, statusSnapshot } from "../ipc";
+import { open } from "@tauri-apps/plugin-dialog";
 import { renderFlow } from "../flow";
-import { esc, humanBytes, humanKb } from "../format";
-import { t } from "../i18n";
+import { renderFrontPage } from "../frontpage";
+import { esc, humanBytes, humanKb, splitUnit } from "../format";
+import { t, timestamp } from "../i18n";
 import { setNavMeta } from "../router";
 import { squarify } from "../treemap";
 import type { View } from "../router";
@@ -110,15 +112,21 @@ let pending: { root: string; taskId: string; label: string } | null = null;
  * finish without touching another tab's DOM. */
 let mounted: HTMLElement | null = null;
 
+/** Whether a listing has been opened since launch. The front page is the
+ * section's opener, so a cold start always lands there even with a warm
+ * cache; once the reader has been inside, tab switches restore the listing. */
+let visitedListing = false;
+
 export const analyze: View = {
   async mount(container) {
     mounted = container;
     if (!home) home = (await appMeta()).home;
     if (mounted !== container) return; // switched away during the await
     if (!currentRoot) currentRoot = home;
-    // Resume order: live scan → cached listing → fresh scan.
+    // Resume order: live scan → the listing the reader was already in →
+    // the front page.
     if (pending) renderScanning(container, pending);
-    else if (listingCache.has(currentRoot))
+    else if (visitedListing && listingCache.has(currentRoot))
       renderListing(container, listingCache.get(currentRoot)!);
     else renderIdle(container);
   },
@@ -127,43 +135,111 @@ export const analyze: View = {
   },
 };
 
-/** Idle page: the investigation's standing headline and the scope choices. */
+/**
+ * Idle front page: the standing headline, the scope switcher and the disk
+ * ledger. The whole-disk figures come from a status snapshot; the home figure
+ * comes from the cache when that root has already been walked, because
+ * measuring it just to label a button would cost a full scan.
+ */
 function renderIdle(container: HTMLElement): void {
-  const scopes: { label: string; root: string }[] = [
-    { label: t("ana.whole"), root: "/" },
-    { label: t("ana.homeScope"), root: home },
+  const homeListing = listingCache.get(home);
+  const scopes: { label: string; root: string; size: string }[] = [
+    { label: t("ana.whole"), root: "/", size: "" },
+    {
+      label: `${t("ana.homeScope")} ~`,
+      root: home,
+      size: homeListing ? humanKb(homeListing.total_kb) : "",
+    },
   ];
-  container.innerHTML = `
-    <div class="hero">
-      <span class="kicker">${t("ana.kicker")}</span>
-      <div class="big">${t("ana.headline")}</div>
-      <p class="sub">${t("ana.lede")}</p>
-      <div style="display:flex;gap:22px;margin-top:16px;font-size:13.5px">
-        ${scopes
-          .map(
-            (s, i) =>
-              `<a href="#" data-scope="${esc(s.root)}" class="${i === 1 ? "" : "muted"}"
-                 style="${i === 1 ? "border-bottom:2px solid var(--rust);font-weight:600;padding-bottom:3px" : "color:var(--ink-faint)"}"
-              >${esc(s.label)} · ${esc(tildify(s.root))}</a>`,
-          )
-          .join("")}
-      </div>
-      <button class="frame-cta" id="start">${t("ana.start")} →</button>
-      ${
-        cachedAt.has(currentRoot)
-          ? `<span class="statline"><span>${t("ana.cached", { time: fmtTime(cachedAt.get(currentRoot)!) })}</span></span>`
-          : ""
-      }
+
+  /** (Re)draw the whole page for the currently selected scope. */
+  const draw = (disk: { total: number; used: number; free: number } | null) => {
+    if (disk) scopes[0].size = humanBytes(disk.total);
+    const active = scopes.find((scope) => scope.root === currentRoot);
+    // The plate numeral quotes the selected scope's size when it is known.
+    const known = active?.size ?? "";
+    const cachedStamp = cachedAt.get(currentRoot);
+
+    const scopeRow = `<div class="scope-row">
+      ${scopes
+        .map(
+          (scope) =>
+            `<button data-scope="${esc(scope.root)}" class="${scope.root === currentRoot ? "on" : ""}">${esc(
+              scope.size ? `${scope.label} · ${scope.size}` : scope.label,
+            )}</button>`,
+        )
+        .join("")}
+      <button data-pick="1" class="${scopes.every((s) => s.root !== currentRoot) ? "on" : ""}">${esc(
+        scopes.every((s) => s.root !== currentRoot) ? tildify(currentRoot) : t("ana.pickFolder"),
+      )}</button>
     </div>`;
 
-  container.querySelectorAll<HTMLAnchorElement>("a[data-scope]").forEach((a) => {
-    a.addEventListener("click", (ev) => {
-      ev.preventDefault();
-      currentRoot = a.dataset.scope!;
-      renderIdle(container);
+    const start = renderFrontPage(container, {
+      kicker: t("ana.kicker"),
+      strapline: t("ana.strapline"),
+      // A plate number is a round figure: "761", never "761.86".
+      watermark: known ? String(Math.round(Number(splitUnit(known)[0]))) : "",
+      watermarkWide: true,
+      headlineHtml: t("ana.headline"),
+      desk: t("ana.desk"),
+      dateline: cachedStamp
+        ? `${t("ana.lastScan")} · ${timestamp(cachedStamp)}`
+        : t("ana.neverScanned"),
+      extraHtml: scopeRow,
+      action: t("ana.start"),
+      actionNote: cachedStamp
+        ? `${t("ana.cachedResult")}\n${t("ana.cachedNote", { time: fmtTime(cachedStamp) })}`
+        : t("ana.freshNote"),
+      // The cached-result note doubles as the way back into it.
+      onActionNote:
+        cachedStamp !== undefined
+          ? () => renderListing(container, listingCache.get(currentRoot)!)
+          : undefined,
+      noteBody: t("ana.standfirst"),
+      stats: disk
+        ? [
+            { label: t("ana.diskTotal"), value: humanBytes(disk.total) },
+            { label: t("ana.diskUsed"), value: humanBytes(disk.used) },
+            { label: t("ana.diskFree"), value: humanBytes(disk.free) },
+          ]
+        : [
+            { label: t("ana.diskTotal"), value: "…" },
+            { label: t("ana.diskUsed"), value: "…" },
+            { label: t("ana.diskFree"), value: "…" },
+          ],
     });
-  });
-  container.querySelector("#start")!.addEventListener("click", () => startScan(currentRoot));
+
+    container.querySelectorAll<HTMLButtonElement>("[data-scope]").forEach((button) => {
+      button.addEventListener("click", () => {
+        currentRoot = button.dataset.scope!;
+        draw(disk);
+      });
+    });
+    container.querySelector<HTMLButtonElement>("[data-pick]")!.addEventListener("click", async () => {
+      // The picker only returns a path; the scan itself still goes through
+      // analyze_scan, which is the same funnel the built-in scopes use.
+      const picked = await open({ directory: true, multiple: false, defaultPath: home });
+      if (typeof picked !== "string") return;
+      currentRoot = picked;
+      draw(disk);
+    });
+    start.addEventListener("click", () => startScan(currentRoot));
+  };
+
+  draw(null);
+  // The disk ledger is context, not content: a failed snapshot leaves the
+  // dashes in place rather than blocking the page.
+  void statusSnapshot()
+    .then((snapshot) => {
+      const root = snapshot.disks.find((d) => d.mount_point === "/") ?? snapshot.disks[0];
+      if (!root || mounted !== container) return;
+      draw({
+        total: root.total_bytes,
+        used: root.total_bytes - root.available_bytes,
+        free: root.available_bytes,
+      });
+    })
+    .catch(() => undefined);
 }
 
 /** Navigate to a directory: serve from cache or start a scan. */
@@ -231,6 +307,7 @@ function renderScanning(
 
 /** Ranked ledger (or treemap) + child rail + whole-disk strip. */
 function renderListing(container: HTMLElement, listing: DirListing): void {
+  visitedListing = true;
   const entries = listing.entries;
   const TOP = 6;
   const shown = entries.slice(0, TOP);

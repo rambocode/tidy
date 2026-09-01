@@ -812,7 +812,243 @@ th.num {
 }
 
 /* ------------------------------------------------------------------ */
-/* Hero states (idle / scanning / result)                              */
+/* Front page — the shared idle spread for 清理 / 优化 / 分析          */
+/* ------------------------------------------------------------------ */
+
+.front-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 20px;
+  padding-top: 16px;
+}
+
+.strapline {
+  font: 500 11px/1.4 var(--font-mono);
+  letter-spacing: 2px;
+  color: var(--ink-faint);
+  text-align: right;
+}
+
+.front-body {
+  position: relative;
+  display: flex;
+  gap: 48px;
+  align-items: flex-start;
+  padding: 38px 0 64px;
+  /* The watermark bleeds past the top edge on purpose; clip it here so it
+     never spills into the masthead rules. */
+  overflow: hidden;
+}
+
+/* Outline-only numeral, printed like a plate number on newsprint. */
+.front-watermark {
+  position: absolute;
+  left: 420px;
+  top: -70px;
+  font: 600 300px/1 var(--font-serif);
+  color: transparent;
+  -webkit-text-stroke: 1px #e2dccb;
+  pointer-events: none;
+  user-select: none;
+}
+
+.front-watermark.wide {
+  left: 300px;
+  top: -52px;
+  font-size: 220px;
+}
+
+.front-lead {
+  flex: 1.4;
+  min-width: 0;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+}
+
+.front-headline {
+  font: 600 70px/1.18 var(--font-serif);
+  letter-spacing: 1px;
+  text-wrap: balance;
+  margin: 0;
+}
+
+/* One word of the headline carries the accent; <em> is the hook, not italics. */
+.front-headline em {
+  color: var(--rust);
+  font-style: normal;
+}
+
+.byline {
+  display: flex;
+  align-items: baseline;
+  gap: 14px;
+}
+
+.byline-rule {
+  width: 44px;
+  flex-shrink: 0;
+  border-top: 2.5px solid var(--rule-strong);
+  position: relative;
+  top: -4px;
+}
+
+.byline-desk {
+  font: 600 13px/1.4 var(--font-serif);
+}
+
+.byline-date {
+  font: 11px/1.4 var(--font-mono);
+  color: var(--ink-faint);
+}
+
+.front-action {
+  margin-top: 14px;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.front-action-note {
+  font: 11.5px/1.7 var(--font-mono);
+  color: var(--ink-faint);
+  max-width: 200px;
+  text-align: left;
+  /* Callers separate the note's clauses with newlines: CJK reflow would
+     otherwise strand a single character on the last line. */
+  white-space: pre-line;
+}
+
+/* When the note reopens a cached result it becomes the page's quiet link. */
+button.front-action-note {
+  border: none;
+  border-radius: 0;
+  padding: 0;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+button.front-action-note:hover:not(:disabled) {
+  color: var(--rust);
+}
+
+/* Scope switcher (analyze only). */
+.scope-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 22px;
+  font-size: 13.5px;
+}
+
+.scope-row button {
+  border: none;
+  border-bottom: 2px solid transparent;
+  border-radius: 0;
+  padding: 0 0 3px;
+  font-size: 13.5px;
+  color: var(--ink-faint);
+}
+
+.scope-row button:hover:not(:disabled) {
+  color: var(--ink);
+}
+
+.scope-row button.on {
+  color: var(--rust);
+  border-bottom-color: var(--rust);
+  font-weight: 600;
+}
+
+/* The 编者按 rail. */
+.front-note {
+  width: 340px;
+  flex-shrink: 0;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  border-left: 1px solid var(--rule-strong);
+  padding-left: 40px;
+}
+
+.front-note-title {
+  font: 600 16px/1.3 var(--font-serif);
+  border-bottom: 1px solid var(--rule-strong);
+  padding-bottom: 8px;
+}
+
+.standfirst {
+  margin: 0;
+  font-size: 13.5px;
+  line-height: 2;
+  color: #4b4638;
+  text-align: justify;
+  text-wrap: pretty;
+}
+
+.dropcap {
+  float: left;
+  font: 600 54px/0.85 var(--font-serif);
+  color: var(--rust);
+  margin: 5px 10px 0 0;
+}
+
+/* Ledger under the standfirst, closed by the section's double rule. */
+.front-ledger {
+  border-top: 2px solid var(--rule-strong);
+  padding-top: 2px;
+}
+
+.front-ledger::before {
+  content: "";
+  display: block;
+  border-top: 1px solid var(--rule-strong);
+  margin-bottom: 14px;
+}
+
+.front-ledger .led {
+  padding-bottom: 11px;
+  font-size: 13px;
+}
+
+.front-ledger .led:last-child {
+  padding-bottom: 0;
+}
+
+.front-stat-label {
+  color: var(--ink-soft);
+  white-space: nowrap;
+}
+
+.front-ledger .amt {
+  font-size: 12.5px;
+}
+
+.front-ledger .amt.lead {
+  font-weight: 600;
+  font-size: 13px;
+  color: var(--rust);
+}
+
+/* The framed action gains an inner hairline — a printed double rule. */
+.frame-cta.double {
+  position: relative;
+  padding: 16px 54px;
+  font-size: 24px;
+}
+
+.frame-cta.double::after {
+  content: "";
+  position: absolute;
+  inset: 3px;
+  border: 1px solid currentColor;
+  pointer-events: none;
+}
+
+/* ------------------------------------------------------------------ */
+/* Hero states (scanning / result)                                     */
 /* ------------------------------------------------------------------ */
 
 .hero {
@@ -871,118 +1107,6 @@ th.num {
     opacity: 1;
     transform: none;
   }
-}
-
-/* ------------------------------------------------------------------ */
-/* Astronomical plate (the celestial explorer lives inside a figure)   */
-/* ------------------------------------------------------------------ */
-
-/* A newspaper prints photographs as plates: a dark, captioned inset with a
-   hairline frame. That is the only place the dark particle canvas belongs. */
-.explore-card {
-  width: 100%;
-  max-width: 880px;
-  margin: 8px auto 0;
-  border: 1px solid var(--rule-strong);
-  background: var(--paper);
-  padding: 14px;
-  text-align: left;
-}
-
-.explore-presets {
-  display: flex;
-  gap: 10px;
-  margin-bottom: 10px;
-}
-
-.explore-presets button {
-  font: 11.5px/1.4 var(--font-mono);
-  padding: 3px 10px;
-}
-
-.explore-presets button.active {
-  border-color: var(--rust);
-  color: var(--rust);
-}
-
-.explore-card-head {
-  display: flex;
-  align-items: baseline;
-  gap: 10px;
-  font: 11.5px/1.4 var(--font-mono);
-  color: var(--ink-faint);
-  padding-bottom: 8px;
-  border-bottom: 1px solid var(--rule-strong);
-  margin-bottom: 10px;
-}
-
-.explore-new {
-  color: var(--rust);
-}
-
-/* The plate itself: night sky, printed edge-to-edge inside the frame. */
-.particle-box,
-.hero .particles,
-.explore-plate {
-  position: relative;
-}
-
-.explore-plate {
-  height: 300px;
-  background: #14161c;
-  overflow: hidden;
-  margin-bottom: 10px;
-}
-
-canvas.particles {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  display: block;
-}
-
-.explore-visual {
-  display: none;
-}
-
-.explore-name {
-  font: 600 22px/1.3 var(--font-serif);
-}
-
-.explore-meta,
-.explore-size {
-  font: 11.5px/1.6 var(--font-mono);
-  color: var(--ink-faint);
-}
-
-.explore-summary {
-  margin: 8px 0 0;
-  font-size: 13px;
-  line-height: 1.8;
-  color: var(--ink-soft);
-  text-wrap: pretty;
-}
-
-.explore-summary:empty {
-  display: none;
-}
-
-.explore-source {
-  margin-top: 8px;
-  font: 11px/1.5 var(--font-mono);
-  color: var(--ink-ghost);
-}
-
-.explore-toggle,
-.explore-reset {
-  font: 12.5px/1.4 var(--font-ui);
-  padding: 4px 10px;
-}
-
-.explore-toggle[aria-pressed="true"] {
-  border-color: var(--rust);
-  color: var(--rust);
 }
 
 /* ------------------------------------------------------------------ */

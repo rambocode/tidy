@@ -170,6 +170,9 @@ pub fn run() {
             }
         })
         .plugin(tauri_plugin_drag::init())
+        // Analyze's "pick a folder" scope. Only the open dialog is granted; the
+        // picker returns a path string and grants the webview no fs access.
+        .plugin(tauri_plugin_dialog::init())
         .invoke_handler(tauri::generate_handler![
             commands::app_meta,
             commands::status_snapshot,
@@ -179,7 +182,6 @@ pub fn run() {
             commands::whitelist_set,
             commands::purge_paths_get,
             commands::touchid_status,
-            commands::celestial_catalog,
             commands::analyze_scan,
             commands::plan_delete_paths,
             commands::plan_clean,

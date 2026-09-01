@@ -82,24 +82,6 @@ pub fn touchid_status() -> mole_ops::touchid::TouchIdStatus {
     mole_ops::touchid::status()
 }
 
-/// Persistent real-object catalog for the optional celestial explorer. The
-/// database lives in the app data directory, outside every cleanup candidate
-/// root, and refresh failures degrade to the last cached snapshot.
-#[tauri::command]
-pub async fn celestial_catalog(
-    app: tauri::AppHandle,
-) -> Result<mole_ops::celestial::CelestialCatalog, IpcError> {
-    let database = app
-        .path()
-        .app_data_dir()
-        .map_err(|error| IpcError::new("io", error.to_string()))?
-        .join("celestial.sqlite3");
-    tauri::async_runtime::spawn_blocking(move || mole_ops::celestial::catalog(&database))
-        .await
-        .map_err(|error| IpcError::new("io", error.to_string()))?
-        .map_err(|error| IpcError::new("catalog", error.to_string()))
-}
-
 // ---------------------------------------------------------------------------
 // analyze
 // ---------------------------------------------------------------------------

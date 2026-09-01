@@ -21,6 +21,9 @@ export interface MaintenanceEntry {
   title: string;
   at: number;
   outcome: string;
+  /** Wall-clock milliseconds the task took; absent on entries written before
+   * durations were recorded. */
+  ms?: number;
 }
 
 const RECLAIM_KEY = "tidy.ledger.reclaim.v1";
@@ -55,9 +58,17 @@ export function recordReclaim(kind: ReclaimEntry["kind"], freedKb: number): void
   write(RECLAIM_KEY, [...read<ReclaimEntry>(RECLAIM_KEY), { kind, at: Date.now(), freedKb }]);
 }
 
-/** Record one maintenance task result. */
-export function recordMaintenance(id: string, title: string, outcome: string): void {
-  write(MAINT_KEY, [...read<MaintenanceEntry>(MAINT_KEY), { id, title, at: Date.now(), outcome }]);
+/** Record one maintenance task result and how long it took. */
+export function recordMaintenance(
+  id: string,
+  title: string,
+  outcome: string,
+  ms: number,
+): void {
+  write(MAINT_KEY, [
+    ...read<MaintenanceEntry>(MAINT_KEY),
+    { id, title, at: Date.now(), outcome, ms },
+  ]);
 }
 
 export const reclaimLog = (): ReclaimEntry[] => read<ReclaimEntry>(RECLAIM_KEY);
@@ -65,7 +76,9 @@ export const maintenanceLog = (): MaintenanceEntry[] => read<MaintenanceEntry>(M
 
 /** Newest reclaim of one kind, or null when that surface has never run. */
 export function lastReclaim(kind: ReclaimEntry["kind"]): ReclaimEntry | null {
-  const rows = reclaimLog().filter((r) => r.kind === kind);
+  // Sort rather than take the tail: a ledger restored from storage is only as
+  // ordered as whatever wrote it.
+  const rows = reclaimLog().filter((r) => r.kind === kind).sort((a, b) => a.at - b.at);
   return rows.length > 0 ? rows[rows.length - 1] : null;
 }
 
@@ -76,13 +89,32 @@ export function totalFreedKb(): number {
 
 /** Newest maintenance entry for a task id, or null when never run. */
 export function lastMaintenance(id?: string): MaintenanceEntry | null {
-  const rows = id ? maintenanceLog().filter((m) => m.id === id) : maintenanceLog();
+  const rows = (id ? maintenanceLog().filter((m) => m.id === id) : maintenanceLog())
+    .sort((a, b) => a.at - b.at);
   return rows.length > 0 ? rows[rows.length - 1] : null;
 }
 
 /** How many maintenance tasks have completed successfully, ever. */
 export function maintenanceDoneCount(): number {
   return maintenanceLog().filter((m) => m.outcome === "ok" || m.outcome === "unchanged").length;
+}
+
+/**
+ * Mean wall-clock time one maintenance task has taken on this machine, in ms.
+ * Null until at least one timed run exists — the idle page prints an estimate
+ * only when there is history to estimate from.
+ */
+export function averageTaskMs(ids: string[]): number | null {
+  const timed = maintenanceLog().filter((m) => typeof m.ms === "number");
+  if (timed.length === 0) return null;
+  // Prefer this run's own tasks; fall back to the overall mean when a task has
+  // never been timed, so a first-time selection still gets a figure.
+  const overall = timed.reduce((sum, m) => sum + m.ms!, 0) / timed.length;
+  const perTask = (id: string) => {
+    const rows = timed.filter((m) => m.id === id);
+    return rows.length > 0 ? rows.reduce((sum, m) => sum + m.ms!, 0) / rows.length : overall;
+  };
+  return ids.reduce((sum, id) => sum + perTask(id), 0);
 }
 
 /** Whole days between an epoch-ms stamp and now (0 = today). */

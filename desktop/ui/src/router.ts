@@ -4,7 +4,7 @@
 // hashchange). Settings and language switching live in the tray menu / the
 // settings view, not in the masthead.
 
-import { lang, t } from "./i18n";
+import { mastheadDate, t } from "./i18n";
 
 export interface View {
   /** Render into the container; called on every navigation to this route. */
@@ -41,20 +41,6 @@ export function register(
   routes.push({ hash, labelKey, theme, view, minor, hidden });
 }
 
-/** The dateline printed at the right of the masthead, e.g. "周二 · 9 月 1 日 · 20:56". */
-function dateline(): string {
-  const now = new Date();
-  const locale = lang() === "zh" ? "zh-CN" : "en-US";
-  const weekday = new Intl.DateTimeFormat(locale, { weekday: "short" }).format(now);
-  const date = new Intl.DateTimeFormat(locale, { month: "long", day: "numeric" }).format(now);
-  const time = new Intl.DateTimeFormat(locale, {
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: false,
-  }).format(now);
-  return `${weekday} · ${date} · ${time}`;
-}
-
 /**
  * Replace the masthead's right-hand marginalia with view-supplied copy
  * (already-escaped HTML). Passing null hands the slot back to the dateline.
@@ -64,7 +50,7 @@ export function setNavMeta(html: string | null): void {
   const el = document.getElementById("nav-meta");
   metaOverridden = html !== null;
   if (!el) return;
-  el.innerHTML = html ?? dateline();
+  el.innerHTML = html ?? mastheadDate();
 }
 
 /** Render the masthead for the active route. */
@@ -82,7 +68,7 @@ function renderNav(activeHash: string): void {
         ${major.map((r) => link(r, "")).join("")}
         ${minor.length > 0 ? `<span class="mast-sep"></span>${minor.map((r) => link(r, "minor")).join("")}` : ""}
       </div>
-      <span class="mast-meta" id="nav-meta">${dateline()}</span>
+      <span class="mast-meta" id="nav-meta">${mastheadDate()}</span>
     </div>
     <div class="mast-rules"></div>`;
 }
@@ -110,7 +96,7 @@ export function start(): void {
   clockTimer = window.setInterval(() => {
     if (metaOverridden || document.hidden) return;
     const el = document.getElementById("nav-meta");
-    if (el) el.textContent = dateline();
+    if (el) el.textContent = mastheadDate();
   }, 20_000);
 }
 

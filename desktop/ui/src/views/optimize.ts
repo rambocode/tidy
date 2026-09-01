@@ -7,14 +7,16 @@
 
 import { appMeta, listOptimizeTasks, runOptimize } from "../ipc";
 import { esc } from "../format";
+import { renderFrontPage } from "../frontpage";
 import {
+  averageTaskMs,
   daysSince,
   lastMaintenance,
   maintenanceDoneCount,
   maintenanceLog,
   recordMaintenance,
 } from "../ledger";
-import { t } from "../i18n";
+import { relativeDay, t, timestamp } from "../i18n";
 import type { View } from "../router";
 import type { OptimizeTask, TaskResult } from "../types";
 
@@ -36,32 +38,51 @@ export const optimize: View = {
   },
 };
 
-/** Idle page: the section's standing headline and the check CTA. */
+/** Idle front page: the section's standing headline and the check CTA. */
 function renderIdle(container: HTMLElement, tasks: OptimizeTask[], helper: boolean): void {
   // Same gating rule the old checklist applied per checkbox: admin tasks are
   // excluded entirely when the privileged helper is unavailable.
   const runnable = tasks.filter((task) => !(task.requires_admin && !helper));
-  const gatedCount = tasks.length - runnable.length;
   const last = lastMaintenance();
+  const eta = averageTaskMs(runnable.map((task) => task.id));
+  const etaLabel = eta === null ? "—" : t("opt.minutes", { m: Math.max(1, Math.round(eta / 60_000)) });
 
-  container.innerHTML = `
-    <div class="hero">
-      <span class="kicker">${t("opt.kicker")}</span>
-      <div class="big">${t("opt.title")}</div>
-      <p class="sub">${t("opt.sub")}</p>
-      ${gatedCount > 0 ? `<p class="sub muted">${t("opt.helper")}</p>` : ""}
-      <button class="frame-cta" id="run">${t("opt.check")} →</button>
-      <div class="statline">
-        <span>${t("opt.stat.last")} · ${last ? relative(last.at) : "—"}</span>
-        <span>${t("opt.stat.done")} · ${maintenanceDoneCount()}</span>
-        <span>${t("opt.stat.count", { n: runnable.length })}</span>
-      </div>
-    </div>`;
+  const start = renderFrontPage(container, {
+    kicker: t("opt.kicker"),
+    strapline: t("opt.strapline", { n: runnable.length }),
+    // The plate numeral is the task count, spelled the way the section
+    // headline counts them.
+    watermark: countNumeral(runnable.length),
+    headlineHtml: t("opt.headline"),
+    desk: t("opt.desk"),
+    dateline: last ? `${t("opt.stat.last")} · ${timestamp(last.at)}` : t("opt.neverRun"),
+    action: t("opt.check"),
+    actionNote: eta === null ? t("opt.checkNote") : `${etaLabel}\n${t("opt.checkNote")}`,
+    noteBody: t("opt.standfirst"),
+    stats: [
+      { label: t("opt.stat.last"), value: last ? timestamp(last.at) : "—" },
+      { label: t("opt.stat.done"), value: t("opt.times", { n: maintenanceDoneCount() }) },
+      { label: t("opt.stat.eta"), value: etaLabel },
+    ],
+  });
+  if (helper === false && runnable.length < tasks.length) {
+    const gate = document.createElement("p");
+    gate.className = "front-action-note";
+    gate.style.maxWidth = "none";
+    gate.textContent = t("opt.helper");
+    container.querySelector(".front-lead")!.append(gate);
+  }
 
-  container.querySelector("#run")!.addEventListener("click", () => {
+  start.addEventListener("click", () => {
     if (runnable.length === 0) return;
     renderChecklist(container, runnable);
   });
+}
+
+/** Spell a small count the way the headline reads it (六 in zh, 6 in en). */
+function countNumeral(n: number): string {
+  const cjk = ["〇", "一", "二", "三", "四", "五", "六", "七", "八", "九", "十"];
+  return t("opt.numerals") === "cjk" && n <= 10 ? cjk[n] : String(n);
 }
 
 /** The six-item grid: numbered tasks in two columns plus the log rail. */
@@ -78,7 +99,7 @@ function renderChecklist(container: HTMLElement, tasks: OptimizeTask[]): void {
       const previous = lastMaintenance(task.id);
       const recent = ranRecently(task.id);
       const state = recent && !on
-        ? `<span class="t-state">✓ ${t("opt.ranAt", { when: relative(previous!.at) })}</span>`
+        ? `<span class="t-state">✓ ${t("opt.ranAt", { when: relativeDay(daysSince(previous!.at)) })}</span>`
         : `<button class="link-quiet ${on ? "accent" : ""}" data-task="${esc(task.id)}">${
             on ? `✓ ${t("opt.chosen")}` : t("opt.add")
           }</button>`;
@@ -162,10 +183,11 @@ async function renderRunning(container: HTMLElement, tasks: OptimizeTask[]): Pro
     const task = tasks[i];
     tick(ticker, `● ${task.title} · ${i + 1}/${tasks.length}`);
     // One task per IPC call keeps the ticker honest about what is running.
+    const startedAt = Date.now();
     const [result] = await runOptimize([task.id]);
     const settled = result ?? { id: task.id, outcome: "failed", output: "" };
     results.push(settled);
-    recordMaintenance(task.id, task.title, settled.outcome);
+    recordMaintenance(task.id, task.title, settled.outcome, Date.now() - startedAt);
   }
 
   // Compact summary: real execution errors are "failed"; every refusal or
@@ -212,14 +234,6 @@ function logRows(): string {
 function ranRecently(id: string): boolean {
   const previous = lastMaintenance(id);
   return previous !== null && Date.now() - previous.at < RECENT_MS;
-}
-
-/** "今天" / "昨天" / "N 天前" for the log and statline. */
-function relative(at: number): string {
-  const days = daysSince(at);
-  if (days <= 0) return t("time.today");
-  if (days === 1) return t("time.yesterday");
-  return t("clean.stat.daysAgo", { d: days });
 }
 
 /** Swaps the ticker text and replays its slide-up entrance animation. */
