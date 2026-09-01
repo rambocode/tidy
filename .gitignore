@@ -19,3 +19,7 @@ site/tools/node_modules/
 # Local signing / notarization credentials
 .env
 desktop/.env
+
+# 自更新签名私钥。丢了它，已经装在用户机器上的 Tidy 就永远收不到更新
+# （公钥编译进了老版本，换不掉），所以本地留一份；但绝不能进仓库。
+desktop/.tauri/

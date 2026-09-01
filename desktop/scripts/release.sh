@@ -34,11 +34,23 @@ PROFILE="${NOTARY_PROFILE:-tidy-notary}"
 
 # 自更新包的 minisign 私钥。没有它 tauri 不会产出 .app.tar.gz.sig，
 # publish 这一步就没东西可发（release.sh 本身仍然能出签名 DMG）。
-export TAURI_SIGNING_PRIVATE_KEY_PATH="${TAURI_SIGNING_PRIVATE_KEY_PATH:-$HOME/.tauri/tidy-updater.key}"
+#
+# 查找顺序：显式环境变量 → 项目内副本 desktop/.tauri/（git-ignored）→ ~/.tauri/。
+# 项目内那份是刻意留的备份：这把私钥丢了，已经装在用户机器上的 Tidy 就永远
+# 收不到更新（公钥编译进了老版本，换不掉）。两处都在同一台机器上，所以它只
+# 防误删，不防丢机器 —— 真正的备份请另外存一份到密码管理器。
+for candidate in "${TAURI_SIGNING_PRIVATE_KEY_PATH:-}" ".tauri/tidy-updater.key" "$HOME/.tauri/tidy-updater.key"; do
+  if [ -n "$candidate" ] && [ -f "$candidate" ]; then
+    export TAURI_SIGNING_PRIVATE_KEY_PATH="$candidate"
+    break
+  fi
+done
 export TAURI_SIGNING_PRIVATE_KEY_PASSWORD="${TAURI_SIGNING_PRIVATE_KEY_PASSWORD:-}"
-if [ ! -f "$TAURI_SIGNING_PRIVATE_KEY_PATH" ]; then
-  echo "⚠ 找不到更新签名私钥 $TAURI_SIGNING_PRIVATE_KEY_PATH —— 这次不会产出自更新包。" >&2
+if [ -z "${TAURI_SIGNING_PRIVATE_KEY_PATH:-}" ] || [ ! -f "$TAURI_SIGNING_PRIVATE_KEY_PATH" ]; then
+  echo "⚠ 找不到更新签名私钥（desktop/.tauri/ 与 ~/.tauri/ 都没有）—— 这次不会产出自更新包。" >&2
   unset TAURI_SIGNING_PRIVATE_KEY_PATH
+else
+  echo "▶ 更新签名私钥：$TAURI_SIGNING_PRIVATE_KEY_PATH"
 fi
 
 echo "▶ building + signing with: $IDENTITY"
