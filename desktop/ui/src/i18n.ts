@@ -279,6 +279,13 @@ const DICT: Record<Lang, Record<string, string>> = {
     "set.selfupdate.latest": "已是最新版本",
     "set.selfupdate.found": "发现新版本 {version}",
     "set.selfupdate.failed": "检查失败,请稍后再试",
+    "set.telemetry": "匿名使用统计",
+    "set.telemetry.desc": "只上报版本、界面和功能是否被用到,不含路径、文件名、体积;关闭后立即停止并清除本机标识",
+
+    "tele.notice": "Tidy 会发送匿名使用统计,帮助判断哪些功能真的有人用。不含任何路径、文件名或体积。",
+    "tele.notice.detail": "看看采了什么",
+    "tele.notice.off": "关掉",
+    "tele.notice.ok": "知道了",
 
     "upd.self.available": "Tidy {version} 已发布",
     "upd.self.mandatory": "必须更新到 Tidy {version} 才能继续安全使用",
@@ -685,6 +692,13 @@ const DICT: Record<Lang, Record<string, string>> = {
     "set.selfupdate.latest": "You are on the latest version",
     "set.selfupdate.found": "Version {version} is available",
     "set.selfupdate.failed": "Check failed, try again later",
+    "set.telemetry": "Anonymous usage statistics",
+    "set.telemetry.desc": "Reports version, screen and whether a feature was used — never paths, file names or sizes; turning it off stops reporting and erases the local identifier",
+
+    "tele.notice": "Tidy sends anonymous usage statistics so we can tell which features people actually use. No paths, file names or sizes.",
+    "tele.notice.detail": "See what is collected",
+    "tele.notice.off": "Turn off",
+    "tele.notice.ok": "Got it",
 
     "upd.self.available": "Tidy {version} is out",
     "upd.self.mandatory": "Update to Tidy {version} is required to keep using it safely",

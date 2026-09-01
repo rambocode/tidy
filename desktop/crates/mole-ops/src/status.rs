@@ -230,6 +230,12 @@ struct Sampler {
     last_refresh: std::time::Instant,
 }
 
+/// 只取 macOS 版本号（如 "15.6"）。snapshot() 要采样进程和 SMC，代价大得多，
+/// 遥测这种只要一个字符串的场景走这里。
+pub fn os_version() -> String {
+    System::os_version().unwrap_or_default()
+}
+
 /// One snapshot from the dashboard's polling loop.
 pub fn snapshot() -> StatusSnapshot {
     static SAMPLER: OnceLock<std::sync::Mutex<Sampler>> = OnceLock::new();

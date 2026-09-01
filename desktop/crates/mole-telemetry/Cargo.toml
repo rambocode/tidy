@@ -1,0 +1,24 @@
+# mole-telemetry: 匿名使用统计。整个 crate 的存在前提是「可以被完整关掉」——
+# 编译期没配 TIDY_TELEMETRY_URL 就退化成空操作，运行期用户关掉开关就不建连接。
+[package]
+name = "mole-telemetry"
+version = "0.1.0"
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+mole-core = { path = "../mole-core" }
+serde.workspace = true
+serde_json.workspace = true
+# 与 tauri-plugin-updater 完全同款的 TLS 组合，避免同一个二进制里塞两套
+# TLS 栈：reqwest 不自带 provider，由本 crate 显式装 ring。
+reqwest = { version = "0.13", default-features = false, features = [
+  "blocking",
+  "json",
+  "rustls-no-provider",
+] }
+rustls = { version = "0.23", default-features = false, features = ["ring"] }
+
+[dev-dependencies]
+tempfile.workspace = true

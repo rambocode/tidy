@@ -6,6 +6,7 @@ mod commands;
 mod dto;
 mod error;
 mod state;
+mod telemetry;
 mod tray_anim;
 mod update;
 
@@ -121,6 +122,44 @@ fn warm_status_sampler() {
     });
 }
 
+/// 系统语言标识（如 `zh-Hans-CN`）。应用在 .app 包里运行时 LANG 往往是空的，
+/// 所以以 macOS 自己的 AppleLocale 为准，LANG 只作兜底。
+fn system_locale() -> String {
+    let from_defaults = std::process::Command::new("/usr/bin/defaults")
+        .args(["read", "-g", "AppleLocale"])
+        .output()
+        .ok()
+        .filter(|out| out.status.success())
+        .map(|out| String::from_utf8_lossy(&out.stdout).trim().to_string())
+        .filter(|s| !s.is_empty());
+    from_defaults.unwrap_or_else(|| {
+        std::env::var("LANG")
+            .unwrap_or_default()
+            .split('.')
+            .next()
+            .unwrap_or_default()
+            .to_string()
+    })
+}
+
+/// 在后台线程里初始化遥测并记一条 app_launched。
+///
+/// 放后台是因为它要读设置文件、跑一次 `defaults read`，还可能生成安装标识；
+/// 这些都不该挡在窗口显示前面。遥测关闭时这个线程几乎立刻退出。
+fn init_telemetry() {
+    std::thread::spawn(|| {
+        let boot = mole_telemetry::init(
+            &home(),
+            env!("CARGO_PKG_VERSION"),
+            &mole_ops::status::os_version(),
+            &system_locale(),
+        );
+        mole_telemetry::track(mole_telemetry::Event::AppLaunched {
+            first_run: boot.first_run,
+        });
+    });
+}
+
 /// Build and run the Tauri application.
 pub fn run() {
     tauri::Builder::default()
@@ -128,6 +167,7 @@ pub fn run() {
         .setup(|app| {
             setup_tray(app)?;
             tray_anim::init(app.handle());
+            init_telemetry();
             warm_apps_inventory(app);
             warm_status_sampler();
             Ok(())
@@ -221,9 +261,18 @@ pub fn run() {
             commands::set_keep_in_tray,
             commands::app_settings,
             commands::set_update_autocheck,
+            commands::set_telemetry_enabled,
+            commands::telemetry_notice_ack,
+            commands::telemetry_track,
             commands::update_check,
             commands::update_install,
         ])
-        .run(tauri::generate_context!())
-        .expect("error while running mole desktop");
+        .build(tauri::generate_context!())
+        .expect("error while running mole desktop")
+        // 退出前把遥测队列发一次，否则一次会话的事件要等到下次启动才补发。
+        .run(|_app, event| {
+            if matches!(event, tauri::RunEvent::Exit) {
+                mole_telemetry::flush();
+            }
+        });
 }

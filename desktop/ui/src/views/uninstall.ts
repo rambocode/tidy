@@ -28,6 +28,7 @@ import { confirmSheet, runExecution } from "../flow";
 import { esc, humanKb } from "../format";
 import { t } from "../i18n";
 import { setNavMeta } from "../router";
+import { stopwatch, track } from "../telemetry";
 import type { View } from "../router";
 import type {
   AppInfo,
@@ -675,8 +676,10 @@ async function renderUpdates(body: HTMLElement, force = false): Promise<void> {
     });
   }
 
+  const scan = stopwatch();
   try {
     const catalog = await listAppUpdates(taskId, force);
+    track({ kind: "scan_completed", scan: "updates", duration_ms: scan() });
     if (updateTaskId !== taskId) return;
     updateTaskId = null;
     paintUpdates(body, catalog, false);
@@ -837,12 +840,13 @@ function paintUpdates(body: HTMLElement, catalog: UpdateCatalog, stale: boolean)
   body.querySelector("#update-all")?.addEventListener("click", (ev) => {
     ev.preventDefault();
     confirmSheet(inMole.length, 0, t("upd.updateAll"), () => {
-      void runUpdateSelection(body, inMole.map((update) => update.id));
+      void runUpdateSelection(body, inMole);
     });
   });
   body.querySelectorAll<HTMLButtonElement>("button[data-update]").forEach((button) => {
     button.addEventListener("click", () => {
-      void runUpdateSelection(body, [button.dataset.update!]);
+      const update = catalog.updates.find((row) => row.id === button.dataset.update);
+      if (update) void runUpdateSelection(body, [update]);
     });
   });
   body.querySelectorAll<HTMLAnchorElement>("a[data-ignore]").forEach((link) => {
@@ -880,8 +884,14 @@ async function loadUpdateIcons(
   }
 }
 
-async function runUpdateSelection(body: HTMLElement, ids: string[]): Promise<void> {
-  if (ids.length === 0) return;
+async function runUpdateSelection(body: HTMLElement, updates: AppUpdate[]): Promise<void> {
+  if (updates.length === 0) return;
+  const ids = updates.map((update) => update.id);
+  // 一次批量升级里每种来源只记一条：想知道的是"Homebrew 这条路有人走吗"，
+  // 而不是这次点了几个应用（数量不上报）。
+  for (const source of new Set(updates.map((update) => update.source))) {
+    track({ kind: "updates_run", source });
+  }
   body.querySelectorAll<HTMLButtonElement>("button").forEach((button) => {
     button.disabled = true;
   });

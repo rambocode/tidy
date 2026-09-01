@@ -5,6 +5,7 @@
 // settings view, not in the masthead.
 
 import { mastheadDate, t } from "./i18n";
+import { track } from "./telemetry";
 
 export interface View {
   /** Render into the container; called on every navigation to this route. */
@@ -84,6 +85,9 @@ function navigate(): void {
   current = route.view;
   metaOverridden = false;
   renderNav(route.hash);
+  // 界面名取自路由注册表而不是 location.hash：未知 hash 会落到第一个路由，
+  // 上报的必须是真正渲染出来的那个界面。
+  track({ kind: "view_opened", view: route.hash.replace(/^#\//, "") });
   route.view.mount(container);
 }
 

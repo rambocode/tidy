@@ -305,6 +305,9 @@ export interface CleanPlanPayload {
 /** 后端持有的设置（前端 localStorage 存不下的那几项）。 */
 export interface AppSettings {
   update_autocheck: boolean;
+  telemetry_enabled: boolean;
+  telemetry_configured: boolean;
+  telemetry_notice_pending: boolean;
 }
 
 /** 一个可用的 Tidy 新版本。 */
@@ -322,3 +325,13 @@ export interface DownloadProgress {
   total: number | null;
 }
 
+/** 上报给后端的遥测事件。字段取值由 Rust 侧白名单收口。 */
+export type TrackRequest =
+  | { kind: "view_opened"; view: string }
+  | { kind: "scan_completed"; scan: string; duration_ms: number }
+  | { kind: "clean_executed"; mode: string; result: string }
+  | { kind: "app_uninstalled" }
+  | { kind: "optimize_run"; action: string }
+  | { kind: "updates_run"; source: string }
+  | { kind: "self_update"; from: string; to: string; result: string }
+  | { kind: "error_occurred"; code: string; view: string };

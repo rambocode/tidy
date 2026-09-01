@@ -25,6 +25,7 @@ tauri-build = { version = "2", features = [] }
 mole-core = { path = "../crates/mole-core" }
 mole-macos = { path = "../crates/mole-macos" }
 mole-ops = { path = "../crates/mole-ops" }
+mole-telemetry = { path = "../crates/mole-telemetry" }
 base64 = "0.22"
 serde.workspace = true
 serde_json.workspace = true

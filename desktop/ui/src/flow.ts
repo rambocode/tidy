@@ -9,6 +9,7 @@ import { cancelTask, executePlan, revealInFinder } from "./ipc";
 import { esc, figureClass, humanKb, splitUnit } from "./format";
 import { daysSince, lastReclaim, recordReclaim, totalFreedKb } from "./ledger";
 import { t } from "./i18n";
+import { stopwatch, track } from "./telemetry";
 import type { ExecItem, ExecReport, PlanItem, PlanSection, PlanSummary } from "./types";
 
 export interface FlowOptions {
@@ -69,18 +70,27 @@ export function renderFlow(container: HTMLElement, taskId: string, opts: FlowOpt
     opts.onCancel?.();
   });
 
+  // 扫描与执行的埋点都收在这里：clean / apps / analyze 三个界面共用这套骨架，
+  // 埋在各自的 view 里迟早会漏掉一个分支，也会各写各的口径。
+  const scan = stopwatch();
   opts
     .plan(taskId, (label) => {
       const el = container.querySelector<HTMLElement>("#scan-label");
       if (el) el.textContent = label;
     })
     .then((result) => {
+      track({ kind: "scan_completed", scan: surfaceOf(opts), duration_ms: scan() });
       hero.remove();
       renderPreview(body, Array.isArray(result) ? result : [result], opts);
     })
     .catch((e) => {
       hero.innerHTML = `<div class="placeholder">${esc(String(e?.message ?? e))}</div>`;
     });
+}
+
+/** 埋点用的界面名。ledger 已经是这三个面的稳定标识，不再另立一套。 */
+function surfaceOf(opts: Pick<FlowOptions, "ledger">): string {
+  return opts.ledger ?? "clean";
 }
 
 /** Section title/desc from i18n keys, falling back to the raw title. */
@@ -461,6 +471,17 @@ export function runExecution(
     return { freedKb, skipped, failed };
   })()
     .then(({ freedKb, skipped, failed }) => {
+      // 卸载面只上报"发生过一次卸载"，清理面额外带删除模式；两者都不带
+      // 数量和体积（隐私承诺）。失败数只用来分 ok/partial/failed 三档。
+      if (surfaceOf(opts) === "apps") {
+        track({ kind: "app_uninstalled" });
+      } else {
+        track({
+          kind: "clean_executed",
+          mode: opts.trashOverride === true ? "trash" : "permanent",
+          result: failed === 0 ? "ok" : done > failed ? "partial" : "failed",
+        });
+      }
       // The house ledger only ever records what actually came back from the
       // backend, so the hero statlines quote real history.
       recordReclaim(opts.ledger ?? "clean", freedKb);
@@ -482,6 +503,13 @@ export function runExecution(
       });
     })
     .catch((e) => {
+      if (surfaceOf(opts) !== "apps") {
+        track({
+          kind: "clean_executed",
+          mode: opts.trashOverride === true ? "trash" : "permanent",
+          result: "failed",
+        });
+      }
       line.textContent = String(e?.message ?? e);
     });
 }

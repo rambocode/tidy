@@ -1,7 +1,8 @@
 // Typed invoke wrappers: one function per Tauri command, so views never call
 // invoke() with a raw string. Progress streams use Tauri channels.
 
-import { Channel, invoke } from "@tauri-apps/api/core";
+import { Channel, invoke as rawInvoke } from "@tauri-apps/api/core";
+import { currentView, track } from "./telemetry";
 import type {
   AppInfo,
   AppMeta,
@@ -30,6 +31,21 @@ import type {
   DownloadProgress,
 } from "./types";
 
+/**
+ * invoke 包装：任何带稳定错误码的后端失败都记一条 error_occurred，然后原样
+ * 抛出去。集中在这里是因为错误上报最容易漏——散在每个 view 的 catch 里，
+ * 迟早会有一个分支忘记埋，而且很容易顺手把 message 也带上（message 里有
+ * 绝对路径）。这里只取 code，Rust 侧还会再过一遍白名单。
+ */
+function invoke<T>(cmd: string, args?: Record<string, unknown>): Promise<T> {
+  return rawInvoke<T>(cmd, args).catch((err: unknown) => {
+    const code = (err as { code?: unknown } | null)?.code;
+    if (typeof code === "string") {
+      track({ kind: "error_occurred", code, view: currentView() });
+    }
+    throw err;
+  });
+}
 
 /** Build a progress channel from a plain callback. */
 function channel<T>(cb: (event: T) => void): Channel<T> {
@@ -177,6 +193,10 @@ export const setKeepInTray = (enable: boolean) => invoke<void>("set_keep_in_tray
 export const appSettings = () => invoke<AppSettings>("app_settings");
 export const setUpdateAutocheck = (on: boolean) =>
   invoke<void>("set_update_autocheck", { on });
+export const setTelemetryEnabled = (on: boolean) =>
+  invoke<void>("set_telemetry_enabled", { on });
+export const telemetryNoticeAck = () => invoke<void>("telemetry_notice_ack");
+
 /** `auto` 为真时受"启动自动检查"开关与 24 小时频率限制约束。 */
 export const updateCheck = (auto: boolean) =>
   invoke<UpdateInfo | null>("update_check", { auto });

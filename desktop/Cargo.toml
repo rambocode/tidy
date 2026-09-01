@@ -6,6 +6,7 @@ members = [
     "crates/mole-macos",
     "crates/mole-helper",
     "crates/mole-ops",
+    "crates/mole-telemetry",
     "src-tauri",
 ]
 

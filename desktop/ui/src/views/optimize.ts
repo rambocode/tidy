@@ -6,6 +6,7 @@
 // the maintenance log, which comes from this machine's own past runs.
 
 import { appMeta, listOptimizeTasks, runOptimize } from "../ipc";
+import { track } from "../telemetry";
 import { esc } from "../format";
 import { renderFrontPage } from "../frontpage";
 import {
@@ -184,6 +185,7 @@ async function renderRunning(container: HTMLElement, tasks: OptimizeTask[]): Pro
     tick(ticker, `● ${task.title} · ${i + 1}/${tasks.length}`);
     // One task per IPC call keeps the ticker honest about what is running.
     const startedAt = Date.now();
+    track({ kind: "optimize_run", action: task.id });
     const [result] = await runOptimize([task.id]);
     const settled = result ?? { id: task.id, outcome: "failed", output: "" };
     results.push(settled);

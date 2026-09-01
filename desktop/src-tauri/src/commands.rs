@@ -1283,17 +1283,27 @@ mod fda_helper_tests {
 pub struct AppSettings {
     /// 启动时自动检查 Tidy 自身的更新。
     pub update_autocheck: bool,
+    /// 用户是否允许匿名使用统计。
+    pub telemetry_enabled: bool,
+    /// 这个构建是否编译进了上报地址（未配置时设置项整行隐藏）。
+    pub telemetry_configured: bool,
+    /// 是否还欠用户一次首次告知横幅。
+    pub telemetry_notice_pending: bool,
 }
 
 /// 读取后端持有的设置。
 #[tauri::command]
 pub fn app_settings() -> AppSettings {
+    let home = crate::home();
+    let configured = mole_telemetry::is_configured();
+    let enabled = mole_core::settings::bool_or(&home, mole_telemetry::KEY_ENABLED, true);
     AppSettings {
-        update_autocheck: mole_core::settings::bool_or(
-            &crate::home(),
-            crate::update::KEY_AUTOCHECK,
-            true,
-        ),
+        update_autocheck: mole_core::settings::bool_or(&home, crate::update::KEY_AUTOCHECK, true),
+        telemetry_enabled: enabled,
+        telemetry_configured: configured,
+        telemetry_notice_pending: configured
+            && enabled
+            && !mole_core::settings::bool_or(&home, mole_telemetry::KEY_NOTICE_SEEN, false),
     }
 }
 
@@ -1306,6 +1316,25 @@ pub fn set_update_autocheck(on: bool) -> Result<(), IpcError> {
         if on { "1" } else { "0" },
     )
     .map_err(IpcError::from)
+}
+
+/// 开关：匿名使用统计。关闭会同时清掉磁盘队列与安装标识。
+#[tauri::command]
+pub fn set_telemetry_enabled(on: bool) -> Result<(), IpcError> {
+    mole_telemetry::set_enabled(&crate::home(), on).map_err(IpcError::from)
+}
+
+/// 记下首次告知横幅已经展示过。
+#[tauri::command]
+pub fn telemetry_notice_ack() -> Result<(), IpcError> {
+    mole_telemetry::mark_notice_seen(&crate::home()).map_err(IpcError::from)
+}
+
+/// 上报一个事件。关闭遥测时是空操作。
+#[tauri::command]
+pub fn telemetry_track(event: crate::telemetry::TrackRequest) {
+    let home = crate::home();
+    mole_telemetry::track(event.into_event(&home));
 }
 
 /// 检查 Tidy 自身是否有新版本。

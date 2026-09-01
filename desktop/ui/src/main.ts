@@ -2,7 +2,7 @@
 // backend-affecting prefs, and listen for tray-menu navigation events.
 
 import { listen } from "@tauri-apps/api/event";
-import { showUpdateBanner } from "./banner";
+import { showTelemetryNotice, showUpdateBanner } from "./banner";
 import { mountFdaHelper } from "./fda-helper";
 import { appSettings, updateCheck } from "./ipc";
 import { applyBackendPrefs } from "./prefs";
@@ -47,12 +47,19 @@ const UPDATE_CHECK_DELAY_MS = 5000;
 /**
  * 决定报头下面那条提示显示什么。
  *
+ * 首次遥测告知优先于更新提示：刚装上的用户不可能有更新可装，而"我们在采
+ * 什么数据"是他第一次运行时就该看到的事。
+ *
  * 自动检查关掉时这里一个网络请求都不发——包括强制更新。止血能力不该成为
  * 绕过用户明确关闭的理由，代价是那部分用户只能靠公告知道要升级。
  */
 async function bootBanner(): Promise<void> {
   const settings = await appSettings().catch(() => null);
   if (!settings) return;
+  if (settings.telemetry_notice_pending) {
+    showTelemetryNotice();
+    return;
+  }
   if (!settings.update_autocheck) return;
   window.setTimeout(() => {
     void updateCheck(true)

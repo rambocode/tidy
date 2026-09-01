@@ -13,6 +13,7 @@ import {
   fdaHelperHide,
   openFdaSettings,
   purgePathsGet,
+  setTelemetryEnabled,
   setUpdateAutocheck,
   touchidStatus,
   updateCheck,
@@ -160,6 +161,15 @@ function generalTab(fda: boolean, autostart: boolean, backend: AppSettings): str
        </div>`,
     ),
     `<div id="upd-check-status" class="muted set-note"></div>`,
+    // 构建里没编译进上报地址时，这一行整行不出现——给一个恒为"关"且点不动
+    // 的开关只会让人怀疑它到底关没关。
+    backend.telemetry_configured
+      ? row(
+          t("set.telemetry"),
+          t("set.telemetry.desc"),
+          toggle("tg-telemetry", backend.telemetry_enabled),
+        )
+      : "",
   ].join("");
 }
 
@@ -289,6 +299,7 @@ function wire(container: HTMLElement, redraw: () => void): void {
   };
   wireToggle("tg-autostart", (on) => void autostartSet(on));
   wireToggle("tg-autocheck", (on) => void setUpdateAutocheck(on));
+  wireToggle("tg-telemetry", (on) => void setTelemetryEnabled(on));
 
   // 手动检查绕开 24 小时频率限制（auto=false）：用户主动点了就该真发请求。
   container.querySelector("#upd-check")?.addEventListener("click", async () => {

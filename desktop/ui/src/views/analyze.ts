@@ -8,6 +8,7 @@
 // running across tab switches — re-entering the tab never restarts a scan.
 
 import { analyzeScan, appMeta, cancelTask, newTaskId, planDeletePaths, statusSnapshot } from "../ipc";
+import { stopwatch, track } from "../telemetry";
 import { open } from "@tauri-apps/plugin-dialog";
 import { renderFlow } from "../flow";
 import { renderFrontPage } from "../frontpage";
@@ -294,6 +295,7 @@ function startScan(root: string, fresh = false): void {
   };
   pending = state;
   if (mounted) renderScanning(mounted, state);
+  const scan = stopwatch();
   analyzeScan(root, state.taskId, fresh, (e) => {
     // Walk progress: directories visited so far (total unknown until done)
     // plus the directory being read right now.
@@ -303,6 +305,11 @@ function startScan(root: string, fresh = false): void {
     paintProgress(state);
   })
     .then((listing) => {
+      // 只有跑完整的扫描才记时长：被取消的扫描（truncated）会把中位数拉低，
+      // 让"扫描要多久"这个指标变成假的。
+      if (!listing.truncated) {
+        track({ kind: "scan_completed", scan: "analyze", duration_ms: scan() });
+      }
       if (pending !== state) return; // superseded by a newer navigation
       pending = null;
       stopTick();

@@ -108,6 +108,8 @@ pub async fn install(app: &AppHandle, progress: Channel<DownloadProgress>) -> Re
         .map_err(|e| IpcError::new("update_install_failed", e.to_string()))?
         .ok_or_else(|| IpcError::new("update_install_failed", "no update available"))?;
 
+    let from = update.current_version.clone();
+    let to = update.version.clone();
     let mut downloaded: u64 = 0;
     update
         .download_and_install(
@@ -120,6 +122,14 @@ pub async fn install(app: &AppHandle, progress: Channel<DownloadProgress>) -> Re
         .await
         .map_err(|e| IpcError::new("update_install_failed", e.to_string()))?;
 
+    // 成功事件必须在这里记：restart() 之后是新进程，旧版本号就没人知道了。
+    // flush 紧随其后，否则这条事件会跟着被替换掉的进程一起消失。
+    mole_telemetry::track(mole_telemetry::Event::SelfUpdate {
+        from,
+        to,
+        result: "ok",
+    });
+    mole_telemetry::flush();
     app.restart();
 }
 
