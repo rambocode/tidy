@@ -11,6 +11,9 @@ node_modules/
 desktop/ui/dist/
 site/tools/node_modules/
 
+# wrangler 的本地构建/状态缓存
+tools/telemetry-proxy/.wrangler/
+
 # Editor / logs
 *.log
 .vscode/
